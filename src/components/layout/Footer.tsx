@@ -11,21 +11,21 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-[#06090F] border-t border-white/10 text-slate-400 pt-16 pb-12 font-sans">
+    <footer className="bg-[#F9F9F8] border-t border-gray-200 text-gray-600 pt-16 pb-12 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Brand Header */}
-        <div className="pb-12 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="pb-12 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <span className="w-8 h-8 border border-[#C8A97E]/50 flex items-center justify-center font-serif text-sm text-[#C8A97E] tracking-widest bg-[#0E1422] shadow-sm">
+            <span className="w-8 h-8 border border-[#936B34] flex items-center justify-center font-serif text-sm text-[#111827] tracking-widest bg-white shadow-xs">
               PA
             </span>
-            <span className="font-serif text-2xl tracking-[0.25em] text-white font-light uppercase">
+            <span className="font-serif text-2xl tracking-[0.25em] text-[#111827] font-light uppercase">
               PARK AVENUE MENSWEAR
             </span>
           </div>
 
-          <div className="text-xs font-mono uppercase tracking-widest text-[#C8A97E] font-medium">
+          <div className="text-xs font-mono uppercase tracking-widest text-[#936B34] font-medium">
             FLAGSHIP ATELIER · BESPOKE SUITING
           </div>
         </div>
@@ -35,18 +35,18 @@ export const Footer: React.FC = () => {
             SERVICES
             COMPANY
         */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 py-12 border-b border-white/10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 py-12 border-b border-gray-200">
           
           {/* Column 1: SHOP */}
           <div className="space-y-4">
-            <h3 className="font-mono text-xs uppercase tracking-[0.25em] text-white font-semibold">
+            <h3 className="font-mono text-xs uppercase tracking-[0.25em] text-[#111827] font-semibold">
               SHOP
             </h3>
-            <ul className="space-y-3 text-xs font-mono uppercase tracking-wider text-slate-400">
+            <ul className="space-y-3 text-xs font-mono uppercase tracking-wider text-gray-600">
               <li>
                 <button 
                   onClick={() => handleNavCategory('New Arrivals')} 
-                  className="hover:text-[#C8A97E] transition-colors cursor-pointer"
+                  className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
                   NEW ARRIVALS
                 </button>
@@ -54,7 +54,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handleNavCategory('Suits')} 
-                  className="hover:text-[#C8A97E] transition-colors cursor-pointer"
+                  className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
                   SUITS
                 </button>
@@ -62,7 +62,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handleNavCategory('Dress Shirts')} 
-                  className="hover:text-[#C8A97E] transition-colors cursor-pointer"
+                  className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
                   DRESS SHIRTS
                 </button>
@@ -70,7 +70,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handleNavCategory('Dress Pants')} 
-                  className="hover:text-[#C8A97E] transition-colors cursor-pointer"
+                  className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
                   DRESS PANTS
                 </button>
@@ -78,7 +78,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => handleNavCategory('Ties')} 
-                  className="hover:text-[#C8A97E] transition-colors cursor-pointer"
+                  className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
                   TIES
                 </button>
@@ -88,17 +88,17 @@ export const Footer: React.FC = () => {
 
           {/* Column 2: SERVICES */}
           <div className="space-y-4">
-            <h3 className="font-mono text-xs uppercase tracking-[0.25em] text-white font-semibold">
+            <h3 className="font-mono text-xs uppercase tracking-[0.25em] text-[#111827] font-semibold">
               SERVICES
             </h3>
-            <ul className="space-y-3 text-xs font-mono uppercase tracking-wider text-slate-400">
+            <ul className="space-y-3 text-xs font-mono uppercase tracking-wider text-gray-600">
               <li>
                 <button 
                   onClick={() => {
                     setActiveView('track-alteration');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="hover:text-[#C8A97E] transition-colors cursor-pointer"
+                  className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
                   BESPOKE ALTERATIONS
                 </button>
@@ -109,7 +109,7 @@ export const Footer: React.FC = () => {
                     setActiveView('track-order');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }} 
-                  className="hover:text-[#C8A97E] transition-colors cursor-pointer"
+                  className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
                   ORDER TRACKING
                 </button>
@@ -120,7 +120,7 @@ export const Footer: React.FC = () => {
                     setActiveView('account');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }} 
-                  className="hover:text-[#C8A97E] transition-colors cursor-pointer"
+                  className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
                   CLIENT CARE
                 </button>
@@ -130,11 +130,11 @@ export const Footer: React.FC = () => {
 
           {/* Column 3: COMPANY */}
           <div className="space-y-4">
-            <h3 className="font-mono text-xs uppercase tracking-[0.25em] text-white font-semibold">
+            <h3 className="font-mono text-xs uppercase tracking-[0.25em] text-[#111827] font-semibold">
               COMPANY
             </h3>
-            <ul className="space-y-3 text-xs font-mono uppercase tracking-wider text-slate-400">
-              <li className="text-white font-medium">
+            <ul className="space-y-3 text-xs font-mono uppercase tracking-wider text-gray-600">
+              <li className="text-[#111827] font-medium">
                 PARK AVENUE MENSWEAR
               </li>
               <li>
@@ -143,18 +143,18 @@ export const Footer: React.FC = () => {
                     setActiveView('home');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }} 
-                  className="hover:text-[#C8A97E] transition-colors cursor-pointer"
+                  className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
                   ABOUT
                 </button>
               </li>
               <li>
-                <span className="text-slate-400 hover:text-[#C8A97E] transition-colors cursor-pointer">
+                <span className="text-gray-600 hover:text-[#936B34] transition-colors cursor-pointer">
                   SUSTAINABILITY
                 </span>
               </li>
               <li>
-                <span className="text-slate-400 hover:text-[#C8A97E] transition-colors cursor-pointer">
+                <span className="text-gray-600 hover:text-[#936B34] transition-colors cursor-pointer">
                   CONTACT
                 </span>
               </li>
@@ -164,7 +164,7 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Spec */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono tracking-widest text-slate-500">
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono tracking-widest text-gray-500">
           <div>
             © PARK AVENUE MENSWEAR. ALL RIGHTS RESERVED.
           </div>
@@ -174,7 +174,7 @@ export const Footer: React.FC = () => {
                 window.dispatchEvent(new CustomEvent('pa_replay_welcome'));
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-slate-400 hover:text-[#C8A97E] cursor-pointer transition-colors"
+              className="text-gray-500 hover:text-[#936B34] cursor-pointer transition-colors"
             >
               WELCOME EXPERIENCE
             </button>
@@ -183,7 +183,7 @@ export const Footer: React.FC = () => {
                 setActiveView('admin');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-[#C8A97E] hover:underline cursor-pointer font-medium"
+              className="text-[#936B34] hover:underline cursor-pointer font-medium"
             >
               ADMIN PORTAL
             </button>

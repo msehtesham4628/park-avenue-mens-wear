@@ -28,51 +28,51 @@ export const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({
 
   return (
     <div
-      className={`relative w-full overflow-hidden bg-[#0C1220] border border-white/10 flex flex-col items-center justify-center p-6 text-center select-none group transition-all duration-500 hover:border-[#C8A97E] hover:bg-[#10172A] ${aspectClass} ${className}`}
+      className={`relative w-full overflow-hidden bg-[#F8F9FA] border border-gray-200 flex flex-col items-center justify-center p-6 text-center select-none group transition-all duration-500 hover:border-[#936B34] hover:bg-[#F3F4F6] ${aspectClass} ${className}`}
     >
       {/* Background Architectural Grid & Subtle Radial Ambient */}
       <div 
-        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        className="absolute inset-0 opacity-[0.06] pointer-events-none"
         style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.9) 1px, transparent 0)`,
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.8) 1px, transparent 0)`,
           backgroundSize: '24px 24px'
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1E293B]/20 to-black/40 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-transparent to-black/[0.03] pointer-events-none" />
 
       {/* Decorative Corner Brackets for Luxury Tailoring Drafting Feel */}
-      <div className="absolute top-3 left-3 w-2.5 h-2.5 border-t border-l border-[#C8A97E]/50 transition-colors group-hover:border-[#C8A97E]" />
-      <div className="absolute top-3 right-3 w-2.5 h-2.5 border-t border-r border-[#C8A97E]/50 transition-colors group-hover:border-[#C8A97E]" />
-      <div className="absolute bottom-3 left-3 w-2.5 h-2.5 border-b border-l border-[#C8A97E]/50 transition-colors group-hover:border-[#C8A97E]" />
-      <div className="absolute bottom-3 right-3 w-2.5 h-2.5 border-b border-r border-[#C8A97E]/50 transition-colors group-hover:border-[#C8A97E]" />
+      <div className="absolute top-3 left-3 w-2.5 h-2.5 border-t border-l border-[#936B34]/60 transition-colors group-hover:border-[#936B34]" />
+      <div className="absolute top-3 right-3 w-2.5 h-2.5 border-t border-r border-[#936B34]/60 transition-colors group-hover:border-[#936B34]" />
+      <div className="absolute bottom-3 left-3 w-2.5 h-2.5 border-b border-l border-[#936B34]/60 transition-colors group-hover:border-[#936B34]" />
+      <div className="absolute bottom-3 right-3 w-2.5 h-2.5 border-b border-r border-[#936B34]/60 transition-colors group-hover:border-[#936B34]" />
 
       {/* Center Monogram / Brand Block */}
       <div className="relative z-10 flex flex-col items-center max-w-[85%]">
         {!minimal && (
-          <div className="w-10 h-10 mb-3 rounded-none border border-[#C8A97E]/50 flex items-center justify-center font-serif text-sm text-[#C8A97E] tracking-widest bg-[#090D16] shadow-md transition-transform group-hover:scale-105 duration-500">
+          <div className="w-10 h-10 mb-3 rounded-none border border-[#936B34] flex items-center justify-center font-serif text-sm text-[#111827] tracking-widest bg-white shadow-xs transition-transform group-hover:scale-105 duration-500">
             PA
           </div>
         )}
 
         {category && (
-          <span className="text-[9px] uppercase tracking-[0.3em] text-[#C8A97E] font-mono mb-1 font-medium">
+          <span className="text-[9px] uppercase tracking-[0.3em] text-[#936B34] font-mono mb-1 font-semibold">
             {category}
           </span>
         )}
 
-        <div className="font-serif text-xs sm:text-sm tracking-[0.25em] text-white uppercase font-light">
+        <div className="font-serif text-xs sm:text-sm tracking-[0.25em] text-[#111827] uppercase font-light">
           [{' '}{label}{' '}]
         </div>
 
         {subtext && (
-          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mt-2 font-mono">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 mt-2 font-mono">
             {subtext}
           </p>
         )}
       </div>
 
       {/* Subtle bottom indicator */}
-      <div className="absolute bottom-2 text-[8px] uppercase tracking-[0.25em] text-slate-500 font-mono">
+      <div className="absolute bottom-2 text-[8px] uppercase tracking-[0.25em] text-gray-400 font-mono">
         Atelier Suiting Frame
       </div>
     </div>

@@ -313,20 +313,20 @@ export const AdminDashboard: React.FC = () => {
     : '--';
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-[#F8FAFC] pt-8 pb-24">
+    <div className="min-h-screen bg-white text-[#111827] pt-8 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header: Exact Required Spec: PARK AVENUE MENSWEAR ADMIN */}
-        <div className="py-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="py-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-xs bg-[#C8A97E] text-[#090D16] px-2 py-0.5 font-bold">
+            <span className="font-mono text-xs bg-[#111827] text-white px-2 py-0.5 font-bold">
               PA
             </span>
             <div>
-              <h1 className="font-serif text-2xl sm:text-3xl text-white uppercase tracking-wide font-light">
+              <h1 className="font-serif text-2xl sm:text-3xl text-[#111827] uppercase tracking-wide font-light">
                 PARK AVENUE MENSWEAR ADMIN
               </h1>
-              <p className="text-xs text-slate-400 font-mono mt-0.5">
+              <p className="text-xs text-gray-500 font-mono mt-0.5">
                 Backend Operations &amp; Inventory Management Portal
               </p>
             </div>
@@ -335,15 +335,15 @@ export const AdminDashboard: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={loadAllData}
-              className="px-3.5 py-2 bg-[#0E1526] border border-white/10 text-xs font-mono text-white hover:border-[#C8A97E] flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
+              className="px-3.5 py-2 bg-[#F9F9F8] border border-gray-200 text-xs font-mono text-[#111827] hover:border-[#936B34] flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-[#C8A97E]' : 'text-slate-400'}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-[#936B34]' : 'text-gray-500'}`} />
               <span>REFRESH DATA</span>
             </button>
 
             <button
               onClick={() => setActiveView('home')}
-              className="px-4 py-2 bg-[#C8A97E] text-[#090D16] text-xs font-semibold uppercase tracking-wider hover:bg-[#C8A97E] transition-colors cursor-pointer shadow-sm"
+              className="px-4 py-2 bg-[#111827] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm"
             >
               VIEW STOREFRONT
             </button>
@@ -351,7 +351,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Navigation */}
-        <div className="mt-6 border-b border-white/10 overflow-x-auto scrollbar-none">
+        <div className="mt-6 border-b border-gray-200 overflow-x-auto scrollbar-none">
           <nav className="flex space-x-8 text-xs font-mono tracking-widest uppercase">
             {[
               { id: 'dashboard', label: 'DASHBOARD' },
@@ -368,8 +368,8 @@ export const AdminDashboard: React.FC = () => {
                 onClick={() => setActiveTab(tab.id as AdminTab)}
                 className={`py-3 relative cursor-pointer transition-colors whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'text-[#C8A97E] font-semibold border-b-2 border-[#C8A97E]'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'text-[#936B34] font-semibold border-b-2 border-[#936B34]'
+                    : 'text-gray-500 hover:text-[#111827]'
                 }`}
               >
                 {tab.label}
@@ -384,50 +384,50 @@ export const AdminDashboard: React.FC = () => {
             {/* Dashboard Cards: Placeholders '--' if empty */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               
-              <div className="border border-white/10 bg-[#0E1526] p-6 space-y-2 shadow-xs">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 block font-medium">
+              <div className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-2 shadow-xs">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block font-medium">
                   TOTAL SALES
                 </span>
-                <div className="font-serif text-3xl sm:text-4xl text-white tracking-tight font-light">
+                <div className="font-serif text-3xl sm:text-4xl text-[#111827] tracking-tight font-light">
                   {totalSalesDisplay}
                 </div>
-                <span className="text-[10px] font-mono text-[#C8A97E] block">
+                <span className="text-[10px] font-mono text-[#936B34] block">
                   {ordersList.length > 0 ? 'Live ledger' : 'Awaiting backend orders'}
                 </span>
               </div>
 
-              <div className="border border-white/10 bg-[#0E1526] p-6 space-y-2 shadow-xs">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 block font-medium">
+              <div className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-2 shadow-xs">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block font-medium">
                   TOTAL ORDERS
                 </span>
-                <div className="font-serif text-3xl sm:text-4xl text-white tracking-tight font-light">
+                <div className="font-serif text-3xl sm:text-4xl text-[#111827] tracking-tight font-light">
                   {totalOrdersDisplay}
                 </div>
-                <span className="text-[10px] font-mono text-[#C8A97E] block">
+                <span className="text-[10px] font-mono text-[#936B34] block">
                   {ordersList.length > 0 ? 'Registered in database' : 'No orders recorded'}
                 </span>
               </div>
 
-              <div className="border border-white/10 bg-[#0E1526] p-6 space-y-2 shadow-xs">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 block font-medium">
+              <div className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-2 shadow-xs">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block font-medium">
                   TOTAL CUSTOMERS
                 </span>
-                <div className="font-serif text-3xl sm:text-4xl text-white tracking-tight font-light">
+                <div className="font-serif text-3xl sm:text-4xl text-[#111827] tracking-tight font-light">
                   {totalCustomersDisplay}
                 </div>
-                <span className="text-[10px] font-mono text-[#C8A97E] block">
+                <span className="text-[10px] font-mono text-[#936B34] block">
                   {customersList.length > 0 ? 'Active accounts' : 'No customer records'}
                 </span>
               </div>
 
-              <div className="border border-white/10 bg-[#0E1526] p-6 space-y-2 shadow-xs">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 block font-medium">
+              <div className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-2 shadow-xs">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block font-medium">
                   ACTIVE ALTERATIONS
                 </span>
-                <div className="font-serif text-3xl sm:text-4xl text-white tracking-tight font-light">
+                <div className="font-serif text-3xl sm:text-4xl text-[#111827] tracking-tight font-light">
                   {activeAlterationsDisplay}
                 </div>
-                <span className="text-[10px] font-mono text-[#C8A97E] block">
+                <span className="text-[10px] font-mono text-[#936B34] block">
                   {alterationsList.length > 0 ? 'In atelier work' : 'No active tailor queue'}
                 </span>
               </div>
@@ -435,8 +435,8 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Quick Actions Panel */}
-            <div className="border border-white/10 bg-[#0E1526] p-6 sm:p-8 shadow-xs">
-              <h2 className="font-serif text-xl text-white uppercase tracking-wide mb-6 font-light">
+            <div className="border border-gray-200 bg-[#F9F9F8] p-6 sm:p-8 shadow-xs">
+              <h2 className="font-serif text-xl text-[#111827] uppercase tracking-wide mb-6 font-light">
                 QUICK ATELIER OPERATIONS
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -455,53 +455,53 @@ export const AdminDashboard: React.FC = () => {
                     });
                     setIsAddProductOpen(true);
                   }}
-                  className="p-4 border border-white/10 bg-[#0E1526] hover:border-[#C8A97E] text-left transition-colors cursor-pointer group shadow-xs"
+                  className="p-4 border border-gray-200 bg-[#F9F9F8] hover:border-[#936B34] text-left transition-colors cursor-pointer group shadow-xs"
                 >
-                  <Plus className="w-4 h-4 text-[#C8A97E] mb-2 group-hover:scale-110 transition-transform" />
-                  <div className="font-mono text-xs uppercase text-white font-medium">ADD PRODUCT</div>
-                  <p className="text-[10px] font-mono text-slate-400 mt-1">Publish garment to catalog</p>
+                  <Plus className="w-4 h-4 text-[#936B34] mb-2 group-hover:scale-110 transition-transform" />
+                  <div className="font-mono text-xs uppercase text-[#111827] font-medium">ADD PRODUCT</div>
+                  <p className="text-[10px] font-mono text-gray-500 mt-1">Publish garment to catalog</p>
                 </button>
 
                 <button
                   onClick={() => setIsCreateAlterationOpen(true)}
-                  className="p-4 border border-white/10 bg-[#0E1526] hover:border-[#C8A97E] text-left transition-colors cursor-pointer group shadow-xs"
+                  className="p-4 border border-gray-200 bg-[#F9F9F8] hover:border-[#936B34] text-left transition-colors cursor-pointer group shadow-xs"
                 >
-                  <Scissors className="w-4 h-4 text-[#C8A97E] mb-2 group-hover:scale-110 transition-transform" />
-                  <div className="font-mono text-xs uppercase text-white font-medium">CREATE ALTERATION</div>
-                  <p className="text-[10px] font-mono text-slate-400 mt-1">Book tailor workbench task</p>
+                  <Scissors className="w-4 h-4 text-[#936B34] mb-2 group-hover:scale-110 transition-transform" />
+                  <div className="font-mono text-xs uppercase text-[#111827] font-medium">CREATE ALTERATION</div>
+                  <p className="text-[10px] font-mono text-gray-500 mt-1">Book tailor workbench task</p>
                 </button>
 
                 <button
                   onClick={() => setIsSendNotificationOpen(true)}
-                  className="p-4 border border-white/10 bg-[#0E1526] hover:border-[#C8A97E] text-left transition-colors cursor-pointer group shadow-xs"
+                  className="p-4 border border-gray-200 bg-[#F9F9F8] hover:border-[#936B34] text-left transition-colors cursor-pointer group shadow-xs"
                 >
-                  <Send className="w-4 h-4 text-[#C8A97E] mb-2 group-hover:scale-110 transition-transform" />
-                  <div className="font-mono text-xs uppercase text-white font-medium">SEND NOTIFICATION</div>
-                  <p className="text-[10px] font-mono text-slate-400 mt-1">Email, SMS or WhatsApp</p>
+                  <Send className="w-4 h-4 text-[#936B34] mb-2 group-hover:scale-110 transition-transform" />
+                  <div className="font-mono text-xs uppercase text-[#111827] font-medium">SEND NOTIFICATION</div>
+                  <p className="text-[10px] font-mono text-gray-500 mt-1">Email, SMS or WhatsApp</p>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('inventory')}
-                  className="p-4 border border-white/10 bg-[#0E1526] hover:border-[#C8A97E] text-left transition-colors cursor-pointer group shadow-xs"
+                  className="p-4 border border-gray-200 bg-[#F9F9F8] hover:border-[#936B34] text-left transition-colors cursor-pointer group shadow-xs"
                 >
-                  <Sliders className="w-4 h-4 text-[#C8A97E] mb-2 group-hover:scale-110 transition-transform" />
-                  <div className="font-mono text-xs uppercase text-white font-medium">ADJUST INVENTORY</div>
-                  <p className="text-[10px] font-mono text-slate-400 mt-1">Update variant stock counts</p>
+                  <Sliders className="w-4 h-4 text-[#936B34] mb-2 group-hover:scale-110 transition-transform" />
+                  <div className="font-mono text-xs uppercase text-[#111827] font-medium">ADJUST INVENTORY</div>
+                  <p className="text-[10px] font-mono text-gray-500 mt-1">Update variant stock counts</p>
                 </button>
               </div>
             </div>
 
             {/* Backend Integration Contract Information */}
-            <div className="border border-white/10 bg-[#0E1526] p-6 space-y-3 font-mono text-xs text-slate-400 shadow-xs">
-              <div className="flex items-center gap-2 text-[#C8A97E] uppercase tracking-wider font-medium">
+            <div className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-3 font-mono text-xs text-gray-500 shadow-xs">
+              <div className="flex items-center gap-2 text-[#936B34] uppercase tracking-wider font-medium">
                 <SettingsIcon className="w-4 h-4" />
                 <span>BACKEND INTEGRATION READINESS</span>
               </div>
               <p>
-                API Endpoint: <strong className="text-white">{API_CONFIG.baseUrl || 'Configurable via NEXT_PUBLIC_API_URL'}</strong>
+                API Endpoint: <strong className="text-[#111827]">{API_CONFIG.baseUrl || 'Configurable via NEXT_PUBLIC_API_URL'}</strong>
               </p>
               <p>
-                Mode: <strong className="text-[#C8A97E]">{API_CONFIG.isLiveBackend ? 'LIVE BACKEND ACTIVE' : 'IN-MEMORY PERSISTED SERVICE ENGINE'}</strong>
+                Mode: <strong className="text-[#936B34]">{API_CONFIG.isLiveBackend ? 'LIVE BACKEND ACTIVE' : 'IN-MEMORY PERSISTED SERVICE ENGINE'}</strong>
               </p>
             </div>
           </div>
@@ -512,10 +512,10 @@ export const AdminDashboard: React.FC = () => {
           <div className="mt-8 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-serif text-xl sm:text-2xl text-white uppercase tracking-wide font-light">
+                <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
                   PRODUCTS REPOSITORY
                 </h2>
-                <p className="text-xs text-slate-400 font-mono">
+                <p className="text-xs text-gray-500 font-mono">
                   Catalog and garment configuration
                 </p>
               </div>
@@ -535,7 +535,7 @@ export const AdminDashboard: React.FC = () => {
                   });
                   setIsAddProductOpen(true);
                 }}
-                className="px-4 py-2.5 bg-[#C8A97E] text-[#090D16] font-semibold text-xs uppercase tracking-wider hover:bg-[#C8A97E] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-4 py-2.5 bg-[#111827] text-white font-semibold text-xs uppercase tracking-wider hover:bg-[#936B34] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 <span>ADD PRODUCT</span>
@@ -543,9 +543,9 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {productsList.length > 0 ? (
-              <div className="border border-white/10 bg-[#0E1526] overflow-x-auto shadow-xs">
+              <div className="border border-gray-200 bg-[#F9F9F8] overflow-x-auto shadow-xs">
                 <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-[#0E1526] text-slate-400 border-b border-white/10">
+                  <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200">
                     <tr>
                       <th className="p-4">SKU</th>
                       <th className="p-4">GARMENT NAME</th>
@@ -555,27 +555,27 @@ export const AdminDashboard: React.FC = () => {
                       <th className="p-4 text-right">ACTIONS</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-gray-100">
                     {productsList.map(prod => (
                       <tr key={prod.id} className="hover:bg-black/[0.02]">
-                        <td className="p-4 text-[#C8A97E] font-medium">{prod.sku}</td>
-                        <td className="p-4 text-white font-serif text-sm font-light">{prod.name}</td>
-                        <td className="p-4 uppercase text-slate-400">{prod.category}</td>
+                        <td className="p-4 text-[#936B34] font-medium">{prod.sku}</td>
+                        <td className="p-4 text-[#111827] font-serif text-sm font-light">{prod.name}</td>
+                        <td className="p-4 uppercase text-gray-500">{prod.category}</td>
                         <td className="p-4 tabular-nums font-semibold">${prod.price.toLocaleString()}</td>
-                        <td className="p-4 text-slate-400">
+                        <td className="p-4 text-gray-500">
                           {prod.variants?.map(v => `${v.size} (${v.stock})`).join(', ') || 'None'}
                         </td>
                         <td className="p-4 text-right space-x-2">
                           <button
                             onClick={() => handleOpenEdit(prod)}
-                            className="p-1.5 text-slate-400 hover:text-[#C8A97E] transition-colors cursor-pointer"
+                            className="p-1.5 text-gray-500 hover:text-[#936B34] transition-colors cursor-pointer"
                             title="Edit Product"
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(prod.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                            className="p-1.5 text-gray-500 hover:text-red-500 transition-colors cursor-pointer"
                             title="Archive Product"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -587,22 +587,22 @@ export const AdminDashboard: React.FC = () => {
                 </table>
               </div>
             ) : (
-              <div className="border border-white/10 bg-[#0E1526] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
-                <div className="w-12 h-12 mb-6 border border-[#C8A97E]/40 flex items-center justify-center font-serif text-base text-[#C8A97E] tracking-widest bg-[#0E1526] shadow-xs">
+              <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
+                <div className="w-12 h-12 mb-6 border border-[#936B34]/40 flex items-center justify-center font-serif text-base text-[#936B34] tracking-widest bg-[#F9F9F8] shadow-xs">
                   PA
                 </div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#C8A97E] mb-2 block font-medium">
+                <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
-                <h3 className="font-serif text-2xl text-white uppercase tracking-wider mb-4 font-light">
+                <h3 className="font-serif text-2xl text-[#111827] uppercase tracking-wider mb-4 font-light">
                   NO PRODUCTS FOUND
                 </h3>
-                <p className="text-xs text-slate-400 max-w-md uppercase tracking-widest font-mono leading-relaxed mb-6">
+                <p className="text-xs text-gray-500 max-w-md uppercase tracking-widest font-mono leading-relaxed mb-6">
                   No inventory has been published. Use the Add Product button above to create a garment or sync from the backend API.
                 </p>
                 <button
                   onClick={() => setIsAddProductOpen(true)}
-                  className="px-6 py-3 bg-[#C8A97E] text-[#090D16] text-xs font-semibold uppercase tracking-wider hover:bg-[#C8A97E] transition-colors cursor-pointer shadow-sm"
+                  className="px-6 py-3 bg-[#111827] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm"
                 >
                   ADD FIRST PRODUCT
                 </button>
@@ -615,18 +615,18 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'inventory' && (
           <div className="mt-8 space-y-6">
             <div>
-              <h2 className="font-serif text-xl sm:text-2xl text-white uppercase tracking-wide font-light">
+              <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
                 INVENTORY VAULT
               </h2>
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-xs text-gray-500 font-mono">
                 Stock counts per size and atelier variant
               </p>
             </div>
 
             {productsList.length > 0 ? (
-              <div className="border border-white/10 bg-[#0E1526] overflow-x-auto shadow-xs">
+              <div className="border border-gray-200 bg-[#F9F9F8] overflow-x-auto shadow-xs">
                 <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-[#0E1526] text-slate-400 border-b border-white/10">
+                  <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200">
                     <tr>
                       <th className="p-4">GARMENT</th>
                       <th className="p-4">SKU</th>
@@ -636,14 +636,14 @@ export const AdminDashboard: React.FC = () => {
                       <th className="p-4 text-right">ACTION</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-gray-100">
                     {productsList.flatMap(p => 
                       (p.variants || []).map(v => (
                         <tr key={v.id} className="hover:bg-black/[0.02]">
-                          <td className="p-4 text-white font-serif">{p.name}</td>
-                          <td className="p-4 text-[#C8A97E] font-medium">{v.sku}</td>
-                          <td className="p-4 text-slate-400">{v.size}</td>
-                          <td className="p-4 font-bold text-white">{v.stock} units</td>
+                          <td className="p-4 text-[#111827] font-serif">{p.name}</td>
+                          <td className="p-4 text-[#936B34] font-medium">{v.sku}</td>
+                          <td className="p-4 text-gray-500">{v.size}</td>
+                          <td className="p-4 font-bold text-[#111827]">{v.stock} units</td>
                           <td className="p-4">
                             {v.stock <= 0 ? (
                               <span className="text-red-600 font-medium">Out of Stock</span>
@@ -661,7 +661,7 @@ export const AdminDashboard: React.FC = () => {
                                 size: v.size,
                                 currentStock: v.stock
                               })}
-                              className="px-3 py-1 border border-white/20 text-white hover:border-[#C8A97E] hover:text-[#C8A97E] text-[10px] uppercase cursor-pointer bg-[#0E1526] transition-colors"
+                              className="px-3 py-1 border border-gray-300 text-[#111827] hover:border-[#936B34] hover:text-[#936B34] text-[10px] uppercase cursor-pointer bg-[#F9F9F8] transition-colors"
                             >
                               ADJUST
                             </button>
@@ -673,17 +673,17 @@ export const AdminDashboard: React.FC = () => {
                 </table>
               </div>
             ) : (
-              <div className="border border-white/10 bg-[#0E1526] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
-                <div className="w-12 h-12 mb-6 border border-[#C8A97E]/40 flex items-center justify-center font-serif text-base text-[#C8A97E] tracking-widest bg-[#0E1526] shadow-xs">
+              <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
+                <div className="w-12 h-12 mb-6 border border-[#936B34]/40 flex items-center justify-center font-serif text-base text-[#936B34] tracking-widest bg-[#F9F9F8] shadow-xs">
                   PA
                 </div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#C8A97E] mb-2 block font-medium">
+                <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
-                <h3 className="font-serif text-2xl text-white uppercase tracking-wider mb-4 font-light">
+                <h3 className="font-serif text-2xl text-[#111827] uppercase tracking-wider mb-4 font-light">
                   NO PRODUCTS FOUND
                 </h3>
-                <p className="text-xs text-slate-400 max-w-md uppercase tracking-widest font-mono leading-relaxed">
+                <p className="text-xs text-gray-500 max-w-md uppercase tracking-widest font-mono leading-relaxed">
                   Inventory vault is empty until products are created.
                 </p>
               </div>
@@ -695,18 +695,18 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'orders' && (
           <div className="mt-8 space-y-6">
             <div>
-              <h2 className="font-serif text-xl sm:text-2xl text-white uppercase tracking-wide font-light">
+              <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
                 CUSTOMER ORDERS &amp; CONSIGNMENTS
               </h2>
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-xs text-gray-500 font-mono">
                 Order fulfillment and luxury courier statuses
               </p>
             </div>
 
             {ordersList.length > 0 ? (
-              <div className="border border-white/10 bg-[#0E1526] overflow-x-auto shadow-xs">
+              <div className="border border-gray-200 bg-[#F9F9F8] overflow-x-auto shadow-xs">
                 <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-[#0E1526] text-slate-400 border-b border-white/10">
+                  <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200">
                     <tr>
                       <th className="p-4">ORDER ID</th>
                       <th className="p-4">CUSTOMER</th>
@@ -716,18 +716,18 @@ export const AdminDashboard: React.FC = () => {
                       <th className="p-4 text-right">UPDATE STATUS</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-gray-100">
                     {ordersList.map(ord => (
                       <tr key={ord.id} className="hover:bg-black/[0.02]">
-                        <td className="p-4 text-[#C8A97E] font-medium">{ord.id}</td>
-                        <td className="p-4 text-white">
+                        <td className="p-4 text-[#936B34] font-medium">{ord.id}</td>
+                        <td className="p-4 text-[#111827]">
                           {(ord.shippingAddress as any)?.fullName || ord.customerEmail || 'Client'}
                         </td>
-                        <td className="p-4 text-slate-400">
+                        <td className="p-4 text-gray-500">
                           {ord.items?.map(it => `${it.productName} (${it.quantity})`).join(', ') || 'N/A'}
                         </td>
-                        <td className="p-4 tabular-nums font-semibold text-white">${ord.total.toLocaleString()}</td>
-                        <td className="p-4 uppercase text-[#C8A97E] font-medium">
+                        <td className="p-4 tabular-nums font-semibold text-[#111827]">${ord.total.toLocaleString()}</td>
+                        <td className="p-4 uppercase text-[#936B34] font-medium">
                           {ord.status || (ord as any).orderStatus}
                         </td>
                         <td className="p-4 text-right space-x-2">
@@ -739,7 +739,7 @@ export const AdminDashboard: React.FC = () => {
                                 showToast(`Order ${ord.id} status changed to ${st}`, 'success');
                                 await loadAllData();
                               }}
-                              className="px-2 py-1 text-[9px] border border-white/10 hover:border-[#C8A97E] text-slate-400 hover:text-white uppercase cursor-pointer bg-[#0E1526] transition-colors"
+                              className="px-2 py-1 text-[9px] border border-gray-200 hover:border-[#936B34] text-gray-500 hover:text-[#111827] uppercase cursor-pointer bg-[#F9F9F8] transition-colors"
                             >
                               {st}
                             </button>
@@ -751,17 +751,17 @@ export const AdminDashboard: React.FC = () => {
                 </table>
               </div>
             ) : (
-              <div className="border border-white/10 bg-[#0E1526] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
-                <div className="w-12 h-12 mb-6 border border-[#C8A97E]/40 flex items-center justify-center font-serif text-base text-[#C8A97E] tracking-widest bg-[#0E1526] shadow-xs">
+              <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
+                <div className="w-12 h-12 mb-6 border border-[#936B34]/40 flex items-center justify-center font-serif text-base text-[#936B34] tracking-widest bg-[#F9F9F8] shadow-xs">
                   PA
                 </div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#C8A97E] mb-2 block font-medium">
+                <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
-                <h3 className="font-serif text-2xl text-white uppercase tracking-wider mb-4 font-light">
+                <h3 className="font-serif text-2xl text-[#111827] uppercase tracking-wider mb-4 font-light">
                   NO ORDERS FOUND
                 </h3>
-                <p className="text-xs text-slate-400 max-w-md uppercase tracking-widest font-mono leading-relaxed">
+                <p className="text-xs text-gray-500 max-w-md uppercase tracking-widest font-mono leading-relaxed">
                   No orders have been recorded in the system yet.
                 </p>
               </div>
@@ -773,18 +773,18 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'customers' && (
           <div className="mt-8 space-y-6">
             <div>
-              <h2 className="font-serif text-xl sm:text-2xl text-white uppercase tracking-wide font-light">
+              <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
                 CUSTOMER DIRECTORY
               </h2>
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-xs text-gray-500 font-mono">
                 Atelier client accounts and bespoke profiles
               </p>
             </div>
 
             {customersList.length > 0 ? (
-              <div className="border border-white/10 bg-[#0E1526] overflow-x-auto shadow-xs">
+              <div className="border border-gray-200 bg-[#F9F9F8] overflow-x-auto shadow-xs">
                 <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-[#0E1526] text-slate-400 border-b border-white/10">
+                  <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200">
                     <tr>
                       <th className="p-4">NAME</th>
                       <th className="p-4">EMAIL</th>
@@ -793,31 +793,31 @@ export const AdminDashboard: React.FC = () => {
                       <th className="p-4">TIER</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-gray-100">
                     {customersList.map(cust => (
                       <tr key={cust.id} className="hover:bg-black/[0.02]">
-                        <td className="p-4 text-white font-medium">{cust.name}</td>
-                        <td className="p-4 text-slate-400">{cust.email}</td>
-                        <td className="p-4 text-slate-400">{cust.phone}</td>
+                        <td className="p-4 text-[#111827] font-medium">{cust.name}</td>
+                        <td className="p-4 text-gray-500">{cust.email}</td>
+                        <td className="p-4 text-gray-500">{cust.phone}</td>
                         <td className="p-4 font-semibold">{cust.ordersCount || 0}</td>
-                        <td className="p-4 uppercase text-[#C8A97E] font-medium">{cust.tier || 'Standard'}</td>
+                        <td className="p-4 uppercase text-[#936B34] font-medium">{cust.tier || 'Standard'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             ) : (
-              <div className="border border-white/10 bg-[#0E1526] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
-                <div className="w-12 h-12 mb-6 border border-[#C8A97E]/40 flex items-center justify-center font-serif text-base text-[#C8A97E] tracking-widest bg-[#0E1526] shadow-xs">
+              <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
+                <div className="w-12 h-12 mb-6 border border-[#936B34]/40 flex items-center justify-center font-serif text-base text-[#936B34] tracking-widest bg-[#F9F9F8] shadow-xs">
                   PA
                 </div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#C8A97E] mb-2 block font-medium">
+                <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
-                <h3 className="font-serif text-2xl text-white uppercase tracking-wider mb-4 font-light">
+                <h3 className="font-serif text-2xl text-[#111827] uppercase tracking-wider mb-4 font-light">
                   NO CUSTOMERS FOUND
                 </h3>
-                <p className="text-xs text-slate-400 max-w-md uppercase tracking-widest font-mono leading-relaxed">
+                <p className="text-xs text-gray-500 max-w-md uppercase tracking-widest font-mono leading-relaxed">
                   No client records have been registered in the database.
                 </p>
               </div>
@@ -830,17 +830,17 @@ export const AdminDashboard: React.FC = () => {
           <div className="mt-8 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-serif text-xl sm:text-2xl text-white uppercase tracking-wide font-light">
+                <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
                   BESPOKE ALTERATIONS QUEUE
                 </h2>
-                <p className="text-xs text-slate-400 font-mono">
+                <p className="text-xs text-gray-500 font-mono">
                   Master tailor workbench and milestone tracking
                 </p>
               </div>
 
               <button
                 onClick={() => setIsCreateAlterationOpen(true)}
-                className="px-4 py-2.5 bg-[#C8A97E] text-[#090D16] font-semibold text-xs uppercase tracking-wider hover:bg-[#C8A97E] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-4 py-2.5 bg-[#111827] text-white font-semibold text-xs uppercase tracking-wider hover:bg-[#936B34] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <Scissors className="w-4 h-4" />
                 <span>CREATE ALTERATION</span>
@@ -848,9 +848,9 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {alterationsList.length > 0 ? (
-              <div className="border border-white/10 bg-[#0E1526] overflow-x-auto shadow-xs">
+              <div className="border border-gray-200 bg-[#F9F9F8] overflow-x-auto shadow-xs">
                 <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-[#0E1526] text-slate-400 border-b border-white/10">
+                  <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200">
                     <tr>
                       <th className="p-4">ALT ID</th>
                       <th className="p-4">CLIENT</th>
@@ -860,14 +860,14 @@ export const AdminDashboard: React.FC = () => {
                       <th className="p-4 text-right">UPDATE MILESTONE</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-gray-100">
                     {alterationsList.map(alt => (
                       <tr key={alt.id} className="hover:bg-black/[0.02]">
-                        <td className="p-4 text-[#C8A97E] font-medium">{alt.id}</td>
-                        <td className="p-4 text-white font-medium">{alt.customerName}</td>
-                        <td className="p-4 text-slate-400">{alt.productName || alt.items?.[0]?.name || 'Garment'}</td>
-                        <td className="p-4 text-slate-400">{alt.alterationDetails || alt.items?.[0]?.type || 'Tailoring'}</td>
-                        <td className="p-4 uppercase text-[#C8A97E] font-medium">
+                        <td className="p-4 text-[#936B34] font-medium">{alt.id}</td>
+                        <td className="p-4 text-[#111827] font-medium">{alt.customerName}</td>
+                        <td className="p-4 text-gray-500">{alt.productName || alt.items?.[0]?.name || 'Garment'}</td>
+                        <td className="p-4 text-gray-500">{alt.alterationDetails || alt.items?.[0]?.type || 'Tailoring'}</td>
+                        <td className="p-4 uppercase text-[#936B34] font-medium">
                           {alt.status.replace(/_/g, ' ')}
                         </td>
                         <td className="p-4 text-right space-x-1.5">
@@ -879,7 +879,7 @@ export const AdminDashboard: React.FC = () => {
                                 showToast(`Alteration ${alt.id} status updated`, 'success');
                                 await loadAllData();
                               }}
-                              className="px-2 py-1 text-[9px] border border-white/10 hover:border-[#C8A97E] text-slate-400 hover:text-white uppercase cursor-pointer bg-[#0E1526] transition-colors"
+                              className="px-2 py-1 text-[9px] border border-gray-200 hover:border-[#936B34] text-gray-500 hover:text-[#111827] uppercase cursor-pointer bg-[#F9F9F8] transition-colors"
                             >
                               {st.split('_')[0]}
                             </button>
@@ -891,22 +891,22 @@ export const AdminDashboard: React.FC = () => {
                 </table>
               </div>
             ) : (
-              <div className="border border-white/10 bg-[#0E1526] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
-                <div className="w-12 h-12 mb-6 border border-[#C8A97E]/40 flex items-center justify-center font-serif text-base text-[#C8A97E] tracking-widest bg-[#0E1526] shadow-xs">
+              <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
+                <div className="w-12 h-12 mb-6 border border-[#936B34]/40 flex items-center justify-center font-serif text-base text-[#936B34] tracking-widest bg-[#F9F9F8] shadow-xs">
                   PA
                 </div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#C8A97E] mb-2 block font-medium">
+                <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
-                <h3 className="font-serif text-2xl text-white uppercase tracking-wider mb-4 font-light">
+                <h3 className="font-serif text-2xl text-[#111827] uppercase tracking-wider mb-4 font-light">
                   NO ALTERATIONS FOUND
                 </h3>
-                <p className="text-xs text-slate-400 max-w-md uppercase tracking-widest font-mono leading-relaxed mb-6">
+                <p className="text-xs text-gray-500 max-w-md uppercase tracking-widest font-mono leading-relaxed mb-6">
                   No tailor commissions are currently active. Click Create Alteration to record client fitting specs.
                 </p>
                 <button
                   onClick={() => setIsCreateAlterationOpen(true)}
-                  className="px-6 py-3 bg-[#C8A97E] text-[#090D16] text-xs font-semibold uppercase tracking-wider hover:bg-[#C8A97E] transition-colors cursor-pointer shadow-sm"
+                  className="px-6 py-3 bg-[#111827] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm"
                 >
                   CREATE FIRST ALTERATION
                 </button>
@@ -920,39 +920,39 @@ export const AdminDashboard: React.FC = () => {
           <div className="mt-8 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-serif text-xl sm:text-2xl text-white uppercase tracking-wide font-light">
+                <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
                   COMMUNICATION &amp; DISPATCH
                 </h2>
-                <p className="text-xs text-slate-400 font-mono">
+                <p className="text-xs text-gray-500 font-mono">
                   Client alerts via Email, SMS and WhatsApp
                 </p>
               </div>
 
               <button
                 onClick={() => setIsSendNotificationOpen(true)}
-                className="px-4 py-2.5 bg-[#C8A97E] text-[#090D16] font-semibold text-xs uppercase tracking-wider hover:bg-[#C8A97E] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+                className="px-4 py-2.5 bg-[#111827] text-white font-semibold text-xs uppercase tracking-wider hover:bg-[#936B34] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <Send className="w-4 h-4" />
                 <span>SEND NOTIFICATION</span>
               </button>
             </div>
 
-            <div className="border border-white/10 bg-[#0E1526] p-6 space-y-4 shadow-xs">
-              <h3 className="font-mono text-xs uppercase text-[#C8A97E] tracking-widest font-medium">
+            <div className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-4 shadow-xs">
+              <h3 className="font-mono text-xs uppercase text-[#936B34] tracking-widest font-medium">
                 AUTOMATED DISPATCH CHANNELS
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 border border-white/5 bg-[#0E1526] space-y-1 shadow-xs">
-                  <div className="text-xs font-serif text-white uppercase font-medium">EMAIL NOTIFICATIONS</div>
-                  <p className="text-[11px] font-mono text-slate-400">Templates for order confirmation, tailoring milestones &amp; tracking.</p>
+                <div className="p-4 border border-gray-100 bg-[#F9F9F8] space-y-1 shadow-xs">
+                  <div className="text-xs font-serif text-[#111827] uppercase font-medium">EMAIL NOTIFICATIONS</div>
+                  <p className="text-[11px] font-mono text-gray-500">Templates for order confirmation, tailoring milestones &amp; tracking.</p>
                 </div>
-                <div className="p-4 border border-white/5 bg-[#0E1526] space-y-1 shadow-xs">
-                  <div className="text-xs font-serif text-white uppercase font-medium">SMS ALERTS</div>
-                  <p className="text-[11px] font-mono text-slate-400">Urgent courier dispatch and ready-for-fitting alerts.</p>
+                <div className="p-4 border border-gray-100 bg-[#F9F9F8] space-y-1 shadow-xs">
+                  <div className="text-xs font-serif text-[#111827] uppercase font-medium">SMS ALERTS</div>
+                  <p className="text-[11px] font-mono text-gray-500">Urgent courier dispatch and ready-for-fitting alerts.</p>
                 </div>
-                <div className="p-4 border border-white/5 bg-[#0E1526] space-y-1 shadow-xs">
-                  <div className="text-xs font-serif text-white uppercase font-medium">WHATSAPP CONCIERGE</div>
-                  <p className="text-[11px] font-mono text-slate-400">Direct master tailor photo updates and signature confirmations.</p>
+                <div className="p-4 border border-gray-100 bg-[#F9F9F8] space-y-1 shadow-xs">
+                  <div className="text-xs font-serif text-[#111827] uppercase font-medium">WHATSAPP CONCIERGE</div>
+                  <p className="text-[11px] font-mono text-gray-500">Direct master tailor photo updates and signature confirmations.</p>
                 </div>
               </div>
             </div>
@@ -963,38 +963,38 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'settings' && (
           <div className="mt-8 space-y-6">
             <div>
-              <h2 className="font-serif text-xl sm:text-2xl text-white uppercase tracking-wide font-light">
+              <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
                 PORTAL CONFIGURATION &amp; ENVIRONMENT
               </h2>
-              <p className="text-xs text-slate-400 font-mono">
+              <p className="text-xs text-gray-500 font-mono">
                 API connectivity and atelier configuration
               </p>
             </div>
 
-            <div className="border border-white/10 bg-[#0E1526] p-6 sm:p-8 space-y-6 shadow-xs">
+            <div className="border border-gray-200 bg-[#F9F9F8] p-6 sm:p-8 space-y-6 shadow-xs">
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-widest text-slate-400 mb-2 font-medium">
+                <label className="block text-[10px] font-mono uppercase tracking-widest text-gray-500 mb-2 font-medium">
                   BACKEND API URL (NEXT_PUBLIC_API_URL / VITE_API_URL)
                 </label>
                 <input
                   type="text"
                   readOnly
                   value={API_CONFIG.baseUrl || 'https://api.parkavenuemenswear.com/v1 (Not configured)'}
-                  className="w-full bg-[#0E1526] border border-white/10 px-4 py-3 text-xs font-mono text-white focus:outline-none"
+                  className="w-full bg-[#F9F9F8] border border-gray-200 px-4 py-3 text-xs font-mono text-[#111827] focus:outline-none"
                 />
-                <p className="text-[11px] font-mono text-slate-400 mt-1.5">
+                <p className="text-[11px] font-mono text-gray-500 mt-1.5">
                   Set NEXT_PUBLIC_API_URL or VITE_API_URL in your hosting environment to proxy calls to your production backend.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-white/10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-mono uppercase text-[#C8A97E] block font-medium">FLAGSHIP ATELIER</span>
-                  <p className="text-xs font-mono text-white">Park Avenue Flagship Atelier, Suite 740</p>
+                  <span className="text-[10px] font-mono uppercase text-[#936B34] block font-medium">FLAGSHIP ATELIER</span>
+                  <p className="text-xs font-mono text-[#111827]">Park Avenue Flagship Atelier, Suite 740</p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[10px] font-mono uppercase text-[#C8A97E] block font-medium">COMMISSION CURRENCY</span>
-                  <p className="text-xs font-mono text-white">USD ($) · Worldwide Express</p>
+                  <span className="text-[10px] font-mono uppercase text-[#936B34] block font-medium">COMMISSION CURRENCY</span>
+                  <p className="text-xs font-mono text-[#111827]">USD ($) · Worldwide Express</p>
                 </div>
               </div>
             </div>
@@ -1006,26 +1006,26 @@ export const AdminDashboard: React.FC = () => {
       {/* MODAL: ADD / EDIT PRODUCT */}
       {isAddProductOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-xl bg-[#0E1526] border border-white/10 p-6 sm:p-8 space-y-6 relative my-8 shadow-2xl">
+          <div className="w-full max-w-xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 shadow-2xl">
             <button
               onClick={() => setIsAddProductOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer"
+              className="absolute top-4 right-4 text-gray-500 hover:text-[#111827] cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#C8A97E] block font-medium">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] block font-medium">
                 ATELIER CATALOG
               </span>
-              <h3 className="font-serif text-2xl text-white uppercase font-light">
+              <h3 className="font-serif text-2xl text-[#111827] uppercase font-light">
                 {editingProduct ? 'EDIT PRODUCT' : 'ADD NEW PRODUCT'}
               </h3>
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                   GARMENT NAME *
                 </label>
                 <input
@@ -1034,19 +1034,19 @@ export const AdminDashboard: React.FC = () => {
                   value={productForm.name}
                   onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                   placeholder="e.g. The Park Avenue Midnight Navy Suit"
-                  className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                  className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                  <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                     CATEGORY *
                   </label>
                   <select
                     value={productForm.category}
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value as ProductCategory })}
-                    className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E] cursor-pointer"
+                    className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34] cursor-pointer"
                   >
                     <option value="Suits">Suits</option>
                     <option value="Dress Shirts">Dress Shirts</option>
@@ -1057,7 +1057,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                  <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                     PRICE (USD) *
                   </label>
                   <input
@@ -1066,14 +1066,14 @@ export const AdminDashboard: React.FC = () => {
                     value={productForm.price}
                     onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
                     placeholder="1250"
-                    className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                    className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                  <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                     SKU *
                   </label>
                   <input
@@ -1082,12 +1082,12 @@ export const AdminDashboard: React.FC = () => {
                     value={productForm.sku}
                     onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
                     placeholder="PA-SUIT-001"
-                    className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                    className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                  <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                     FABRIC
                   </label>
                   <input
@@ -1095,13 +1095,13 @@ export const AdminDashboard: React.FC = () => {
                     value={productForm.fabric}
                     onChange={(e) => setProductForm({ ...productForm, fabric: e.target.value })}
                     placeholder="Super 150s Italian Virgin Wool"
-                    className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                    className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                   SIZES &amp; INITIAL STOCK (FORMAT: SIZE:STOCK, SIZE:STOCK)
                 </label>
                 <input
@@ -1109,12 +1109,12 @@ export const AdminDashboard: React.FC = () => {
                   value={productForm.sizeStock}
                   onChange={(e) => setProductForm({ ...productForm, sizeStock: e.target.value })}
                   placeholder="38R:4, 40R:6, 42R:2"
-                  className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                  className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                   DESCRIPTION
                 </label>
                 <textarea
@@ -1122,14 +1122,14 @@ export const AdminDashboard: React.FC = () => {
                   value={productForm.description}
                   onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
                   placeholder="Architectural silhouette tailored with peak lapels..."
-                  className="w-full bg-[#0E1526] border border-white/10 p-3 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                  className="w-full bg-[#F9F9F8] border border-gray-200 p-3 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                 />
               </div>
 
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-[#C8A97E] text-[#090D16] font-semibold text-xs uppercase tracking-widest hover:bg-[#C8A97E] transition-colors cursor-pointer shadow-sm"
+                  className="w-full py-3.5 bg-[#111827] text-white font-semibold text-xs uppercase tracking-widest hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm"
                 >
                   {editingProduct ? 'UPDATE PRODUCT' : 'CREATE PRODUCT'}
                 </button>
@@ -1142,23 +1142,23 @@ export const AdminDashboard: React.FC = () => {
       {/* MODAL: ADJUST INVENTORY */}
       {adjustingInventory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-[#0E1526] border border-white/10 p-6 space-y-4 relative shadow-2xl">
+          <div className="w-full max-w-sm bg-[#F9F9F8] border border-gray-200 p-6 space-y-4 relative shadow-2xl">
             <button
               onClick={() => setAdjustingInventory(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer"
+              className="absolute top-4 right-4 text-gray-500 hover:text-[#111827] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#C8A97E] block font-medium">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] block font-medium">
               INVENTORY VAULT
             </span>
-            <h4 className="font-serif text-lg text-white uppercase font-light">
+            <h4 className="font-serif text-lg text-[#111827] uppercase font-light">
               ADJUST STOCK ({adjustingInventory.size})
             </h4>
 
             <div>
-              <label className="block text-[10px] font-mono uppercase text-slate-400 mb-2 font-medium">
+              <label className="block text-[10px] font-mono uppercase text-gray-500 mb-2 font-medium">
                 UNITS IN STOCK
               </label>
               <input
@@ -1166,7 +1166,7 @@ export const AdminDashboard: React.FC = () => {
                 min="0"
                 defaultValue={adjustingInventory.currentStock}
                 id="adjust-stock-input"
-                className="w-full bg-[#0E1526] border border-white/10 px-4 py-2.5 text-sm font-mono text-white focus:outline-none focus:border-[#C8A97E]"
+                className="w-full bg-[#F9F9F8] border border-gray-200 px-4 py-2.5 text-sm font-mono text-[#111827] focus:outline-none focus:border-[#936B34]"
               />
             </div>
 
@@ -1175,7 +1175,7 @@ export const AdminDashboard: React.FC = () => {
                 const el = document.getElementById('adjust-stock-input') as HTMLInputElement;
                 handleSaveStock(parseInt(el.value || '0', 10));
               }}
-              className="w-full py-3 bg-[#C8A97E] text-[#090D16] font-semibold text-xs uppercase tracking-widest hover:bg-[#C8A97E] transition-colors cursor-pointer shadow-sm"
+              className="w-full py-3 bg-[#111827] text-white font-semibold text-xs uppercase tracking-widest hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm"
             >
               SAVE ADJUSTMENT
             </button>
@@ -1186,19 +1186,19 @@ export const AdminDashboard: React.FC = () => {
       {/* MODAL: CREATE ALTERATION */}
       {isCreateAlterationOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-lg bg-[#0E1526] border border-white/10 p-6 sm:p-8 space-y-6 relative my-8 shadow-2xl">
+          <div className="w-full max-w-lg bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 shadow-2xl">
             <button
               onClick={() => setIsCreateAlterationOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer"
+              className="absolute top-4 right-4 text-gray-500 hover:text-[#111827] cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#C8A97E] block font-medium">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] block font-medium">
                 MASTER TAILOR BENCH
               </span>
-              <h3 className="font-serif text-2xl text-white uppercase font-light">
+              <h3 className="font-serif text-2xl text-[#111827] uppercase font-light">
                 CREATE BESPOKE ALTERATION
               </h3>
             </div>
@@ -1206,7 +1206,7 @@ export const AdminDashboard: React.FC = () => {
             <form onSubmit={handleCreateAlteration} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                  <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                     CLIENT NAME *
                   </label>
                   <input
@@ -1215,12 +1215,12 @@ export const AdminDashboard: React.FC = () => {
                     value={alterationForm.customerName}
                     onChange={(e) => setAlterationForm({ ...alterationForm, customerName: e.target.value })}
                     placeholder="Julian Vanderbilt"
-                    className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                    className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                  <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                     PHONE NUMBER *
                   </label>
                   <input
@@ -1229,13 +1229,13 @@ export const AdminDashboard: React.FC = () => {
                     value={alterationForm.phone}
                     onChange={(e) => setAlterationForm({ ...alterationForm, phone: e.target.value })}
                     placeholder="+1 (212) 555-0199"
-                    className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                    className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                   GARMENT NAME *
                 </label>
                 <input
@@ -1244,18 +1244,18 @@ export const AdminDashboard: React.FC = () => {
                   value={alterationForm.productName}
                   onChange={(e) => setAlterationForm({ ...alterationForm, productName: e.target.value })}
                   placeholder="The Park Avenue Bespoke Navy Suit"
-                  className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                  className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                   ALTERATION SCOPE
                 </label>
                 <select
                   value={alterationForm.alterationType}
                   onChange={(e) => setAlterationForm({ ...alterationForm, alterationType: e.target.value })}
-                  className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E] cursor-pointer"
+                  className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34] cursor-pointer"
                 >
                   <option value="Hemming & Inseam Break">Hemming &amp; Inseam Break</option>
                   <option value="Waist & Seat Suppression">Waist &amp; Seat Suppression</option>
@@ -1265,7 +1265,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                   TAILOR SPECIFICATIONS &amp; NOTES
                 </label>
                 <textarea
@@ -1273,14 +1273,14 @@ export const AdminDashboard: React.FC = () => {
                   value={alterationForm.notes}
                   onChange={(e) => setAlterationForm({ ...alterationForm, notes: e.target.value })}
                   placeholder="Medium break trouser hem, 1.5 inch turn-up cuff..."
-                  className="w-full bg-[#0E1526] border border-white/10 p-3 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                  className="w-full bg-[#F9F9F8] border border-gray-200 p-3 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                 />
               </div>
 
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-[#C8A97E] text-[#090D16] font-semibold text-xs uppercase tracking-widest hover:bg-[#C8A97E] transition-colors cursor-pointer shadow-sm"
+                  className="w-full py-3.5 bg-[#111827] text-white font-semibold text-xs uppercase tracking-widest hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm"
                 >
                   REGISTER ALTERATION
                 </button>
@@ -1293,19 +1293,19 @@ export const AdminDashboard: React.FC = () => {
       {/* MODAL: SEND NOTIFICATION */}
       {isSendNotificationOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-          <div className="w-full max-w-lg bg-[#0E1526] border border-white/10 p-6 sm:p-8 space-y-6 relative shadow-2xl">
+          <div className="w-full max-w-lg bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative shadow-2xl">
             <button
               onClick={() => setIsSendNotificationOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer"
+              className="absolute top-4 right-4 text-gray-500 hover:text-[#111827] cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#C8A97E] block font-medium">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] block font-medium">
                 COMMUNICATION DISPATCH
               </span>
-              <h3 className="font-serif text-2xl text-white uppercase font-light">
+              <h3 className="font-serif text-2xl text-[#111827] uppercase font-light">
                 SEND CLIENT NOTIFICATION
               </h3>
             </div>
@@ -1313,13 +1313,13 @@ export const AdminDashboard: React.FC = () => {
             <form onSubmit={handleSendNotification} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                  <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                     CHANNEL
                   </label>
                   <select
                     value={notificationForm.channel}
                     onChange={(e) => setNotificationForm({ ...notificationForm, channel: e.target.value })}
-                    className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E] cursor-pointer"
+                    className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34] cursor-pointer"
                   >
                     <option value="EMAIL">Email</option>
                     <option value="SMS">SMS Message</option>
@@ -1328,7 +1328,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                  <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                     RECIPIENT CONTACT *
                   </label>
                   <input
@@ -1337,25 +1337,25 @@ export const AdminDashboard: React.FC = () => {
                     value={notificationForm.recipient}
                     onChange={(e) => setNotificationForm({ ...notificationForm, recipient: e.target.value })}
                     placeholder="client@domain.com or +12125550199"
-                    className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                    className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                   SUBJECT / TITLE
                 </label>
                 <input
                   type="text"
                   value={notificationForm.subject}
                   onChange={(e) => setNotificationForm({ ...notificationForm, subject: e.target.value })}
-                  className="w-full bg-[#0E1526] border border-white/10 px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                  className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1 font-medium">
+                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                   MESSAGE CONTENT *
                 </label>
                 <textarea
@@ -1363,14 +1363,14 @@ export const AdminDashboard: React.FC = () => {
                   required
                   value={notificationForm.message}
                   onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })}
-                  className="w-full bg-[#0E1526] border border-white/10 p-3 text-xs text-white font-mono focus:outline-none focus:border-[#C8A97E]"
+                  className="w-full bg-[#F9F9F8] border border-gray-200 p-3 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                 />
               </div>
 
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-[#C8A97E] text-[#090D16] font-semibold text-xs uppercase tracking-widest hover:bg-[#C8A97E] transition-colors cursor-pointer shadow-sm"
+                  className="w-full py-3.5 bg-[#111827] text-white font-semibold text-xs uppercase tracking-widest hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm"
                 >
                   DISPATCH NOTIFICATION
                 </button>

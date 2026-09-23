@@ -26,22 +26,22 @@ export const CategoryShowcase: React.FC = () => {
   };
 
   return (
-    <section id="category-showcase" className="py-24 bg-[#090D16] text-[#F8FAFC] border-t border-white/5">
+    <section id="category-showcase" className="py-24 bg-white text-[#111827] border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-14 pb-6 border-b border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-14 pb-6 border-b border-gray-200">
           <div>
-            <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#C8A97E] block mb-2 font-medium">
+            <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] block mb-2 font-semibold">
               PARK AVENUE MENSWEAR
             </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-white uppercase tracking-wide font-light">
+            <h2 className="font-serif text-3xl sm:text-4xl text-[#111827] uppercase tracking-wide font-light">
               DEPARTMENTS &amp; CATEGORIES
             </h2>
           </div>
           <button
             onClick={() => handleSelect('All')}
-            className="mt-4 sm:mt-0 text-xs uppercase tracking-[0.25em] text-[#C8A97E] hover:text-white transition-colors flex items-center gap-2 font-medium cursor-pointer"
+            className="mt-4 sm:mt-0 text-xs uppercase tracking-[0.25em] text-[#936B34] hover:text-black transition-colors flex items-center gap-2 font-medium cursor-pointer"
           >
             <span>VIEW ALL COLLECTIONS</span>
             <ArrowRight className="w-4 h-4" />
@@ -54,7 +54,7 @@ export const CategoryShowcase: React.FC = () => {
             <div
               key={cat.title}
               onClick={() => handleSelect(cat.title)}
-              className="group border border-white/10 bg-[#0E1422] hover:bg-[#121B2F] hover:border-[#C8A97E] hover:shadow-2xl hover:shadow-black/70 transition-all duration-300 cursor-pointer flex flex-col p-4 sm:p-5"
+              className="group border border-gray-200 bg-white hover:bg-[#FBFBFA] hover:border-[#936B34] hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col p-4 sm:p-5"
             >
               {/* Media Placeholder */}
               <div className="relative mb-5 overflow-hidden">
@@ -68,15 +68,15 @@ export const CategoryShowcase: React.FC = () => {
 
               {/* Card Content */}
               <div className="space-y-2 mt-auto pt-2">
-                <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-slate-400">
+                <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-gray-500">
                   PARK AVENUE MENSWEAR
                 </div>
 
-                <h3 className="font-serif text-xl sm:text-2xl text-white uppercase tracking-wide group-hover:text-[#C8A97E] transition-colors">
+                <h3 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide group-hover:text-[#936B34] transition-colors">
                   {cat.displayName}
                 </h3>
 
-                <div className="pt-2 flex items-center gap-1.5 text-xs uppercase tracking-[0.2em] font-medium text-[#C8A97E] group-hover:text-white transition-colors">
+                <div className="pt-2 flex items-center gap-1.5 text-xs uppercase tracking-[0.2em] font-medium text-[#936B34] group-hover:text-black transition-colors">
                   <span>SHOP NOW</span>
                   <span className="transition-transform group-hover:translate-x-1">→</span>
                 </div>

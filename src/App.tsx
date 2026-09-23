@@ -25,7 +25,7 @@ const MainContent: React.FC = () => {
   const { activeView } = useShop();
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#090D16] text-[#F8FAFC] selection:bg-[#C8A97E] selection:text-[#090D16]">
+    <div className="min-h-screen flex flex-col bg-white text-[#111827] selection:bg-[#936B34] selection:text-white">
       {/* Welcome Entrance Screen & Loading Transition */}
       <WelcomeCurtain />
 

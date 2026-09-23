@@ -91,7 +91,7 @@ export const AlterationTrackingPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSearching}
-              className="w-full py-4 bg-[#111111] hover:bg-[#8C6D3B] text-white font-semibold text-xs uppercase tracking-[0.25em] transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+              className="w-full py-4 bg-[#111111] hover:bg-[#8C6D3B] text-[#111827] font-semibold text-xs uppercase tracking-[0.25em] transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
             >
               {isSearching ? 'SEARCHING ATELIER ARCHIVE...' : 'TRACK ALTERATION'}
             </button>

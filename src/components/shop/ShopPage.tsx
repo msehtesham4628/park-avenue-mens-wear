@@ -143,12 +143,12 @@ export const ShopPage: React.FC = () => {
   }, [products, selectedCategory, searchFilter, maxPrice, selectedSizes, selectedColors, availability, sortBy]);
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-[#F8FAFC] pt-6 pb-24">
+    <div className="min-h-screen bg-white text-[#111827] pt-6 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Page Breadcrumb & Header */}
-        <div className="py-8 border-b border-white/10">
-          <div className="flex items-center gap-2 text-xs tracking-[0.25em] uppercase text-[#C8A97E] mb-2 font-mono">
+        <div className="py-8 border-b border-gray-200">
+          <div className="flex items-center gap-2 text-xs tracking-[0.25em] uppercase text-[#936B34] mb-2 font-mono">
             <span>Park Avenue Menswear</span>
             <span>/</span>
             <span>Ready-To-Wear &amp; Bespoke</span>
@@ -156,22 +156,22 @@ export const ShopPage: React.FC = () => {
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="font-serif text-3xl sm:text-5xl text-white font-light">
+              <h1 className="font-serif text-3xl sm:text-5xl text-[#111827] font-light">
                 {selectedCategory === 'All' ? 'Complete Collection' : selectedCategory}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
+              <p className="text-xs sm:text-sm text-gray-600 mt-1 max-w-xl">
                 Super 150s virgin wool suits, Egyptian cotton dress shirts, worsted wool trousers, and seven-fold silk ties.
               </p>
             </div>
 
-            <div className="text-xs text-slate-400 font-mono tabular-nums">
-              Showing <span className="text-[#C8A97E] font-medium">{filteredProducts.length}</span> tailored pieces
+            <div className="text-xs text-gray-500 font-mono tabular-nums">
+              Showing <span className="text-[#936B34] font-medium">{filteredProducts.length}</span> tailored pieces
             </div>
           </div>
         </div>
 
         {/* Top Controls Bar */}
-        <div className="py-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border-b border-white/10">
+        <div className="py-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border-b border-gray-200">
           
           {/* Quick Categories Bar */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
@@ -181,8 +181,8 @@ export const ShopPage: React.FC = () => {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-colors whitespace-nowrap border cursor-pointer ${
                   selectedCategory === cat
-                    ? 'bg-[#C8A97E] text-[#090D16] border-[#C8A97E] font-semibold'
-                    : 'bg-[#0E1526] text-slate-400 border-white/10 hover:border-white/30 hover:text-white'
+                    ? 'bg-[#111827] text-white border-[#936B34] font-semibold'
+                    : 'bg-[#F9F9F8] text-gray-500 border-gray-200 hover:border-gray-400 hover:text-[#111827]'
                 }`}
               >
                 {cat}
@@ -194,18 +194,18 @@ export const ShopPage: React.FC = () => {
           <div className="flex items-center gap-3">
             {/* Inline search */}
             <div className="relative flex-1 md:w-56">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
                 placeholder="Filter current view..."
-                className="w-full bg-[#0E1526] border border-white/10 pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-[#C8A97E] focus:outline-none"
+                className="w-full bg-[#F9F9F8] border border-gray-200 pl-8 pr-3 py-1.5 text-xs text-[#111827] placeholder-slate-500 focus:border-[#936B34] focus:outline-none"
               />
               {searchFilter && (
                 <button
                   onClick={() => setSearchFilter('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#111827] cursor-pointer"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -215,12 +215,12 @@ export const ShopPage: React.FC = () => {
             {/* Mobile Filter Button */}
             <button
               onClick={() => setIsMobileFiltersOpen(true)}
-              className="lg:hidden px-3 py-1.5 bg-[#0E1526] border border-white/10 text-xs text-white flex items-center gap-2 cursor-pointer"
+              className="lg:hidden px-3 py-1.5 bg-[#F9F9F8] border border-gray-200 text-xs text-[#111827] flex items-center gap-2 cursor-pointer"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#C8A97E]" />
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#936B34]" />
               <span>Filters</span>
               {hasActiveFilters && (
-                <span className="w-2 h-2 rounded-full bg-[#C8A97E]" />
+                <span className="w-2 h-2 rounded-full bg-[#936B34]" />
               )}
             </button>
 
@@ -230,14 +230,14 @@ export const ShopPage: React.FC = () => {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
                 aria-label="Sort products by"
-                className="bg-[#0E1526] border border-white/10 text-xs text-white px-3 py-1.5 appearance-none pr-8 focus:border-[#C8A97E] focus:outline-none cursor-pointer"
+                className="bg-[#F9F9F8] border border-gray-200 text-xs text-[#111827] px-3 py-1.5 appearance-none pr-8 focus:border-[#936B34] focus:outline-none cursor-pointer"
               >
                 <option value="featured">Sort: Featured &amp; Tailored</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
                 <option value="newest">New Arrivals First</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-gray-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -247,18 +247,18 @@ export const ShopPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 pt-8">
           
           {/* Desktop Left Sidebar Filters */}
-          <aside className="hidden lg:block lg:col-span-1 space-y-8 pr-6 border-r border-white/10">
+          <aside className="hidden lg:block lg:col-span-1 space-y-8 pr-6 border-r border-gray-200">
             
             {/* Filter Actions */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
-              <span className="text-xs uppercase tracking-[0.2em] font-medium text-white flex items-center gap-2">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-[#C8A97E]" />
+            <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+              <span className="text-xs uppercase tracking-[0.2em] font-medium text-[#111827] flex items-center gap-2">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#936B34]" />
                 <span>Refine Selection</span>
               </span>
               {hasActiveFilters && (
                 <button
                   onClick={resetAllFilters}
-                  className="text-xs text-[#C8A97E] hover:text-white flex items-center gap-1 transition-colors cursor-pointer font-mono"
+                  className="text-xs text-[#936B34] hover:text-[#111827] flex items-center gap-1 transition-colors cursor-pointer font-mono"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>Reset All</span>
@@ -268,9 +268,9 @@ export const ShopPage: React.FC = () => {
 
             {/* Price Filter */}
             <div>
-              <div className="flex justify-between items-center text-xs text-slate-400 mb-2 font-mono">
+              <div className="flex justify-between items-center text-xs text-gray-500 mb-2 font-mono">
                 <span className="uppercase tracking-wider">Maximum Price</span>
-                <span className="text-[#C8A97E] font-semibold tabular-nums">${maxPrice}</span>
+                <span className="text-[#936B34] font-semibold tabular-nums">${maxPrice}</span>
               </div>
               <input
                 type="range"
@@ -279,9 +279,9 @@ export const ShopPage: React.FC = () => {
                 step="25"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="w-full accent-[#C8A97E] bg-[#1E293B] h-1.5 cursor-pointer"
+                className="w-full accent-[#936B34] bg-gray-200 h-1.5 cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] text-slate-500 mt-1 tabular-nums font-mono">
+              <div className="flex justify-between text-[10px] text-gray-400 mt-1 tabular-nums font-mono">
                 <span>$180</span>
                 <span>$2,200</span>
               </div>
@@ -289,7 +289,7 @@ export const ShopPage: React.FC = () => {
 
             {/* Availability Filter */}
             <div>
-              <span className="block text-xs uppercase tracking-wider text-[#C8A97E] mb-2.5 font-mono">
+              <span className="block text-xs uppercase tracking-wider text-[#936B34] mb-2.5 font-mono">
                 Vault Availability
               </span>
               <div className="space-y-1.5">
@@ -298,13 +298,13 @@ export const ShopPage: React.FC = () => {
                   { id: 'in_stock', label: 'In Stock Only' },
                   { id: 'low_stock', label: 'Limited Run / Low Stock' }
                 ].map(opt => (
-                  <label key={opt.id} className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer hover:text-[#C8A97E]">
+                  <label key={opt.id} className="flex items-center gap-2.5 text-xs text-gray-600 cursor-pointer hover:text-[#936B34]">
                     <input
                       type="radio"
                       name="avail"
                       checked={availability === opt.id}
                       onChange={() => setAvailability(opt.id as any)}
-                      className="accent-[#C8A97E]"
+                      className="accent-[#936B34]"
                     />
                     <span>{opt.label}</span>
                   </label>
@@ -314,7 +314,7 @@ export const ShopPage: React.FC = () => {
 
             {/* Size Filter */}
             <div>
-              <span className="block text-xs uppercase tracking-wider text-[#C8A97E] mb-2.5 font-mono">
+              <span className="block text-xs uppercase tracking-wider text-[#936B34] mb-2.5 font-mono">
                 Size
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -326,8 +326,8 @@ export const ShopPage: React.FC = () => {
                       onClick={() => toggleSize(sz)}
                       className={`px-2.5 py-1 text-xs border transition-colors cursor-pointer font-mono ${
                         isSelected
-                          ? 'border-[#C8A97E] bg-[#C8A97E] text-[#090D16] font-semibold'
-                          : 'border-white/10 text-slate-400 hover:border-white/30 hover:text-white bg-[#0E1526]'
+                          ? 'border-[#936B34] bg-[#111827] text-white font-semibold'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-400 hover:text-[#111827] bg-[#F9F9F8]'
                       }`}
                     >
                       {sz}
@@ -339,7 +339,7 @@ export const ShopPage: React.FC = () => {
 
             {/* Color Filter */}
             <div>
-              <span className="block text-xs uppercase tracking-wider text-[#C8A97E] mb-2.5 font-mono">
+              <span className="block text-xs uppercase tracking-wider text-[#936B34] mb-2.5 font-mono">
                 Color Palette
               </span>
               <div className="space-y-2">
@@ -349,18 +349,18 @@ export const ShopPage: React.FC = () => {
                     <button
                       key={color.label}
                       onClick={() => toggleColor(color.label)}
-                      className="flex items-center justify-between w-full text-left text-xs py-1 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                      className="flex items-center justify-between w-full text-left text-xs py-1 text-gray-600 hover:text-[#111827] transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className="w-3.5 h-3.5 rounded-full border border-white/20 inline-block"
+                          className="w-3.5 h-3.5 rounded-full border border-gray-300 inline-block"
                           style={{ backgroundColor: color.hex }}
                         />
-                        <span className={isSelected ? 'text-[#C8A97E] font-semibold' : ''}>
+                        <span className={isSelected ? 'text-[#936B34] font-semibold' : ''}>
                           {color.label}
                         </span>
                       </div>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[#C8A97E]" />}
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[#936B34]" />}
                     </button>
                   );
                 })}
@@ -372,17 +372,17 @@ export const ShopPage: React.FC = () => {
           {/* Product Grid Area (3 Columns on desktop) */}
           <main className="lg:col-span-3">
             {filteredProducts.length === 0 ? (
-              <div className="py-24 text-center border border-white/10 bg-[#0E1422] p-8 sm:p-12 flex flex-col items-center justify-center relative shadow-xl">
-                <div className="w-12 h-12 mb-6 border border-[#C8A97E]/50 flex items-center justify-center font-serif text-base text-[#C8A97E] tracking-widest bg-[#090D16] shadow-md">
+              <div className="py-24 text-center border border-gray-200 bg-[#F9F9F8] p-8 sm:p-12 flex flex-col items-center justify-center relative shadow-xl">
+                <div className="w-12 h-12 mb-6 border border-[#936B34]/50 flex items-center justify-center font-serif text-base text-[#936B34] tracking-widest bg-white shadow-md">
                   PA
                 </div>
-                <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-[#C8A97E] mb-3 block font-medium">
+                <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-[#936B34] mb-3 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
-                <h3 className="font-serif text-2xl sm:text-3xl text-white uppercase tracking-wider mb-4 font-light">
+                <h3 className="font-serif text-2xl sm:text-3xl text-[#111827] uppercase tracking-wider mb-4 font-light">
                   NO PRODUCTS AVAILABLE
                 </h3>
-                <p className="text-xs text-slate-400 max-w-md uppercase tracking-widest font-mono leading-relaxed mb-8">
+                <p className="text-xs text-gray-500 max-w-md uppercase tracking-widest font-mono leading-relaxed mb-8">
                   {hasActiveFilters 
                     ? 'No garments match the active filter criteria. Clear filters or adjust your sartorial preferences.'
                     : 'The storefront architecture is ready. When products are published from the backend API or added through the admin console, they will dynamically populate here.'}
@@ -390,14 +390,14 @@ export const ShopPage: React.FC = () => {
                 {hasActiveFilters ? (
                   <button
                     onClick={resetAllFilters}
-                    className="px-8 py-3.5 bg-[#C8A97E] text-[#090D16] text-xs font-semibold uppercase tracking-[0.2em] hover:bg-[#D4AF37] transition-colors cursor-pointer shadow-md"
+                    className="px-8 py-3.5 bg-[#111827] text-white text-xs font-semibold uppercase tracking-[0.2em] hover:bg-[#7A5726] transition-colors cursor-pointer shadow-md"
                   >
                     RESET ALL FILTERS
                   </button>
                 ) : (
                   <button
                     onClick={() => setActiveView('admin')}
-                    className="px-6 py-3 border border-[#C8A97E] text-[#C8A97E] hover:bg-[#C8A97E] hover:text-[#090D16] transition-colors text-xs font-mono tracking-widest uppercase cursor-pointer"
+                    className="px-6 py-3 border border-[#936B34] text-[#936B34] hover:bg-[#936B34] hover:text-white transition-colors text-xs font-mono tracking-widest uppercase cursor-pointer"
                   >
                     OPEN ADMIN INVENTORY
                   </button>
@@ -432,17 +432,17 @@ export const ShopPage: React.FC = () => {
       {isMobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden overflow-hidden">
           <div 
-            className="fixed inset-0 bg-black/70 backdrop-blur-xs"
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs"
             onClick={() => setIsMobileFiltersOpen(false)}
           />
           <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-xs bg-[#090D16] text-white border-l border-white/10 p-6 flex flex-col justify-between overflow-y-auto">
+            <div className="w-screen max-w-xs bg-white text-[#111827] border-l border-gray-200 p-6 flex flex-col justify-between overflow-y-auto">
               <div>
-                <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
-                  <span className="font-serif text-lg text-white">Refine Selection</span>
+                <div className="flex items-center justify-between pb-4 border-b border-gray-200 mb-6">
+                  <span className="font-serif text-lg text-[#111827]">Refine Selection</span>
                   <button
                     onClick={() => setIsMobileFiltersOpen(false)}
-                    className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                    className="p-1 text-gray-500 hover:text-[#111827] cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -450,9 +450,9 @@ export const ShopPage: React.FC = () => {
 
                 {/* Price */}
                 <div className="mb-6">
-                  <div className="flex justify-between text-xs text-slate-400 mb-2 font-mono">
+                  <div className="flex justify-between text-xs text-gray-500 mb-2 font-mono">
                     <span>Max Price</span>
-                    <span className="text-[#C8A97E] font-medium">${maxPrice}</span>
+                    <span className="text-[#936B34] font-medium">${maxPrice}</span>
                   </div>
                   <input
                     type="range"
@@ -461,13 +461,13 @@ export const ShopPage: React.FC = () => {
                     step="25"
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(Number(e.target.value))}
-                    className="w-full accent-[#C8A97E]"
+                    className="w-full accent-[#936B34]"
                   />
                 </div>
 
                 {/* Sizes */}
                 <div className="mb-6">
-                  <span className="block text-xs uppercase tracking-wider text-[#C8A97E] mb-2 font-mono">Size</span>
+                  <span className="block text-xs uppercase tracking-wider text-[#936B34] mb-2 font-mono">Size</span>
                   <div className="flex flex-wrap gap-1">
                     {availableSizes.map(sz => (
                       <button
@@ -475,8 +475,8 @@ export const ShopPage: React.FC = () => {
                         onClick={() => toggleSize(sz)}
                         className={`px-2 py-1 text-xs border font-mono cursor-pointer ${
                           selectedSizes.includes(sz)
-                            ? 'bg-[#C8A97E] text-[#090D16] font-semibold border-[#C8A97E]'
-                            : 'border-white/10 text-slate-400 bg-[#0E1526]'
+                            ? 'bg-[#111827] text-white font-semibold border-[#936B34]'
+                            : 'border-gray-200 text-gray-500 bg-[#F9F9F8]'
                         }`}
                       >
                         {sz}
@@ -487,33 +487,33 @@ export const ShopPage: React.FC = () => {
 
                 {/* Colors */}
                 <div className="mb-6">
-                  <span className="block text-xs uppercase tracking-wider text-[#C8A97E] mb-2 font-mono">Colors</span>
+                  <span className="block text-xs uppercase tracking-wider text-[#936B34] mb-2 font-mono">Colors</span>
                   <div className="space-y-1.5">
                     {availableColors.map(c => (
                       <button
                         key={c.label}
                         onClick={() => toggleColor(c.label)}
-                        className="flex items-center justify-between w-full text-xs text-slate-300 py-1 cursor-pointer"
+                        className="flex items-center justify-between w-full text-xs text-gray-600 py-1 cursor-pointer"
                       >
                         <span>{c.label}</span>
-                        {selectedColors.includes(c.label) && <Check className="w-3.5 h-3.5 text-[#C8A97E]" />}
+                        {selectedColors.includes(c.label) && <Check className="w-3.5 h-3.5 text-[#936B34]" />}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-white/10 space-y-2">
+              <div className="pt-6 border-t border-gray-200 space-y-2">
                 <button
                   onClick={() => setIsMobileFiltersOpen(false)}
-                  className="w-full py-3 bg-[#C8A97E] text-[#090D16] font-semibold text-xs uppercase tracking-wider cursor-pointer hover:bg-[#D4AF37] transition-colors"
+                  className="w-full py-3 bg-[#111827] text-white font-semibold text-xs uppercase tracking-wider cursor-pointer hover:bg-[#7A5726] transition-colors"
                 >
                   Apply Filters ({filteredProducts.length})
                 </button>
                 {hasActiveFilters && (
                   <button
                     onClick={resetAllFilters}
-                    className="w-full py-2 bg-transparent text-slate-400 text-xs hover:text-white cursor-pointer font-mono"
+                    className="w-full py-2 bg-transparent text-gray-500 text-xs hover:text-[#111827] cursor-pointer font-mono"
                   >
                     Reset Filters
                   </button>

@@ -21,7 +21,7 @@ export const ToastContainer: React.FC = () => {
                 ? 'bg-[#12141A]/95 border-[#C5A880]/60 text-[#FAF8F5]'
                 : isError
                 ? 'bg-[#181113]/95 border-red-500/50 text-red-200'
-                : 'bg-[#12141A]/95 border-white/10 text-[#EBE8E3]'
+                : 'bg-[#12141A]/95 border-gray-200 text-[#EBE8E3]'
             }`}
           >
             {isSuccess && <CheckCircle2 className="w-4 h-4 text-[#C5A880] shrink-0 mt-0.5" />}
@@ -34,7 +34,7 @@ export const ToastContainer: React.FC = () => {
 
             <button
               onClick={() => dismissToast(toast.id)}
-              className="text-[#9E9B95] hover:text-white shrink-0 p-0.5 transition-colors"
+              className="text-[#9E9B95] hover:text-[#111827] shrink-0 p-0.5 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>

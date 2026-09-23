@@ -12,16 +12,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #090D16;
+  background: #F8F9FA;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1E293B;
+  background: #D1D5DB;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #C8A97E;
+  background: #936B34;
 }
 
 /* Tabular figures for prices, SKU, tracking */

@@ -56,16 +56,16 @@ export const CheckoutPage: React.FC = () => {
 
   if (cart.length === 0 && !orderComplete) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center bg-[#090D16] text-[#F8FAFC] px-4">
-        <div className="text-center max-w-md bg-[#0E1526] p-8 sm:p-12 border border-white/10 shadow-2xl">
-          <ShoppingBag className="w-12 h-12 text-[#C8A97E] mx-auto mb-4" />
-          <h2 className="font-serif text-2xl text-white mb-2 font-light">Your Shopping Bag is Empty</h2>
-          <p className="text-xs text-slate-400 mb-6">
+      <div className="min-h-[70vh] flex items-center justify-center bg-white text-[#111827] px-4">
+        <div className="text-center max-w-md bg-[#F9F9F8] p-8 sm:p-12 border border-gray-200 shadow-2xl">
+          <ShoppingBag className="w-12 h-12 text-[#936B34] mx-auto mb-4" />
+          <h2 className="font-serif text-2xl text-[#111827] mb-2 font-light">Your Shopping Bag is Empty</h2>
+          <p className="text-xs text-gray-500 mb-6">
             Please select from our suits, dress shirts, trousers, or neckwear before checking out.
           </p>
           <button
             onClick={() => setActiveView('shop')}
-            className="px-6 py-3 bg-[#C8A97E] text-[#090D16] text-xs font-semibold uppercase tracking-wider hover:bg-[#D4AF37] transition-colors cursor-pointer shadow-md"
+            className="px-6 py-3 bg-[#111827] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#7A5726] transition-colors cursor-pointer shadow-md"
           >
             Explore Catalogue
           </button>
@@ -127,43 +127,43 @@ export const CheckoutPage: React.FC = () => {
 
   if (orderComplete) {
     return (
-      <div className="min-h-screen bg-[#090D16] text-[#F8FAFC] pt-12 pb-24 px-4">
+      <div className="min-h-screen bg-white text-[#111827] pt-12 pb-24 px-4">
         <div className="max-w-2xl mx-auto text-center space-y-6">
-          <div className="p-8 sm:p-12 border border-white/10 bg-[#0E1526] shadow-2xl relative">
-            <div className="w-14 h-14 bg-[#121B2F] border border-[#C8A97E] rounded-full flex items-center justify-center mx-auto mb-4 text-[#C8A97E]">
+          <div className="p-8 sm:p-12 border border-gray-200 bg-[#F9F9F8] shadow-2xl relative">
+            <div className="w-14 h-14 bg-[#F3F4F6] border border-[#936B34] rounded-full flex items-center justify-center mx-auto mb-4 text-[#936B34]">
               <Check className="w-7 h-7" />
             </div>
 
-            <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#C8A97E] block mb-2 font-medium">
+            <span className="font-mono text-xs uppercase tracking-[0.3em] text-[#936B34] block mb-2 font-medium">
               PARK AVENUE ATELIER
             </span>
 
-            <h1 className="font-serif text-3xl sm:text-4xl text-white font-light uppercase tracking-wider mb-2">
+            <h1 className="font-serif text-3xl sm:text-4xl text-[#111827] font-light uppercase tracking-wider mb-2">
               COMMISSION CONFIRMED
             </h1>
 
-            <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+            <p className="text-xs text-gray-600 max-w-md mx-auto leading-relaxed">
               Thank you for trusting Park Avenue Menswear. A tailored receipt and authentication guarantee have been forwarded to{' '}
-              <strong className="text-white">{orderComplete.customerEmail}</strong>.
+              <strong className="text-[#111827]">{orderComplete.customerEmail}</strong>.
             </p>
 
             {/* Order snapshot card */}
-            <div className="bg-[#090D16] border border-white/10 p-6 text-left max-w-xl mx-auto my-8 space-y-4 shadow-lg">
-              <div className="flex justify-between items-center pb-3 border-b border-white/10 text-xs">
-                <span className="text-slate-400">Order Reference:</span>
-                <span className="font-mono text-white font-medium">{orderComplete.id}</span>
+            <div className="bg-white border border-gray-200 p-6 text-left max-w-xl mx-auto my-8 space-y-4 shadow-lg">
+              <div className="flex justify-between items-center pb-3 border-b border-gray-200 text-xs">
+                <span className="text-gray-500">Order Reference:</span>
+                <span className="font-mono text-[#111827] font-medium">{orderComplete.id}</span>
               </div>
-              <div className="flex justify-between items-center pb-3 border-b border-white/10 text-xs">
-                <span className="text-slate-400">Tracking Number:</span>
-                <span className="font-mono text-[#C8A97E] font-medium">{orderComplete.trackingNumber}</span>
+              <div className="flex justify-between items-center pb-3 border-b border-gray-200 text-xs">
+                <span className="text-gray-500">Tracking Number:</span>
+                <span className="font-mono text-[#936B34] font-medium">{orderComplete.trackingNumber}</span>
               </div>
-              <div className="flex justify-between items-center pb-3 border-b border-white/10 text-xs">
-                <span className="text-slate-400">Est. Delivery:</span>
-                <span className="text-white font-medium">{orderComplete.estimatedDelivery}</span>
+              <div className="flex justify-between items-center pb-3 border-b border-gray-200 text-xs">
+                <span className="text-gray-500">Est. Delivery:</span>
+                <span className="text-[#111827] font-medium">{orderComplete.estimatedDelivery}</span>
               </div>
 
               {orderComplete.alterationRequested && (
-                <div className="pt-2 flex items-start gap-2 text-xs text-[#C8A97E]">
+                <div className="pt-2 flex items-start gap-2 text-xs text-[#936B34]">
                   <Scissors className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>
                     Master tailor alterations registered. Inseam will be tailored prior to courier handover.
@@ -179,15 +179,15 @@ export const CheckoutPage: React.FC = () => {
                   setCurrentOrder(orderComplete);
                   setActiveView('track-order');
                 }}
-                className="w-full sm:w-auto px-8 py-3.5 bg-[#C8A97E] text-[#090D16] text-xs font-semibold uppercase tracking-wider hover:bg-[#D4AF37] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                className="w-full sm:w-auto px-8 py-3.5 bg-[#111827] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#7A5726] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
               >
-                <Truck className="w-4 h-4 text-[#090D16]" />
+                <Truck className="w-4 h-4 text-white" />
                 <span>Track Live Status</span>
               </button>
 
               <button
                 onClick={() => setActiveView('home')}
-                className="w-full sm:w-auto px-8 py-3.5 bg-[#090D16] border border-white/20 text-white hover:border-[#C8A97E] hover:text-[#C8A97E] text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-8 py-3.5 bg-white border border-gray-300 text-[#111827] hover:border-[#936B34] hover:text-[#936B34] text-xs uppercase tracking-wider transition-colors cursor-pointer"
               >
                 Return to Home
               </button>
@@ -200,21 +200,21 @@ export const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-[#F8FAFC] pt-6 pb-24">
+    <div className="min-h-screen bg-white text-[#111827] pt-6 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
-        <div className="py-6 border-b border-white/10 mb-8 flex items-center justify-between">
+        <div className="py-6 border-b border-gray-200 mb-8 flex items-center justify-between">
           <div>
-            <div className="text-xs uppercase tracking-[0.25em] text-[#C8A97E] mb-1 font-mono font-medium">
+            <div className="text-xs uppercase tracking-[0.25em] text-[#936B34] mb-1 font-mono font-medium">
               PA Atelier Checkout
             </div>
-            <h1 className="font-serif text-3xl sm:text-4xl text-white font-light">
+            <h1 className="font-serif text-3xl sm:text-4xl text-[#111827] font-light">
               Secure Order &amp; Tailoring Commission
             </h1>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
-            <Lock className="w-4 h-4 text-[#C8A97E]" />
+          <div className="flex items-center gap-2 text-xs text-gray-500 font-mono">
+            <Lock className="w-4 h-4 text-[#936B34]" />
             <span>256-bit Encrypted Checkout</span>
           </div>
         </div>
@@ -225,99 +225,99 @@ export const CheckoutPage: React.FC = () => {
           <div className="lg:col-span-7 space-y-10">
             
             {/* 1. Contact Information */}
-            <div className="p-6 bg-[#0E1526] border border-white/10 space-y-4">
-              <h2 className="font-serif text-lg text-white pb-2 border-b border-white/10 font-light">
+            <div className="p-6 bg-[#F9F9F8] border border-gray-200 space-y-4">
+              <h2 className="font-serif text-lg text-[#111827] pb-2 border-b border-gray-200 font-light">
                 1. Client Contact Details
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block text-slate-400 mb-1 font-mono">First Name</label>
+                  <label className="block text-gray-500 mb-1 font-mono">First Name</label>
                   <input
                     type="text"
                     required
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none"
+                    className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1 font-mono">Last Name</label>
+                  <label className="block text-gray-500 mb-1 font-mono">Last Name</label>
                   <input
                     type="text"
                     required
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none"
+                    className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1 font-mono">Email Address (Order confirmation)</label>
+                  <label className="block text-gray-500 mb-1 font-mono">Email Address (Order confirmation)</label>
                   <input
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none"
+                    className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1 font-mono">Mobile Phone (Courier SMS updates)</label>
+                  <label className="block text-gray-500 mb-1 font-mono">Mobile Phone (Courier SMS updates)</label>
                   <input
                     type="tel"
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none"
+                    className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* 2. Courier Shipping Address */}
-            <div className="p-6 bg-[#0E1526] border border-white/10 space-y-4">
-              <h2 className="font-serif text-lg text-white pb-2 border-b border-white/10 font-light">
+            <div className="p-6 bg-[#F9F9F8] border border-gray-200 space-y-4">
+              <h2 className="font-serif text-lg text-[#111827] pb-2 border-b border-gray-200 font-light">
                 2. Courier Shipping Destination
               </h2>
               <div className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-slate-400 mb-1 font-mono">Street Address / Suite</label>
+                  <label className="block text-gray-500 mb-1 font-mono">Street Address / Suite</label>
                   <input
                     type="text"
                     required
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none"
+                    className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="col-span-2 sm:col-span-2">
-                    <label className="block text-slate-400 mb-1 font-mono">City</label>
+                    <label className="block text-gray-500 mb-1 font-mono">City</label>
                     <input
                       type="text"
                       required
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none"
+                      className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-400 mb-1 font-mono">State / Province</label>
+                    <label className="block text-gray-500 mb-1 font-mono">State / Province</label>
                     <input
                       type="text"
                       required
                       value={formData.state}
                       onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none"
+                      className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-400 mb-1 font-mono">Postal Code</label>
+                    <label className="block text-gray-500 mb-1 font-mono">Postal Code</label>
                     <input
                       type="text"
                       required
                       value={formData.postalCode}
                       onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                      className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none"
+                      className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -325,15 +325,15 @@ export const CheckoutPage: React.FC = () => {
             </div>
 
             {/* 3. Bespoke Alteration Studio Option */}
-            <div className="p-6 bg-[#0E1526] border border-[#C8A97E]/40 space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-white/10">
+            <div className="p-6 bg-[#F9F9F8] border border-[#936B34]/40 space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
                 <div className="flex items-center gap-2">
-                  <Scissors className="w-4 h-4 text-[#C8A97E]" />
-                  <h2 className="font-serif text-lg text-white font-light">
+                  <Scissors className="w-4 h-4 text-[#936B34]" />
+                  <h2 className="font-serif text-lg text-[#111827] font-light">
                     3. Atelier Tailoring &amp; Alteration Specifications
                   </h2>
                 </div>
-                <span className="text-[10px] uppercase tracking-wider text-[#090D16] bg-[#C8A97E] px-2 py-0.5 font-mono font-semibold">
+                <span className="text-[10px] uppercase tracking-wider text-white bg-[#936B34] px-2 py-0.5 font-mono font-semibold">
                   Complimentary
                 </span>
               </div>
@@ -343,7 +343,7 @@ export const CheckoutPage: React.FC = () => {
                   type="checkbox"
                   checked={formData.needAlteration}
                   onChange={(e) => setFormData({ ...formData, needAlteration: e.target.checked })}
-                  className="accent-[#C8A97E] w-4 h-4 cursor-pointer"
+                  className="accent-[#936B34] w-4 h-4 cursor-pointer"
                 />
                 <span className="font-medium">
                   Request custom tailoring adjustments before handover (adds 24-48h to dispatch)
@@ -354,11 +354,11 @@ export const CheckoutPage: React.FC = () => {
                 <div className="pt-3 space-y-4 text-xs">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-slate-400 mb-1 font-mono">Trouser Hem Style</label>
+                      <label className="block text-gray-500 mb-1 font-mono">Trouser Hem Style</label>
                       <select
                         value={formData.trouserHemType}
                         onChange={(e) => setFormData({ ...formData, trouserHemType: e.target.value })}
-                        className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none cursor-pointer"
+                        className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none cursor-pointer"
                       >
                         <option>Half Break (Modern Classic)</option>
                         <option>Full Break (Traditional)</option>
@@ -369,23 +369,23 @@ export const CheckoutPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 mb-1 font-mono">Target Inseam (Inches)</label>
+                      <label className="block text-gray-500 mb-1 font-mono">Target Inseam (Inches)</label>
                       <input
                         type="text"
                         value={formData.inseamLength}
                         onChange={(e) => setFormData({ ...formData, inseamLength: e.target.value })}
                         placeholder='e.g. 32.5"'
-                        className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none"
+                        className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 font-mono">Sleeve Adjustment</label>
+                    <label className="block text-gray-500 mb-1 font-mono">Sleeve Adjustment</label>
                     <select
                       value={formData.jacketSleeveAdjustment}
                       onChange={(e) => setFormData({ ...formData, jacketSleeveAdjustment: e.target.value })}
-                      className="w-full bg-[#090D16] border border-white/10 p-2.5 text-white focus:border-[#C8A97E] focus:outline-none cursor-pointer"
+                      className="w-full bg-white border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none cursor-pointer"
                     >
                       <option>None (Standard 34.5")</option>
                       <option>Shorten Sleeves by 0.5"</option>
@@ -395,12 +395,12 @@ export const CheckoutPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-slate-400 mb-1 font-mono">Tailor Notes for Master Craftsman</label>
+                    <label className="block text-gray-500 mb-1 font-mono">Tailor Notes for Master Craftsman</label>
                     <textarea
                       rows={2}
                       value={formData.specialTailorNotes}
                       onChange={(e) => setFormData({ ...formData, specialTailorNotes: e.target.value })}
-                      className="w-full bg-[#090D16] border border-white/10 p-2 text-white focus:border-[#C8A97E] focus:outline-none"
+                      className="w-full bg-white border border-gray-200 p-2 text-[#111827] focus:border-[#936B34] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -408,53 +408,53 @@ export const CheckoutPage: React.FC = () => {
             </div>
 
             {/* 4. Payment Method */}
-            <div className="p-6 bg-[#0E1526] border border-white/10 space-y-4">
-              <h2 className="font-serif text-lg text-white pb-2 border-b border-white/10 font-light">
+            <div className="p-6 bg-[#F9F9F8] border border-gray-200 space-y-4">
+              <h2 className="font-serif text-lg text-[#111827] pb-2 border-b border-gray-200 font-light">
                 4. Payment Method
               </h2>
               <div className="space-y-3">
-                <label className="flex items-center gap-3 p-3 bg-[#090D16] border border-white/10 cursor-pointer text-xs">
+                <label className="flex items-center gap-3 p-3 bg-white border border-gray-200 cursor-pointer text-xs">
                   <input
                     type="radio"
                     name="pay"
                     checked={formData.paymentMethod === 'credit_card'}
                     onChange={() => setFormData({ ...formData, paymentMethod: 'credit_card' })}
-                    className="accent-[#C8A97E]"
+                    className="accent-[#936B34]"
                   />
-                  <CreditCard className="w-4 h-4 text-[#C8A97E]" />
-                  <span className="text-white font-medium">Credit or Debit Card (Visa, Mastercard, American Express)</span>
+                  <CreditCard className="w-4 h-4 text-[#936B34]" />
+                  <span className="text-[#111827] font-medium">Credit or Debit Card (Visa, Mastercard, American Express)</span>
                 </label>
 
                 {formData.paymentMethod === 'credit_card' && (
-                  <div className="p-4 bg-[#090D16] border border-white/10 space-y-3 text-xs">
+                  <div className="p-4 bg-white border border-gray-200 space-y-3 text-xs">
                     <div>
-                      <label className="block text-slate-400 mb-1 font-mono">Card Number</label>
+                      <label className="block text-gray-500 mb-1 font-mono">Card Number</label>
                       <input
                         type="text"
                         value={formData.cardNumber}
                         onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })}
-                        className="w-full bg-[#0E1526] border border-white/10 p-2.5 text-white font-mono"
+                        className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] font-mono"
                         placeholder="•••• •••• •••• ••••"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-slate-400 mb-1 font-mono">Expiry Date</label>
+                        <label className="block text-gray-500 mb-1 font-mono">Expiry Date</label>
                         <input
                           type="text"
                           value={formData.cardExp}
                           onChange={(e) => setFormData({ ...formData, cardExp: e.target.value })}
-                          className="w-full bg-[#0E1526] border border-white/10 p-2.5 text-white font-mono"
+                          className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] font-mono"
                           placeholder="MM/YY"
                         />
                       </div>
                       <div>
-                        <label className="block text-slate-400 mb-1 font-mono">CVC / Security Code</label>
+                        <label className="block text-gray-500 mb-1 font-mono">CVC / Security Code</label>
                         <input
                           type="text"
                           value={formData.cardCvc}
                           onChange={(e) => setFormData({ ...formData, cardCvc: e.target.value })}
-                          className="w-full bg-[#0E1526] border border-white/10 p-2.5 text-white font-mono"
+                          className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] font-mono"
                           placeholder="CVC"
                         />
                       </div>
@@ -468,13 +468,13 @@ export const CheckoutPage: React.FC = () => {
 
           {/* Right Summary Column */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="bg-[#0E1526] border border-white/10 p-6 space-y-6 sticky top-24 shadow-2xl">
-              <h2 className="font-serif text-xl text-white pb-3 border-b border-white/10 font-light">
+            <div className="bg-[#F9F9F8] border border-gray-200 p-6 space-y-6 sticky top-24 shadow-2xl">
+              <h2 className="font-serif text-xl text-[#111827] pb-3 border-b border-gray-200 font-light">
                 Order Review ({cart.length} pieces)
               </h2>
 
               {/* Items List */}
-              <div className="max-h-72 overflow-y-auto space-y-4 divide-y divide-white/5 pr-1">
+              <div className="max-h-72 overflow-y-auto space-y-4 divide-y divide-gray-100 pr-1">
                 {cart.map((item) => (
                   <div key={item.id} className="pt-4 first:pt-0 flex gap-3 text-xs">
                     <div className="w-14 h-18 shrink-0 overflow-hidden">
@@ -487,12 +487,12 @@ export const CheckoutPage: React.FC = () => {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-serif text-white truncate uppercase">{item.product.name}</h4>
-                      <p className="text-[11px] font-mono text-slate-400">Size: {item.selectedSize} · {item.selectedColor}</p>
-                      <p className="text-[11px] font-mono text-slate-400">Qty: {item.quantity}</p>
+                      <h4 className="font-serif text-[#111827] truncate uppercase">{item.product.name}</h4>
+                      <p className="text-[11px] font-mono text-gray-500">Size: {item.selectedSize} · {item.selectedColor}</p>
+                      <p className="text-[11px] font-mono text-gray-500">Qty: {item.quantity}</p>
                     </div>
                     <div className="text-right">
-                      <span className="font-medium font-mono tabular-nums text-white">
+                      <span className="font-medium font-mono tabular-nums text-[#111827]">
                         ${(item.price * item.quantity).toLocaleString()}
                       </span>
                     </div>
@@ -501,28 +501,28 @@ export const CheckoutPage: React.FC = () => {
               </div>
 
               {/* Cost Calculations */}
-              <div className="pt-4 border-t border-white/10 space-y-2 text-xs text-slate-400 font-mono">
+              <div className="pt-4 border-t border-gray-200 space-y-2 text-xs text-gray-500 font-mono">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span className="tabular-nums text-white">${cartSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="tabular-nums text-[#111827]">${cartSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Worldwide Courier Delivery</span>
-                  <span className="tabular-nums text-white">
-                    {shippingFee === 0 ? <span className="text-[#C8A97E] font-medium">Complimentary</span> : `$${shippingFee}`}
+                  <span className="tabular-nums text-[#111827]">
+                    {shippingFee === 0 ? <span className="text-[#936B34] font-medium">Complimentary</span> : `$${shippingFee}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Atelier Alterations</span>
-                  <span className="text-[#C8A97E] font-medium">Complimentary</span>
+                  <span className="text-[#936B34] font-medium">Complimentary</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Estimated Sales Tax</span>
-                  <span className="tabular-nums text-white">${estimatedTax.toFixed(2)}</span>
+                  <span className="tabular-nums text-[#111827]">${estimatedTax.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between pt-3 border-t border-white/10 text-base font-serif text-white">
+                <div className="flex justify-between pt-3 border-t border-gray-200 text-base font-serif text-[#111827]">
                   <span>Total Due</span>
-                  <span className="tabular-nums font-sans font-bold text-lg text-[#C8A97E]">
+                  <span className="tabular-nums font-sans font-bold text-lg text-[#936B34]">
                     ${grandTotal.toFixed(2)}
                   </span>
                 </div>
@@ -532,7 +532,7 @@ export const CheckoutPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 bg-[#C8A97E] hover:bg-[#D4AF37] text-[#090D16] font-semibold text-xs uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-md"
+                className="w-full py-4 bg-[#936B34] hover:bg-[#7A5726] text-white font-semibold text-xs uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-md"
               >
                 {isSubmitting ? (
                   <span>Dispatching Commission...</span>
@@ -544,8 +544,8 @@ export const CheckoutPage: React.FC = () => {
                 )}
               </button>
 
-              <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 font-mono">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#C8A97E]" />
+              <div className="flex items-center justify-center gap-2 text-[10px] text-gray-500 font-mono">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#936B34]" />
                 <span>Protected by Park Avenue Atelier Guarantee</span>
               </div>
 

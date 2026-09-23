@@ -643,10 +643,46 @@ export const NotificationService = {
     entityId: string; // Order or Alteration ID
     type: 'order' | 'alteration';
   }): Promise<{ success: boolean; dispatchedChannels: string[]; messageId: string }> {
-    await delay(400);
+    // Attempt remote communication gateway dispatch if configured
+    if (API_CONFIG.commGatewayUrl || (API_CONFIG.baseUrl && API_CONFIG.isLiveBackend)) {
+      const targetUrl = API_CONFIG.commGatewayUrl || `${API_CONFIG.baseUrl.replace(/\/$/, '')}/notifications/dispatch`;
+      try {
+        const response = await fetch(targetUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(API_CONFIG.authProvider ? { 'Authorization': `Bearer ${API_CONFIG.authProvider}` } : {})
+          },
+          body: JSON.stringify(payload)
+        });
 
-    // In production with live backend, this POSTs to the communication gateway
-    console.info(`[Park Avenue Comm Gateway] Dispatching to ${payload.channels.join(', ')}:`, {
+        if (response.ok) {
+          const gatewayResult = await response.json().catch(() => ({}));
+          await this.createNotification({
+            title: payload.subject,
+            message: payload.message,
+            type: payload.type === 'order' ? 'shipment' : 'alteration_update',
+            orderId: payload.type === 'order' ? payload.entityId : undefined,
+            alterationId: payload.type === 'alteration' ? payload.entityId : undefined
+          });
+
+          return {
+            success: true,
+            dispatchedChannels: payload.channels,
+            messageId: gatewayResult.messageId || `COMM-GW-${Date.now()}`
+          };
+        } else {
+          console.warn(`[Park Avenue Comm Gateway] Gateway returned status ${response.status}. Falling back to atelier dispatch engine.`);
+        }
+      } catch (networkError) {
+        console.warn('[Park Avenue Comm Gateway] Network dispatch failed, falling back to local dispatch log:', networkError);
+      }
+    }
+
+    await delay(350);
+
+    // Atelier dispatch logging
+    console.info(`[Park Avenue Comm Gateway] Dispatched to ${payload.channels.join(', ')}:`, {
       recipient: payload.recipientName,
       contact: payload.recipientContact,
       message: payload.message

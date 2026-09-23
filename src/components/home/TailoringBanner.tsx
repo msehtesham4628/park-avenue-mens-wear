@@ -7,7 +7,7 @@ export const TailoringBanner: React.FC = () => {
   const { setActiveView } = useShop();
 
   return (
-    <section className="py-24 bg-[#0B101D] border-y border-white/10 text-[#F8FAFC] relative overflow-hidden">
+    <section className="py-24 bg-[#F9F9F8] border-y border-white/10 text-[#F8FAFC] relative overflow-hidden">
       {/* Background Subtle Watermark */}
       <div className="absolute -right-12 -bottom-12 select-none pointer-events-none font-serif text-[180px] font-bold text-white/[0.02] tracking-tighter">
         PA
@@ -28,11 +28,11 @@ export const TailoringBanner: React.FC = () => {
               />
 
               {/* Bottom Quote on Atelier */}
-              <div className="absolute bottom-6 left-6 right-6 p-4 bg-[#090D16]/95 backdrop-blur-md border border-white/10 shadow-lg">
+              <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/95 backdrop-blur-md border border-white/10 shadow-lg">
                 <p className="font-serif italic text-xs sm:text-sm text-slate-200 leading-snug">
                   &ldquo;A suit that does not fit with precision is merely cloth. True bespoke is sculptured architecture.&rdquo;
                 </p>
-                <span className="text-[9px] uppercase tracking-widest text-[#C8A97E] mt-1.5 block font-mono font-medium">
+                <span className="text-[9px] uppercase tracking-widest text-[#936B34] mt-1.5 block font-mono font-medium">
                   PARK AVENUE MENSWEAR · MASTER TAILORING SALON
                 </span>
               </div>
@@ -41,7 +41,7 @@ export const TailoringBanner: React.FC = () => {
 
           {/* Right Editorial Info */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="flex items-center gap-2 text-xs tracking-[0.25em] uppercase text-[#C8A97E] font-sans font-medium">
+            <div className="flex items-center gap-2 text-xs tracking-[0.25em] uppercase text-[#936B34] font-sans font-medium">
               <Scissors className="w-3.5 h-3.5" />
               <span>COMPLIMENTARY ATELIER SERVICES</span>
             </div>
@@ -61,7 +61,7 @@ export const TailoringBanner: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div className="p-4 bg-[#0E1526] border border-white/10 shadow-xs">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-white font-medium mb-1">
-                  <Scissors className="w-3.5 h-3.5 text-[#C8A97E]" />
+                  <Scissors className="w-3.5 h-3.5 text-[#936B34]" />
                   <span>Complimentary Hemming</span>
                 </div>
                 <p className="text-xs text-slate-400 font-light">
@@ -71,7 +71,7 @@ export const TailoringBanner: React.FC = () => {
 
               <div className="p-4 bg-[#0E1526] border border-white/10 shadow-xs">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-white font-medium mb-1">
-                  <Clock className="w-3.5 h-3.5 text-[#C8A97E]" />
+                  <Clock className="w-3.5 h-3.5 text-[#936B34]" />
                   <span>Atelier Handover</span>
                 </div>
                 <p className="text-xs text-slate-400 font-light">
@@ -87,9 +87,9 @@ export const TailoringBanner: React.FC = () => {
                   setActiveView('track-alteration');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="px-8 py-4 bg-[#C8A97E] hover:bg-[#D4AF37] text-[#090D16] text-xs font-semibold uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                className="px-8 py-4 bg-[#936B34] hover:bg-[#7A5726] text-white text-xs font-semibold uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
               >
-                <Scissors className="w-4 h-4 text-[#090D16]" />
+                <Scissors className="w-4 h-4 text-white" />
                 <span>TRACK AN ALTERATION</span>
               </button>
 
@@ -98,9 +98,9 @@ export const TailoringBanner: React.FC = () => {
                   setActiveView('track-order');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="px-8 py-4 bg-transparent border border-white/20 hover:border-[#C8A97E] text-slate-200 hover:text-[#C8A97E] text-xs font-semibold uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="px-8 py-4 bg-transparent border border-white/20 hover:border-[#936B34] text-slate-200 hover:text-[#936B34] text-xs font-semibold uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Compass className="w-4 h-4 text-[#C8A97E]" />
+                <Compass className="w-4 h-4 text-[#936B34]" />
                 <span>TRACK RECENT ORDER</span>
               </button>
             </div>
