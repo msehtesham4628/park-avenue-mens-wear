@@ -32,17 +32,17 @@ export const FeaturedProducts: React.FC = () => {
   };
 
   return (
-    <section className="py-24 bg-white text-[#111111] border-t border-black/5">
+    <section className="py-24 bg-[#090D16] text-[#F8FAFC] border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header & Tabs */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12 pb-6 border-b border-black/10">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12 pb-6 border-b border-white/10">
           <div>
-            <div className="flex items-center gap-2 text-xs tracking-[0.3em] uppercase text-[#8C6D3B] mb-2 font-mono">
-              <span className="font-bold border border-[#8C6D3B]/40 px-1">PA</span>
+            <div className="flex items-center gap-2 text-xs tracking-[0.3em] uppercase text-[#C8A97E] mb-2 font-mono">
+              <span className="font-bold border border-[#C8A97E]/40 px-1.5 py-0.5">PA</span>
               <span>CURATED SELECTION</span>
             </div>
-            <h2 className="font-serif text-3xl sm:text-4xl text-[#111111] font-light uppercase tracking-wide">
+            <h2 className="font-serif text-3xl sm:text-4xl text-white font-light uppercase tracking-wide">
               FEATURED MENSWEAR &amp; TAILORING
             </h2>
           </div>
@@ -55,8 +55,8 @@ export const FeaturedProducts: React.FC = () => {
                 onClick={() => setActiveTab(tab.value)}
                 className={`px-3.5 py-1.5 text-[10px] font-mono tracking-widest uppercase transition-colors whitespace-nowrap border cursor-pointer ${
                   activeTab === tab.value
-                    ? 'bg-[#111111] text-white border-[#111111] font-semibold'
-                    : 'bg-[#FAF9F6] text-[#666666] border-black/10 hover:border-black/30 hover:text-black'
+                    ? 'bg-[#C8A97E] text-[#090D16] border-[#C8A97E] font-semibold'
+                    : 'bg-[#0E1422] text-slate-400 border-white/10 hover:border-white/30 hover:text-white'
                 }`}
               >
                 {tab.label}
@@ -77,38 +77,35 @@ export const FeaturedProducts: React.FC = () => {
             ))}
           </div>
         ) : (
-          /* Exact Required Empty State:
-             PARK AVENUE MENSWEAR
-             PRODUCTS WILL APPEAR HERE */
-          <div className="border border-black/10 bg-[#FAF9F6] py-24 px-6 text-center flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="border border-white/10 bg-[#0E1422] py-24 px-6 text-center flex flex-col items-center justify-center relative overflow-hidden">
             {/* Background geometric drafting grid */}
             <div 
               className="absolute inset-0 opacity-[0.03] pointer-events-none"
               style={{
-                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.8) 1px, transparent 0)`,
+                backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.8) 1px, transparent 0)`,
                 backgroundSize: '24px 24px'
               }}
             />
 
-            <div className="w-12 h-12 mb-6 border border-[#8C6D3B]/40 flex items-center justify-center font-serif text-base text-[#8C6D3B] tracking-widest bg-white shadow-xs">
+            <div className="w-12 h-12 mb-6 border border-[#C8A97E]/50 flex items-center justify-center font-serif text-base text-[#C8A97E] tracking-widest bg-[#090D16] shadow-md">
               PA
             </div>
 
-            <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-[#8C6D3B] mb-3 block font-medium">
+            <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-[#C8A97E] mb-3 block font-medium">
               PARK AVENUE MENSWEAR
             </span>
 
-            <h3 className="font-serif text-2xl sm:text-3xl text-[#111111] uppercase tracking-wider mb-4 font-light">
+            <h3 className="font-serif text-2xl sm:text-3xl text-white uppercase tracking-wider mb-4 font-light">
               PRODUCTS WILL APPEAR HERE
             </h3>
 
-            <p className="text-xs text-[#666666] max-w-md uppercase tracking-widest font-mono leading-relaxed mb-8">
+            <p className="text-xs text-slate-400 max-w-md uppercase tracking-widest font-mono leading-relaxed mb-8">
               The product architecture and service layers are connected. Once catalog inventory is published via the backend API or Admin Management portal, garments will render here automatically.
             </p>
 
             <button
               onClick={() => setActiveView('admin')}
-              className="px-6 py-3 border border-[#8C6D3B] text-[#8C6D3B] hover:bg-[#8C6D3B] hover:text-white transition-colors text-xs font-mono tracking-widest uppercase flex items-center gap-2 cursor-pointer shadow-xs"
+              className="px-6 py-3 border border-[#C8A97E] text-[#C8A97E] hover:bg-[#C8A97E] hover:text-[#090D16] transition-colors text-xs font-mono font-medium tracking-widest uppercase flex items-center gap-2 cursor-pointer shadow-md"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>OPEN ADMIN PRODUCT PORTAL</span>
@@ -121,7 +118,7 @@ export const FeaturedProducts: React.FC = () => {
           <div className="mt-14 text-center">
             <button
               onClick={handleExploreMore}
-              className="inline-flex items-center gap-3 px-8 py-3.5 bg-transparent border border-black/20 hover:border-[#8C6D3B] text-xs uppercase tracking-[0.2em] text-[#111111] hover:text-[#8C6D3B] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-3 px-8 py-3.5 bg-transparent border border-white/20 hover:border-[#C8A97E] text-xs uppercase tracking-[0.2em] text-slate-200 hover:text-[#C8A97E] transition-colors cursor-pointer"
             >
               <span>EXPLORE ALL {activeTab === 'All' ? 'GARMENTS' : activeTab}</span>
               <ArrowRight className="w-4 h-4" />

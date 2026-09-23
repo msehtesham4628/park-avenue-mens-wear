@@ -5,23 +5,23 @@
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Custom scrollbar and luxury styling */
+/* Custom scrollbar and luxury suiting styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #FAFAFA;
+  background: #090D16;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D4D4D8;
+  background: #1E293B;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #B38E5D;
+  background: #C8A97E;
 }
 
 /* Tabular figures for prices, SKU, tracking */

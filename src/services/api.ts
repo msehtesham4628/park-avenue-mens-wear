@@ -265,7 +265,7 @@ export const OrderService = {
         {
           status: 'Order Confirmed',
           timestamp: 'Just now',
-          location: 'Park Avenue Flagship Atelier, NYC',
+          location: 'Park Avenue Flagship Atelier',
           description: 'Payment authorized and items reserved from private vault.',
           completed: true
         },

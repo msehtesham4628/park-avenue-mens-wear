@@ -12,7 +12,6 @@ import { WelcomeCurtain } from './components/common/WelcomeCurtain';
 import { Hero } from './components/home/Hero';
 import { CategoryShowcase } from './components/home/CategoryShowcase';
 import { FeaturedProducts } from './components/home/FeaturedProducts';
-import { TailoringBanner } from './components/home/TailoringBanner';
 import { CampaignBanner } from './components/home/CampaignBanner';
 import { ShopPage } from './components/shop/ShopPage';
 import { ProductDetailPage } from './components/pdp/ProductDetailPage';
@@ -26,7 +25,7 @@ const MainContent: React.FC = () => {
   const { activeView } = useShop();
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-[#111111] selection:bg-[#B38E5D] selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#090D16] text-[#F8FAFC] selection:bg-[#C8A97E] selection:text-[#090D16]">
       {/* Welcome Entrance Screen & Loading Transition */}
       <WelcomeCurtain />
 
@@ -38,7 +37,6 @@ const MainContent: React.FC = () => {
             <Hero />
             <CategoryShowcase />
             <FeaturedProducts />
-            <TailoringBanner />
             <CampaignBanner />
           </>
         )}

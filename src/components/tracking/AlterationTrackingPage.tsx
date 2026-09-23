@@ -176,7 +176,7 @@ export const AlterationTrackingPage: React.FC = () => {
                   PARK AVENUE FLAGSHIP ATELIER
                 </p>
                 <p className="text-[11px] text-[#666666] mt-1 font-mono">
-                  740 Park Avenue, New York, NY 10021
+                  Park Avenue Flagship Atelier, Suite 740
                 </p>
               </div>
             </div>
