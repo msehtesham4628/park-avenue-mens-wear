@@ -1,0 +1,6 @@
+{
+  "name": "Park Avenue Menswear | Bespoke Tailoring & Luxury Apparel",
+  "description": "Explore luxury menswear, Italian wool suits, Egyptian cotton dress shirts, tailored dress pants, and handcrafted silk ties. Experience Park Avenue craftsmanship and bespoke alteration services.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

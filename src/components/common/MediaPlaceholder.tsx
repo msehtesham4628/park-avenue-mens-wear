@@ -1,0 +1,80 @@
+import React from 'react';
+
+interface MediaPlaceholderProps {
+  label?: string;
+  category?: string;
+  aspectRatio?: 'portrait' | 'landscape' | 'square' | 'hero' | 'wide' | 'auto';
+  className?: string;
+  subtext?: string;
+  minimal?: boolean;
+}
+
+export const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({
+  label = 'PARK AVENUE MENSWEAR',
+  category,
+  aspectRatio = 'portrait',
+  className = '',
+  subtext,
+  minimal = false
+}) => {
+  const aspectClass = {
+    portrait: 'aspect-[3/4]',
+    landscape: 'aspect-[16/10]',
+    square: 'aspect-square',
+    hero: 'aspect-[21/9] sm:aspect-[16/7]',
+    wide: 'aspect-[16/9]',
+    auto: ''
+  }[aspectRatio];
+
+  return (
+    <div
+      className={`relative w-full overflow-hidden bg-[#FAF9F6] border border-black/10 flex flex-col items-center justify-center p-6 text-center select-none group transition-all duration-500 hover:border-[#8C6D3B] hover:bg-[#F7F6F2] ${aspectClass} ${className}`}
+    >
+      {/* Background Architectural Grid & Subtle Radial Ambient */}
+      <div 
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.8) 1px, transparent 0)`,
+          backgroundSize: '24px 24px'
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-black/[0.02] pointer-events-none" />
+
+      {/* Decorative Corner Brackets for Luxury Tailoring Drafting Feel */}
+      <div className="absolute top-3 left-3 w-2.5 h-2.5 border-t border-l border-[#8C6D3B]/40 transition-colors group-hover:border-[#8C6D3B]" />
+      <div className="absolute top-3 right-3 w-2.5 h-2.5 border-t border-r border-[#8C6D3B]/40 transition-colors group-hover:border-[#8C6D3B]" />
+      <div className="absolute bottom-3 left-3 w-2.5 h-2.5 border-b border-l border-[#8C6D3B]/40 transition-colors group-hover:border-[#8C6D3B]" />
+      <div className="absolute bottom-3 right-3 w-2.5 h-2.5 border-b border-r border-[#8C6D3B]/40 transition-colors group-hover:border-[#8C6D3B]" />
+
+      {/* Center Monogram / Brand Block */}
+      <div className="relative z-10 flex flex-col items-center max-w-[85%]">
+        {!minimal && (
+          <div className="w-10 h-10 mb-3 rounded-none border border-[#8C6D3B]/40 flex items-center justify-center font-serif text-sm text-[#8C6D3B] tracking-widest bg-white shadow-xs transition-transform group-hover:scale-105 duration-500">
+            PA
+          </div>
+        )}
+
+        {category && (
+          <span className="text-[9px] uppercase tracking-[0.3em] text-[#8C6D3B] font-mono mb-1 font-medium">
+            {category}
+          </span>
+        )}
+
+        <div className="font-serif text-xs sm:text-sm tracking-[0.25em] text-[#111111] uppercase font-light">
+          [{' '}{label}{' '}]
+        </div>
+
+        {subtext && (
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#666666] mt-2 font-mono">
+            {subtext}
+          </p>
+        )}
+      </div>
+
+      {/* Subtle bottom indicator */}
+      <div className="absolute bottom-2 text-[8px] uppercase tracking-[0.25em] text-[#888888]/60 font-mono">
+        Atelier Media Slot
+      </div>
+    </div>
+  );
+};
