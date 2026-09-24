@@ -107,22 +107,15 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                 const isExpanded = expandedCategory === cat.id;
                 return (
                   <div key={cat.id}>
-                    <div className="flex items-center">
-                      <button
-                        onClick={() => handleNav('shop', cat.queryValue)}
-                        className="flex-1 text-left py-2 px-2 text-xs uppercase font-sans tracking-wider text-gray-700 hover:text-black hover:bg-[#F9F9F8] transition-colors rounded-xs cursor-pointer"
-                      >
-                        <span className="font-medium">{cat.name}</span>
-                      </button>
-                      <button
-                        onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
-                        className="p-2 text-gray-500 hover:text-[#936B34] transition-colors"
-                        aria-label={"Expand " + cat.name}
-                        aria-expanded={isExpanded}
-                      >
-                        <ChevronDown className={"w-3.5 h-3.5 transition-transform duration-200 " + (isExpanded ? 'rotate-180 text-[#936B34]' : '')} />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
+                      className="w-full flex items-center justify-between text-left py-2 px-2 text-xs uppercase font-sans tracking-wider text-gray-700 hover:text-black hover:bg-[#F9F9F8] transition-colors rounded-xs cursor-pointer"
+                      aria-label={"Expand " + cat.name}
+                      aria-expanded={isExpanded}
+                    >
+                      <span className="font-medium">{cat.name}</span>
+                      <ChevronDown className={"w-3.5 h-3.5 transition-transform duration-200 " + (isExpanded ? 'rotate-180 text-[#936B34]' : '')} />
+                    </button>
                     {isExpanded && (
                       <div className="ml-4 mb-1 border-l border-[#936B34]/20 pl-2">
                         <button
