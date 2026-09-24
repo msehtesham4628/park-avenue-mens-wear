@@ -44,6 +44,14 @@ async function bootstrapServer() {
   // Error handling middleware for all API routes
   app.use('/api', errorHandler);
 
+  // API requests must always receive JSON, including unmatched routes.
+  app.use('/api', (req, res) => {
+    res.status(404).json({
+      success: false,
+      error: `API route not found: ${req.method} ${req.originalUrl}`
+    });
+  });
+
   // Vite development middleware or production static serving
   const isProduction = process.env.NODE_ENV === 'production';
 
