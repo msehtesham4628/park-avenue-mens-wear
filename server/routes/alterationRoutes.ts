@@ -7,10 +7,11 @@ const router = Router();
 
 router.post('/', alterationController.createAlteration);
 router.post('/lookup', orderLookupLimiter, alterationController.customerLookup);
-router.get('/:id', alterationController.getAlterationById);
 
-// Admin alteration routes
+// Admin alteration routes must be declared before /:id so "admin" is not treated as an alteration ID.
 router.get('/admin/list', ...requireAdminOrStaff, alterationController.getAdminAlterations);
 router.put('/admin/:id/status', ...requireAdminOrStaff, alterationController.updateStatus);
+
+router.get('/:id', alterationController.getAlterationById);
 
 export default router;
