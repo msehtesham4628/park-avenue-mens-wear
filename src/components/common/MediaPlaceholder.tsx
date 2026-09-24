@@ -46,6 +46,14 @@ export const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({
       <div className="absolute bottom-3 left-3 w-2.5 h-2.5 border-b border-l border-[#936B34]/60 transition-colors group-hover:border-[#936B34]" />
       <div className="absolute bottom-3 right-3 w-2.5 h-2.5 border-b border-r border-[#936B34]/60 transition-colors group-hover:border-[#936B34]" />
 
+      {/* Supplied brand artwork is used instead of an empty media frame. */}
+      <img
+        src="/20260925_004137_0000.png"
+        alt="Park Avenue Menswear"
+        className="absolute inset-0 w-full h-full object-contain p-8 opacity-95"
+        loading="lazy"
+      />
+
       {/* Center Monogram / Brand Block */}
       <div className="relative z-10 flex flex-col items-center max-w-[85%]">
         {!minimal && (
