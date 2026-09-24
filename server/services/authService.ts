@@ -139,36 +139,6 @@ export const authService = {
       ]
     });
 
-    // 2. Fallback resolution for admin accounts
-    if (!customer) {
-      if (clean === 'admin' || clean === 'admin@parkavenuemenswear.com' || clean === 'parkmens@admin.com' || clean === 'parkmens') {
-        customer = await CustomerModel.findOne({ 
-          $or: [
-            { email: 'parkmens@admin.com' },
-            { email: 'admin@parkavenuemenswear.com' },
-            { username: 'parkmens' },
-            { username: 'admin' },
-            { role: 'admin' }
-          ]
-        });
-      } else if (clean === 'tailor' || clean === 'tailor@parkavenuemenswear.com' || clean === 'staff') {
-        customer = await CustomerModel.findOne({
-          $or: [
-            { email: 'tailor@parkavenuemenswear.com' },
-            { username: 'tailor' },
-            { role: 'staff' }
-          ]
-        });
-      } else if (clean === 'patron' || clean === 'patron@parkavenuemenswear.com' || clean === 'client') {
-        customer = await CustomerModel.findOne({
-          $or: [
-            { email: 'patron@parkavenuemenswear.com' },
-            { username: 'patron' },
-            { role: 'customer' }
-          ]
-        });
-      }
-    }
 
     if (!customer) {
       throw new Error('Invalid username, email, or credentials.');
@@ -185,24 +155,7 @@ export const authService = {
     // Standard verify
     const isMatch = await this.verifyPassword(password, customer.passwordHash);
 
-    // Permissive master credentials fallback for administrative demo access
-    const isMasterPassword = (customer.role === 'admin' || customer.role === 'staff') && (
-      password === 'ParkAvenue2026!' ||
-      password === 'ParkAvenue2026' ||
-      password.toLowerCase() === 'parkavenue2026!' ||
-      password.toLowerCase() === 'parkavenue2026' ||
-      password.toLowerCase() === 'parkavenue' ||
-      password.toLowerCase() === 'parkmens' ||
-      password.toLowerCase() === 'parkmens2026!' ||
-      password.toLowerCase() === 'parkmens2026' ||
-      password.toLowerCase() === 'admin' ||
-      password.toLowerCase() === 'admin123'
-    );
-
-    if (!isMatch && !isMasterPassword) {
-      if (customer.role === 'admin' || customer.role === 'staff') {
-        throw new Error('Incorrect password. For Atelier access, please use: ParkAvenue2026! (or tap Quick Fill).');
-      }
+    if (!isMatch) {
       throw new Error('Invalid username, email, or credentials.');
     }
 
