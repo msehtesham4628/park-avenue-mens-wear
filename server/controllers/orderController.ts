@@ -248,7 +248,7 @@ export const orderController = {
       return res.status(200).json({
         success: true,
         data: order,
-        message: `Order status updated to ${status}. Customer notification dispatched.`
+        message: `Order status updated to ${status}. Customer notification recorded; delivery depends on the configured notification provider.`
       });
     } catch (err: any) {
       return res.status(400).json({ success: false, message: err.message });
