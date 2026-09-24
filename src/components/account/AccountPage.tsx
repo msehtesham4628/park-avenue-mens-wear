@@ -68,9 +68,11 @@ export const AccountPage: React.FC = () => {
                   PATRON PRIVATE
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-1 font-mono">
-                {currentCustomer?.email || 'client@parkavenuemenswear.com'} · Flagship Salon Atelier Access
-              </p>
+              {currentCustomer?.email && (
+                <p className="text-xs text-gray-500 mt-1 font-mono">
+                  {currentCustomer.email}
+                </p>
+              )}
             </div>
           </div>
 
