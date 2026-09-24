@@ -13,6 +13,6 @@ router.post('/lookup', orderLookupLimiter, alterationController.customerLookup);
 router.get('/admin/list', ...requireAdminOrStaff, alterationController.getAdminAlterations);
 router.put('/admin/:id/status', ...requireAdminOrStaff, alterationController.updateStatus);
 
-router.get('/:id', alterationController.getAlterationById);
+router.get('/:id', authenticateJWT, alterationController.getAlterationById);
 
 export default router;
