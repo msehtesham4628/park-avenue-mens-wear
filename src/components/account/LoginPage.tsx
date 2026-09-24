@@ -198,91 +198,9 @@ export const LoginPage: React.FC = () => {
                   <span>{errorMessage}</span>
                 </div>
               </div>
-              <div className="pt-2 border-t border-red-200/60 flex items-center justify-between">
-                <span className="text-[11px] text-red-700">Need immediate Admin access?</span>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setLoginUsername('parkmens@admin.com');
-                    setLoginPassword('ParkAvenue2026!');
-                    setErrorMessage(null);
-                    setIsLoading(true);
-                    try {
-                      const res = await login('parkmens@admin.com', 'ParkAvenue2026!');
-                      if (res.success) {
-                        setActiveView('admin');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      } else {
-                        setErrorMessage(res.message || 'Login failed.');
-                      }
-                    } catch (e: any) {
-                      setErrorMessage(e.message || 'Login failed.');
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
-                  className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] uppercase font-semibold tracking-wider cursor-pointer transition-colors shadow-xs"
-                >
-                  ⚡ Auto-Fill & Login Admin
-                </button>
-              </div>
             </div>
           )}
 
-          {/* Quick Demo Access Bar */}
-          {viewMode === 'login' && (
-            <div className="mb-5 p-3 bg-[#F9F9F8] border border-gray-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-gray-500 font-semibold">
-                  1-Tap Atelier Access
-                </span>
-                <span className="text-[10px] font-mono text-[#936B34]">
-                  Pass: ParkAvenue2026!
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginUsername('parkmens@admin.com');
-                    setLoginPassword('ParkAvenue2026!');
-                    setErrorMessage(null);
-                  }}
-                  className="py-1.5 px-2 bg-white hover:bg-[#936B34] hover:text-white border border-gray-200 text-left transition-colors cursor-pointer group shadow-2xs"
-                  title="Fill Admin credentials"
-                >
-                  <span className="block text-[10px] font-semibold font-mono text-gray-900 group-hover:text-white">Admin</span>
-                  <span className="block text-[8px] font-mono text-gray-500 group-hover:text-gray-100 truncate">parkmens@admin.com</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginUsername('tailor@parkavenuemenswear.com');
-                    setLoginPassword('ParkAvenue2026!');
-                    setErrorMessage(null);
-                  }}
-                  className="py-1.5 px-2 bg-white hover:bg-[#936B34] hover:text-white border border-gray-200 text-left transition-colors cursor-pointer group shadow-2xs"
-                  title="Fill Tailor credentials"
-                >
-                  <span className="block text-[10px] font-semibold font-mono text-gray-900 group-hover:text-white">Tailor</span>
-                  <span className="block text-[8px] font-mono text-gray-500 group-hover:text-gray-100 truncate">tailor@...</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginUsername('patron@parkavenuemenswear.com');
-                    setLoginPassword('ParkAvenue2026!');
-                    setErrorMessage(null);
-                  }}
-                  className="py-1.5 px-2 bg-white hover:bg-[#936B34] hover:text-white border border-gray-200 text-left transition-colors cursor-pointer group shadow-2xs"
-                  title="Fill Patron credentials"
-                >
-                  <span className="block text-[10px] font-semibold font-mono text-gray-900 group-hover:text-white">Patron</span>
-                  <span className="block text-[8px] font-mono text-gray-500 group-hover:text-gray-100 truncate">patron@...</span>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* ========================================================= */}
           {/* VIEW: LOGIN                                               */}
