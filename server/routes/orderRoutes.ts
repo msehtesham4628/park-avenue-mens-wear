@@ -6,6 +6,7 @@ import { requireAdminOrStaff } from '../middleware/authMiddleware.js';
 const router = Router();
 
 // Storefront & Client routes
+router.get('/', ...requireAdminOrStaff, orderController.getOrders);
 router.post('/', orderController.createOrder);
 router.post('/lookup', orderLookupLimiter, orderController.customerLookup);
 
