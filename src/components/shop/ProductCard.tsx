@@ -7,25 +7,35 @@ import { MediaPlaceholder } from '../common/MediaPlaceholder';
 interface ProductCardProps {
   product: Product;
   onQuickView?: (product: Product) => void;
+  /** Other catalog records with the same product name, grouped into this card by color. */
+  colorProducts?: Product[];
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, colorProducts = [] }) => {
   const { navigateToProduct, addToCart, toggleWishlist, isInWishlist } = useShop();
+  const groupedProducts = [product, ...colorProducts];
+  const colorOptions = groupedProducts.flatMap(p => p.variants || []).reduce<ProductVariant[]>((acc, variant) => {
+    if (!acc.some(v => v.color.toLowerCase() === variant.color.toLowerCase())) acc.push(variant);
+    return acc;
+  }, []);
+  const [selectedColor, setSelectedColor] = useState<string>(colorOptions[0]?.color || product.variants?.[0]?.color || 'Standard');
+  const selectedColorProduct = groupedProducts.find(p => (p.variants || []).some(v => v.color.toLowerCase() === selectedColor.toLowerCase())) || product;
+  const selectedColorImage = selectedColorProduct.colorImages?.[selectedColor] || selectedColorProduct.images?.slice(0, 1) || [];
   const [selectedSize, setSelectedSize] = useState<string>(
     product.variants?.find(v => v.stock > 0)?.size || product.variants?.[0]?.size || 'Standard'
   );
   const isWishlisted = isInWishlist(product.id);
 
   // Check stock for currently selected size
-  const activeVariant = product.variants?.find(v => v.size === selectedSize);
+  const activeVariant = groupedProducts.flatMap(p => p.variants || []).find(v => v.color.toLowerCase() === selectedColor.toLowerCase() && v.size === selectedSize) || groupedProducts.flatMap(p => p.variants || []).find(v => v.color.toLowerCase() === selectedColor.toLowerCase()) || product.variants?.find(v => v.size === selectedSize);
   const isOutOfStock = activeVariant ? activeVariant.stock <= 0 : (product.totalStock ?? 0) <= 0;
   const isLowStock = activeVariant ? activeVariant.stock > 0 && activeVariant.stock <= 3 : false;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isOutOfStock) return;
-    const defaultColor = activeVariant?.color || product.variants?.[0]?.color || 'Standard';
-    addToCart(product, selectedSize, defaultColor, 1);
+    const defaultColor = activeVariant?.color || selectedColor || product.variants?.[0]?.color || 'Standard';
+    addToCart(selectedColorProduct, selectedSize, defaultColor, 1);
   };
 
   return (
@@ -35,13 +45,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
     >
       {/* Product Media Area (Strictly Luxury Media Placeholder) */}
       <div className="relative aspect-[3/4] bg-[#F8F9FA] overflow-hidden">
-        <MediaPlaceholder
-          label="PARK AVENUE MENSWEAR"
-          category={product.category}
-          aspectRatio="auto"
-          className="w-full h-full"
-          subtext={product.name}
-        />
+        {selectedColorImage[0] ? (
+          <img
+            src={selectedColorImage[0]}
+            alt={product.name + ' - ' + selectedColor}
+            className="w-full h-full object-cover transition-opacity duration-300"
+            loading="lazy"
+          />
+        ) : (
+          <MediaPlaceholder
+            label="PARK AVENUE MENSWEAR"
+            category={product.category}
+            aspectRatio="auto"
+            className="w-full h-full"
+            subtext={product.name}
+          />
+        )}
 
         {/* Top Badges / Indicators */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-1 items-start">
@@ -126,6 +145,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
           <h3 className="font-serif text-base sm:text-lg text-[#111827] group-hover:text-[#936B34] transition-colors line-clamp-1 font-normal">
             {product.name}
           </h3>
+
+          {/* Color selector — grouped same-name products share one card */}
+          {colorOptions.length > 1 && (
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+              {colorOptions.map(color => {
+                const colorProduct = groupedProducts.find(p => (p.variants || []).some(v => v.color.toLowerCase() === color.color.toLowerCase()));
+                return (
+                  <button
+                    key={color.color}
+                    type="button"
+                    title={color.color}
+                    aria-label={"Select " + color.color}
+                    onClick={() => {
+                      setSelectedColor(color.color);
+                      const matchingSize = colorProduct?.variants?.find(v => v.stock > 0)?.size;
+                      if (matchingSize) setSelectedSize(matchingSize);
+                    }}
+                    className={"w-4 h-4 rounded-full border transition-all " + (selectedColor.toLowerCase() === color.color.toLowerCase() ? 'ring-2 ring-[#936B34] ring-offset-1 border-[#936B34]' : 'border-gray-300')}
+                    style={{ backgroundColor: color.colorHex || '#E5E7EB' }}
+                  />
+                );
+              })}
+              <span className="text-[9px] text-gray-500 ml-1">{colorOptions.length} colors</span>
+            </div>
+          )}
 
           {/* Subtitle / Fabric info */}
           {product.subtitle && (
