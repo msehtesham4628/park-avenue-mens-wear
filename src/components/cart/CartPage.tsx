@@ -424,7 +424,7 @@ export const CartPage: React.FC = () => {
                       COMPLIMENTARY FIRST ALTERATION
                     </span>
                     <span className="text-[11px] text-gray-500">
-                      Visit our Manhattan salon or network tailors for precision hemming and adjustments.
+                      Consult our master tailoring artisans or partner fitters for precision hemming and adjustments.
                     </span>
                   </div>
                 </div>

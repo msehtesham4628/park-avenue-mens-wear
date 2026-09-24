@@ -6,31 +6,24 @@ import { authService } from '../services/authService.js';
 
 export async function seedInitialData() {
   try {
-    // 1. Seed Admin & Staff accounts if not existing
-    const existingAdmin = await CustomerModel.findOne({ email: 'admin@parkavenuemenswear.com' });
+    // 1. Seed exclusive Admin account if not existing
+    const existingAdmin = await CustomerModel.findOne({ email: 'parkamw@admin.com' });
     if (!existingAdmin) {
-      const passwordHash = await authService.hashPassword('ParkAvenue2026!');
+      const passwordHash = await authService.hashPassword('Parkmens@911');
       await CustomerModel.create({
         customerId: 'CUST-ADMIN-001',
         firstName: 'Master',
         lastName: 'Director',
         name: 'Master Director',
-        email: 'admin@parkavenuemenswear.com',
+        username: 'parkamw@admin.com',
+        email: 'parkamw@admin.com',
         phone: '+1 (800) 555-7275',
         passwordHash,
         role: 'admin',
         status: 'active',
-        addresses: [{
-          id: 'addr-admin-1',
-          street: '725 Park Avenue',
-          city: 'New York',
-          state: 'NY',
-          postalCode: '10021',
-          country: 'United States',
-          isDefault: true
-        }]
+        addresses: []
       });
-      console.info('[Park Avenue DB Seed] Created default administrator: admin@parkavenuemenswear.com (Password: ParkAvenue2026!)');
+      console.info('[Park Avenue DB Seed] Created default administrator: parkamw@admin.com (Password: Parkmens@911)');
     }
 
     const existingStaff = await CustomerModel.findOne({ email: 'tailor@parkavenuemenswear.com' });

@@ -45,7 +45,7 @@ export const OFFICIAL_CATEGORIES: CategoryItem[] = [
   { id: 'coats', name: 'Coats', queryValue: 'Coats', description: 'Double-breasted overcoats in pure cashmere and camel hair' },
   { id: 'polo-shirts', name: 'Polo Shirts', queryValue: 'Polo shirts', description: 'Long and short-sleeve knit polos in Sea Island silk-cotton' },
   { id: 'shorts', name: 'Shorts', queryValue: 'Shorts', description: 'Pleated linen-cotton and tropical wool tailored walk shorts' },
-  { id: 'new-arrivals', name: 'New Arrivals', queryValue: 'New Arrivals', description: 'The latest seasonal cuts from the New York atelier' }
+  { id: 'new-arrivals', name: 'New Arrivals', queryValue: 'New Arrivals', description: 'The latest seasonal cuts from the sartorial atelier' }
 ];
 
 export interface ProductVariant {

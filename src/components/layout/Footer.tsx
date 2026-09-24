@@ -23,7 +23,7 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className="text-xs font-mono uppercase tracking-widest text-[#936B34] font-medium">
-            FLAGSHIP ATELIER · 725 PARK AVENUE, NYC
+            HAND-CANVASSED SUITS &amp; BESPOKE TAILORING
           </div>
         </div>
 
@@ -137,7 +137,7 @@ export const Footer: React.FC = () => {
           <div className="flex items-center gap-6 text-[11px]">
             <span className="hover:text-[#936B34] transition-colors cursor-pointer">PRIVACY</span>
             <span className="hover:text-[#936B34] transition-colors cursor-pointer">TERMS OF COMMISSION</span>
-            <span className="text-[#936B34]">FLAGSHIP ATELIER NYC</span>
+            <span className="text-[#936B34]">ATELIER COMMISSIONS</span>
           </div>
         </div>
 

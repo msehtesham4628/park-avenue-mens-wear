@@ -171,12 +171,12 @@ export const AlterationTrackingPage: React.FC = () => {
               </div>
 
               <div className="p-4 bg-white border border-black/5 space-y-1 shadow-xs">
-                <span className="text-[10px] font-mono uppercase text-[#8C6D3B] block font-medium">COLLECTION SALON</span>
+                <span className="text-[10px] font-mono uppercase text-[#8C6D3B] block font-medium">COMMISSION SALON</span>
                 <p className="text-xs text-[#111111] font-light">
-                  PARK AVENUE FLAGSHIP ATELIER
+                  PARK AVENUE BESPOKE ATELIER
                 </p>
                 <p className="text-[11px] text-[#666666] mt-1 font-mono">
-                  Park Avenue Flagship Atelier, Suite 740
+                  Master Tailoring &amp; Hand-Finishing Division
                 </p>
               </div>
             </div>

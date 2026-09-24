@@ -13,7 +13,16 @@ import {
   EyeOff,
   Lock,
   ShieldCheck,
-  ArrowLeft
+  ArrowLeft,
+  FileSpreadsheet,
+  Download,
+  Upload,
+  FileUp,
+  FileText,
+  Calculator,
+  TrendingUp,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { 
@@ -27,6 +36,16 @@ import {
 import { Product, Order, AlterationRecord, Customer, ProductCategory } from '../../types';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { navigateTo } from '../../utils/router';
+import {
+  exportProductsToExcel,
+  downloadProductExcelTemplate,
+  parseProductsFromExcel,
+  exportCustomersToExcel,
+  exportOrdersToExcel,
+  exportTallyXml,
+  exportTallyExcel,
+  exportSalesReportToExcel
+} from '../../utils/excelErpUtils';
 
 type AdminTab = 
   | 'dashboard' 
@@ -35,6 +54,7 @@ type AdminTab =
   | 'orders' 
   | 'customers' 
   | 'alterations' 
+  | 'erp-reports'
   | 'notifications' 
   | 'settings';
 
@@ -67,6 +87,46 @@ export const AdminDashboard: React.FC = () => {
   const [adjustingInventory, setAdjustingInventory] = useState<{ productId: string; variantId: string; size: string; currentStock: number } | null>(null);
   const [isCreateAlterationOpen, setIsCreateAlterationOpen] = useState(false);
   const [isSendNotificationOpen, setIsSendNotificationOpen] = useState(false);
+
+  // Excel Product Upload & Import State
+  const [isExcelUploadOpen, setIsExcelUploadOpen] = useState(false);
+  const [parsedExcelProducts, setParsedExcelProducts] = useState<Product[]>([]);
+  const [excelImportErrors, setExcelImportErrors] = useState<string[]>([]);
+  const [excelFileName, setExcelFileName] = useState('');
+  const [isImportingExcel, setIsImportingExcel] = useState(false);
+
+  // Manual Order Commissioning State
+  const [isManualOrderOpen, setIsManualOrderOpen] = useState(false);
+  const [manualOrderForm, setManualOrderForm] = useState({
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+    orderStatus: 'Order Confirmed',
+    paymentStatus: 'Paid',
+    paymentMethod: 'In-Salon POS / Cash',
+    alterationRequested: false,
+    alterationNotes: '',
+    shippingFee: 0,
+    items: [] as Array<{
+      productId: string;
+      productName: string;
+      category: ProductCategory;
+      size: string;
+      color: string;
+      quantity: number;
+      price: number;
+      sku: string;
+      image: string;
+    }>
+  });
+
+  const [itemBuilder, setItemBuilder] = useState({
+    productId: '',
+    size: '',
+    color: 'Classic Atelier',
+    quantity: 1,
+    price: 0
+  });
 
   // Form states
   const [productForm, setProductForm] = useState({
@@ -226,6 +286,145 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Excel Product Import Handlers
+  const handleExcelFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setExcelFileName(file.name);
+    try {
+      const result = await parseProductsFromExcel(file);
+      setParsedExcelProducts(result.products);
+      setExcelImportErrors(result.errors);
+      if (result.products.length > 0) {
+        showToast(`Parsed ${result.products.length} garments from ${file.name}`, 'success');
+      } else {
+        showToast('No valid garments found in spreadsheet', 'error');
+      }
+    } catch {
+      showToast('Error reading spreadsheet file', 'error');
+    }
+  };
+
+  const handleConfirmExcelImport = async () => {
+    if (parsedExcelProducts.length === 0) return;
+    setIsImportingExcel(true);
+    try {
+      await ProductService.batchCreate(parsedExcelProducts);
+      showToast(`Successfully imported ${parsedExcelProducts.length} garments into inventory!`, 'success');
+      setIsExcelUploadOpen(false);
+      setParsedExcelProducts([]);
+      setExcelImportErrors([]);
+      setExcelFileName('');
+      await loadAllData();
+      await refreshProducts();
+    } catch {
+      showToast('Failed to save imported garments', 'error');
+    } finally {
+      setIsImportingExcel(false);
+    }
+  };
+
+  // Manual Order Handlers
+  const handleAddItemToManualOrder = () => {
+    if (!itemBuilder.productId) {
+      showToast('Please select a garment from the catalogue', 'error');
+      return;
+    }
+    const prod = productsList.find(p => p.id === itemBuilder.productId);
+    if (!prod) return;
+
+    const size = itemBuilder.size || (prod.variants?.[0]?.size || 'Regular');
+    const color = itemBuilder.color || (prod.variants?.[0]?.color || 'Classic');
+    const price = itemBuilder.price > 0 ? itemBuilder.price : prod.price;
+
+    setManualOrderForm(prev => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        {
+          productId: prod.id,
+          productName: prod.name,
+          category: prod.category,
+          size,
+          color,
+          quantity: Math.max(1, itemBuilder.quantity),
+          price,
+          sku: prod.sku,
+          image: prod.images?.[0] || ''
+        }
+      ]
+    }));
+
+    // Reset item builder
+    setItemBuilder({
+      productId: '',
+      size: '',
+      color: 'Classic Atelier',
+      quantity: 1,
+      price: 0
+    });
+    showToast('Garment item added to consignment', 'success');
+  };
+
+  const handleRemoveManualItem = (index: number) => {
+    setManualOrderForm(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSaveManualOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualOrderForm.items.length === 0) {
+      showToast('Please add at least one garment to the order', 'error');
+      return;
+    }
+    if (!manualOrderForm.customerName.trim()) {
+      showToast('Customer name is required', 'error');
+      return;
+    }
+
+    try {
+      const subtotal = manualOrderForm.items.reduce((sum, it) => sum + (it.price * it.quantity), 0);
+      const tax = subtotal * 0.08875;
+      const total = subtotal + tax + Number(manualOrderForm.shippingFee || 0);
+
+      const created = await OrderService.createManualOrder({
+        customerName: manualOrderForm.customerName,
+        customerEmail: manualOrderForm.customerEmail || 'patron@parkavenuemenswear.com',
+        customerPhone: manualOrderForm.customerPhone || 'On File',
+        orderStatus: manualOrderForm.orderStatus as any,
+        paymentStatus: manualOrderForm.paymentStatus as any,
+        paymentMethod: manualOrderForm.paymentMethod,
+        alterationRequested: manualOrderForm.alterationRequested,
+        alterationNotes: manualOrderForm.alterationNotes,
+        items: manualOrderForm.items,
+        subtotal,
+        tax,
+        shippingFee: Number(manualOrderForm.shippingFee || 0),
+        total
+      });
+
+      showToast(`Consignment ${created.id} recorded successfully!`, 'success');
+      setIsManualOrderOpen(false);
+      setManualOrderForm({
+        customerName: '',
+        customerEmail: '',
+        customerPhone: '',
+        orderStatus: 'Order Confirmed',
+        paymentStatus: 'Paid',
+        paymentMethod: 'In-Salon POS / Cash',
+        alterationRequested: false,
+        alterationNotes: '',
+        shippingFee: 0,
+        items: []
+      });
+      await loadAllData();
+    } catch {
+      showToast('Failed to record consignment order', 'error');
+    }
+  };
+
   const handleSaveStock = async (newStock: number) => {
     if (!adjustingInventory) return;
     try {
@@ -335,18 +534,23 @@ export const AdminDashboard: React.FC = () => {
   if (!isAdminLoggedIn) {
     const handleAdminSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!adminUsername || !adminPassword) {
+      const cleanUsername = adminUsername.trim().toLowerCase();
+      if (!cleanUsername || !adminPassword) {
         showToast('Please provide executive username and password', 'error');
+        return;
+      }
+      if (cleanUsername !== 'parkamw@admin.com') {
+        showToast('Access restricted: Only parkamw@admin.com is authorized for administrator access.', 'error');
         return;
       }
       setIsAuthenticating(true);
       try {
-        const res = await login(adminUsername, adminPassword);
-        if (res.success && (res.role === 'admin' || res.role === 'staff')) {
+        const res = await login(adminUsername.trim(), adminPassword);
+        if (res.success && res.role === 'admin') {
           showToast('Atelier Executive clearance confirmed', 'success');
           await loadAllData();
         } else {
-          showToast('Access restricted: Insufficient atelier clearance credentials', 'error');
+          showToast('Access restricted: Invalid credentials for administrator account.', 'error');
         }
       } catch {
         showToast('Authentication protocol failed', 'error');
@@ -370,20 +574,20 @@ export const AdminDashboard: React.FC = () => {
               ATELIER ADMINISTRATION
             </h1>
             <p className="text-xs text-gray-500 font-mono mt-2 leading-relaxed">
-              Restricted portal path (<code className="text-[#936B34]">/admin</code>). Enter executive or staff credentials to access inventory and client orders.
+              Restricted portal path (<code className="text-[#936B34]">/admin</code>). Only authorized administrator account (<strong className="text-[#111827]">parkamw@admin.com</strong>) has access.
             </p>
           </div>
 
           <form onSubmit={handleAdminSubmit} className="space-y-4">
             <div>
               <label className="block text-[11px] font-mono uppercase tracking-widest text-gray-700 mb-1.5">
-                Executive Username / Email
+                Executive Administrator Email
               </label>
               <input
                 type="text"
                 value={adminUsername}
                 onChange={(e) => setAdminUsername(e.target.value)}
-                placeholder="admin"
+                placeholder="parkamw@admin.com"
                 className="w-full bg-[#F9F9F8] border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] focus:border-[#936B34] focus:bg-white focus:outline-none transition-colors"
                 required
               />
@@ -502,6 +706,7 @@ export const AdminDashboard: React.FC = () => {
               { id: 'orders', label: 'ORDERS' },
               { id: 'customers', label: 'CUSTOMERS' },
               { id: 'alterations', label: 'ALTERATIONS' },
+              { id: 'erp-reports', label: 'TALLY & ERP REPORTS' },
               { id: 'notifications', label: 'NOTIFICATIONS' },
               { id: 'settings', label: 'SETTINGS' }
             ].map(tab => (
@@ -652,7 +857,7 @@ export const AdminDashboard: React.FC = () => {
         {/* TAB: PRODUCTS */}
         {activeTab === 'products' && (
           <div className="mt-8 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
                   PRODUCTS REPOSITORY
@@ -662,26 +867,60 @@ export const AdminDashboard: React.FC = () => {
                 </p>
               </div>
 
-              <button
-                onClick={() => {
-                  setEditingProduct(null);
-                  setProductForm({
-                    name: '',
-                    category: 'Suits',
-                    price: '',
-                    sku: '',
-                    description: '',
-                    fabric: '',
-                    fit: '',
-                    sizeStock: '38R:4, 40R:6, 42R:2'
-                  });
-                  setIsAddProductOpen(true);
-                }}
-                className="px-4 py-2.5 bg-[#111827] text-white font-semibold text-xs uppercase tracking-wider hover:bg-[#936B34] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span>ADD PRODUCT</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => downloadProductExcelTemplate()}
+                  className="px-3 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  title="Download sample Excel template with format instructions"
+                >
+                  <FileText className="w-3.5 h-3.5 text-gray-500" />
+                  <span>TEMPLATE</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setParsedExcelProducts([]);
+                    setExcelImportErrors([]);
+                    setExcelFileName('');
+                    setIsExcelUploadOpen(true);
+                  }}
+                  className="px-3 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  title="Upload Excel spreadsheet to bulk create products"
+                >
+                  <Upload className="w-3.5 h-3.5 text-[#936B34]" />
+                  <span>IMPORT EXCEL</span>
+                </button>
+
+                <button
+                  onClick={() => exportProductsToExcel(productsList)}
+                  className="px-3 py-2 bg-[#F9F9F8] border border-gray-200 text-gray-700 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  title="Export current product catalog to Excel (.xlsx)"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>EXPORT EXCEL</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setProductForm({
+                      name: '',
+                      category: 'Suits',
+                      price: '',
+                      sku: '',
+                      description: '',
+                      fabric: '',
+                      fit: '',
+                      sizeStock: '38R:4, 40R:6, 42R:2'
+                    });
+                    setIsAddProductOpen(true);
+                  }}
+                  className="px-4 py-2 bg-[#111827] text-white font-semibold text-xs uppercase tracking-wider hover:bg-[#936B34] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>ADD PRODUCT</span>
+                </button>
+              </div>
             </div>
 
             {productsList.length > 0 ? (
@@ -836,13 +1075,61 @@ export const AdminDashboard: React.FC = () => {
         {/* TAB: ORDERS */}
         {activeTab === 'orders' && (
           <div className="mt-8 space-y-6">
-            <div>
-              <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
-                CUSTOMER ORDERS &amp; CONSIGNMENTS
-              </h2>
-              <p className="text-xs text-gray-500 font-mono">
-                Order fulfillment and luxury courier statuses
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
+                  CUSTOMER ORDERS &amp; CONSIGNMENTS
+                </h2>
+                <p className="text-xs text-gray-500 font-mono">
+                  Order fulfillment and luxury courier statuses
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => exportTallyXml(ordersList)}
+                  className="px-3 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  title="Export orders as official Tally XML for direct import into Tally Prime / ERP 9"
+                >
+                  <Calculator className="w-3.5 h-3.5 text-[#936B34]" />
+                  <span>TALLY XML</span>
+                </button>
+
+                <button
+                  onClick={() => exportTallyExcel(ordersList)}
+                  className="px-3 py-2 bg-white border border-gray-200 text-gray-700 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  title="Export Tally-formatted Daybook spreadsheet"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-amber-600" />
+                  <span>TALLY EXCEL</span>
+                </button>
+
+                <button
+                  onClick={() => exportOrdersToExcel(ordersList)}
+                  className="px-3 py-2 bg-[#F9F9F8] border border-gray-200 text-gray-700 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  title="Export detailed orders and item breakdown to Excel"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>EXPORT EXCEL</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setItemBuilder({
+                      productId: productsList[0]?.id || '',
+                      size: productsList[0]?.variants?.[0]?.size || '38R',
+                      color: productsList[0]?.variants?.[0]?.color || 'Classic Atelier',
+                      quantity: 1,
+                      price: productsList[0]?.price || 0
+                    });
+                    setIsManualOrderOpen(true);
+                  }}
+                  className="px-4 py-2 bg-[#111827] text-white font-semibold text-xs uppercase tracking-wider hover:bg-[#936B34] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>ADD ORDER MANUALLY</span>
+                </button>
+              </div>
             </div>
 
             {ordersList.length > 0 ? (
@@ -914,13 +1201,24 @@ export const AdminDashboard: React.FC = () => {
         {/* TAB: CUSTOMERS */}
         {activeTab === 'customers' && (
           <div className="mt-8 space-y-6">
-            <div>
-              <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
-                CUSTOMER DIRECTORY
-              </h2>
-              <p className="text-xs text-gray-500 font-mono">
-                Atelier client accounts and bespoke profiles
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
+                  CUSTOMER DIRECTORY
+                </h2>
+                <p className="text-xs text-gray-500 font-mono">
+                  Atelier client accounts and bespoke profiles
+                </p>
+              </div>
+
+              <button
+                onClick={() => exportCustomersToExcel(customersList, ordersList)}
+                className="px-3.5 py-2 bg-[#F9F9F8] border border-gray-200 text-gray-700 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
+                title="Export complete patron database with order counts and spend to Excel"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-600" />
+                <span>EXPORT PATRONS EXCEL</span>
+              </button>
             </div>
 
             {customersList.length > 0 ? (
@@ -1057,6 +1355,228 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {/* TAB: TALLY & ERP REPORTS */}
+        {activeTab === 'erp-reports' && (
+          <div className="mt-8 space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
+                  ATELIER FINANCIAL LEDGER &amp; ERP INTEGRATION
+                </h2>
+                <p className="text-xs text-gray-500 font-mono">
+                  Export sales ledgers to Tally Prime / Tally.ERP 9, generate executive sales analytics, and audit revenue.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => exportTallyXml(ordersList)}
+                  className="px-3.5 py-2 bg-[#111827] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#936B34] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <Calculator className="w-3.5 h-3.5 text-[#936B34]" />
+                  <span>EXPORT TALLY XML</span>
+                </button>
+
+                <button
+                  onClick={() => exportSalesReportToExcel(ordersList, productsList)}
+                  className="px-3.5 py-2 bg-[#936B34] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#7D5A2B] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>EXECUTIVE SALES REPORT (.xlsx)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Financial Overview Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-[#F9F9F8] border border-gray-200 p-5 space-y-1 shadow-xs">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block font-medium">
+                  GROSS COMMISSIONS REVENUE
+                </span>
+                <p className="font-serif text-2xl font-light text-[#111827]">
+                  ${ordersList.reduce((sum, o) => sum + (o.total || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </p>
+                <span className="text-[11px] font-mono text-[#936B34] block">
+                  {ordersList.length} orders recorded
+                </span>
+              </div>
+
+              <div className="bg-[#F9F9F8] border border-gray-200 p-5 space-y-1 shadow-xs">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block font-medium">
+                  NET GARMENT SALES
+                </span>
+                <p className="font-serif text-2xl font-light text-[#111827]">
+                  ${ordersList.reduce((sum, o) => sum + (o.subtotal || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </p>
+                <span className="text-[11px] font-mono text-gray-500 block">
+                  Excluding tax &amp; courier freight
+                </span>
+              </div>
+
+              <div className="bg-[#F9F9F8] border border-gray-200 p-5 space-y-1 shadow-xs">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block font-medium">
+                  TOTAL LUXURY TAX COLLECTED
+                </span>
+                <p className="font-serif text-2xl font-light text-[#111827]">
+                  ${ordersList.reduce((sum, o) => sum + (o.tax || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </p>
+                <span className="text-[11px] font-mono text-gray-500 block">
+                  Tally output tax account
+                </span>
+              </div>
+
+              <div className="bg-[#F9F9F8] border border-gray-200 p-5 space-y-1 shadow-xs">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block font-medium">
+                  AVERAGE COMMISSION VALUE (AOV)
+                </span>
+                <p className="font-serif text-2xl font-light text-[#111827]">
+                  ${(ordersList.length > 0 ? (ordersList.reduce((sum, o) => sum + (o.total || 0), 0) / ordersList.length) : 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </p>
+                <span className="text-[11px] font-mono text-emerald-700 block font-medium">
+                  High-ticket luxury portfolio
+                </span>
+              </div>
+            </div>
+
+            {/* Integration Export Modules */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              
+              {/* Card 1: Tally Prime & Tally.ERP 9 XML */}
+              <div className="bg-white border border-gray-200 p-6 flex flex-col justify-between space-y-4 hover:border-[#936B34] transition-colors shadow-xs">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 bg-[#F9F9F8] border border-gray-200 flex items-center justify-center text-[#936B34]">
+                    <Calculator className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-serif text-lg text-[#111827] uppercase font-light">
+                    Tally Prime / ERP 9 (XML)
+                  </h3>
+                  <p className="text-xs text-gray-600 font-mono leading-relaxed">
+                    Official Tally Voucher XML schema. Maps directly into Tally with Sundry Debtors, Sales Account (Cr), and Luxury Output Tax (Cr). Ready for import via <em>Gateway of Tally &rarr; Import Data &rarr; Vouchers</em>.
+                  </p>
+                </div>
+                <button
+                  onClick={() => exportTallyXml(ordersList)}
+                  className="w-full py-2.5 bg-[#111827] text-white text-xs font-mono uppercase tracking-wider hover:bg-[#936B34] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>DOWNLOAD TALLY XML (.xml)</span>
+                </button>
+              </div>
+
+              {/* Card 2: Tally Excel Daybook */}
+              <div className="bg-white border border-gray-200 p-6 flex flex-col justify-between space-y-4 hover:border-[#936B34] transition-colors shadow-xs">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 bg-[#F9F9F8] border border-gray-200 flex items-center justify-center text-amber-600">
+                    <FileSpreadsheet className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-serif text-lg text-[#111827] uppercase font-light">
+                    Tally Daybook Excel
+                  </h3>
+                  <p className="text-xs text-gray-600 font-mono leading-relaxed">
+                    Standard columnar spreadsheet formatted for accounting audits and Excel daybook imports with voucher numbers, ledger accounts, cost centres, and transaction narrations.
+                  </p>
+                </div>
+                <button
+                  onClick={() => exportTallyExcel(ordersList)}
+                  className="w-full py-2.5 bg-white border border-gray-300 text-gray-800 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-600" />
+                  <span>DOWNLOAD DAYBOOK (.xlsx)</span>
+                </button>
+              </div>
+
+              {/* Card 3: Executive Sales Report */}
+              <div className="bg-white border border-gray-200 p-6 flex flex-col justify-between space-y-4 hover:border-[#936B34] transition-colors shadow-xs">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 bg-[#F9F9F8] border border-gray-200 flex items-center justify-center text-emerald-600">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-serif text-lg text-[#111827] uppercase font-light">
+                    Executive Sales &amp; Margin Report
+                  </h3>
+                  <p className="text-xs text-gray-600 font-mono leading-relaxed">
+                    Comprehensive multi-sheet financial workbook with executive KPI metrics, department revenue share, item sales velocity, and gross margins.
+                  </p>
+                </div>
+                <button
+                  onClick={() => exportSalesReportToExcel(ordersList, productsList)}
+                  className="w-full py-2.5 bg-emerald-800 text-white text-xs font-mono uppercase tracking-wider hover:bg-emerald-900 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>DOWNLOAD SALES REPORT (.xlsx)</span>
+                </button>
+              </div>
+
+              {/* Card 4: Orders Ledger */}
+              <div className="bg-white border border-gray-200 p-6 flex flex-col justify-between space-y-4 hover:border-[#936B34] transition-colors shadow-xs">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 bg-[#F9F9F8] border border-gray-200 flex items-center justify-center text-indigo-600">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-serif text-lg text-[#111827] uppercase font-light">
+                    Complete Orders &amp; Items Ledger
+                  </h3>
+                  <p className="text-xs text-gray-600 font-mono leading-relaxed">
+                    Two-sheet detailed consignment report containing order headers, customer contacts, payment statuses, and line-item SKU breakdowns.
+                  </p>
+                </div>
+                <button
+                  onClick={() => exportOrdersToExcel(ordersList)}
+                  className="w-full py-2.5 bg-white border border-gray-300 text-gray-800 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>EXPORT ORDERS EXCEL (.xlsx)</span>
+                </button>
+              </div>
+
+              {/* Card 5: Patron Lifetime Database */}
+              <div className="bg-white border border-gray-200 p-6 flex flex-col justify-between space-y-4 hover:border-[#936B34] transition-colors shadow-xs">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 bg-[#F9F9F8] border border-gray-200 flex items-center justify-center text-sky-600">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-serif text-lg text-[#111827] uppercase font-light">
+                    Patron CRM &amp; Spend Database
+                  </h3>
+                  <p className="text-xs text-gray-600 font-mono leading-relaxed">
+                    Customer directory with lifetime spend, VIP classification tiers, order counts, and last commission timestamps.
+                  </p>
+                </div>
+                <button
+                  onClick={() => exportCustomersToExcel(customersList, ordersList)}
+                  className="w-full py-2.5 bg-white border border-gray-300 text-gray-800 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5 text-sky-600" />
+                  <span>EXPORT PATRONS EXCEL (.xlsx)</span>
+                </button>
+              </div>
+
+              {/* Card 6: Inventory Valuation */}
+              <div className="bg-white border border-gray-200 p-6 flex flex-col justify-between space-y-4 hover:border-[#936B34] transition-colors shadow-xs">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 bg-[#F9F9F8] border border-gray-200 flex items-center justify-center text-[#936B34]">
+                    <Sliders className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-serif text-lg text-[#111827] uppercase font-light">
+                    Inventory Stock &amp; Valuation
+                  </h3>
+                  <p className="text-xs text-gray-600 font-mono leading-relaxed">
+                    Complete product inventory with SKU listings, variant sizes, stock numbers, fabrics, fits, and retail prices.
+                  </p>
+                </div>
+                <button
+                  onClick={() => exportProductsToExcel(productsList)}
+                  className="w-full py-2.5 bg-white border border-gray-300 text-gray-800 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#936B34]" />
+                  <span>EXPORT PRODUCTS EXCEL (.xlsx)</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
         {/* TAB: NOTIFICATIONS */}
         {activeTab === 'notifications' && (
           <div className="mt-8 space-y-6">
@@ -1131,8 +1651,8 @@ export const AdminDashboard: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-mono uppercase text-[#936B34] block font-medium">FLAGSHIP ATELIER</span>
-                  <p className="text-xs font-mono text-[#111827]">Park Avenue Flagship Atelier, Suite 740</p>
+                  <span className="text-[10px] font-mono uppercase text-[#936B34] block font-medium">ATELIER SALON</span>
+                  <p className="text-xs font-mono text-[#111827]">Park Avenue Mens Wear Atelier</p>
                 </div>
                 <div className="space-y-1">
                   <span className="text-[10px] font-mono uppercase text-[#936B34] block font-medium">COMMISSION CURRENCY</span>
@@ -1527,6 +2047,469 @@ export const AdminDashboard: React.FC = () => {
                   DISPATCH NOTIFICATION
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EXCEL PRODUCT IMPORT */}
+      {isExcelUploadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-2xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setIsExcelUploadOpen(false);
+                setParsedExcelProducts([]);
+                setExcelImportErrors([]);
+                setExcelFileName('');
+              }}
+              className="absolute top-5 right-5 text-gray-500 hover:text-[#111827] cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <div className="flex items-center gap-2 text-[#936B34] text-[10px] font-mono uppercase tracking-[0.25em] mb-1">
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>EXCEL CATALOGUE IMPORT</span>
+              </div>
+              <h3 className="font-serif text-2xl text-[#111827] uppercase tracking-wide font-light">
+                UPLOAD PRODUCTS SPREADSHEET
+              </h3>
+              <p className="text-xs text-gray-500 font-mono mt-1">
+                Import multiple garments simultaneously using Excel (.xlsx, .xls) or CSV.
+              </p>
+            </div>
+
+            {/* Template Download Alert */}
+            <div className="p-3.5 bg-white border border-gray-200 flex items-center justify-between text-xs font-mono">
+              <span className="text-gray-600">Need the standardized column structure?</span>
+              <button
+                type="button"
+                onClick={() => downloadProductExcelTemplate()}
+                className="text-[#936B34] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>DOWNLOAD TEMPLATE</span>
+              </button>
+            </div>
+
+            {/* Upload Zone */}
+            <div className="border-2 border-dashed border-gray-300 bg-white p-8 text-center space-y-3 hover:border-[#936B34] transition-colors">
+              <Upload className="w-8 h-8 text-[#936B34] mx-auto" />
+              <div>
+                <label className="text-xs font-mono uppercase tracking-wider text-[#111827] font-semibold cursor-pointer hover:text-[#936B34]">
+                  <span>SELECT EXCEL OR CSV FILE</span>
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls, .csv"
+                    onChange={handleExcelFileSelect}
+                    className="sr-only"
+                  />
+                </label>
+                <p className="text-[11px] text-gray-400 font-mono mt-1">
+                  Supports .xlsx, .xls, and .csv formats
+                </p>
+              </div>
+              {excelFileName && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#F9F9F8] border border-gray-200 text-xs font-mono text-[#111827]">
+                  <FileText className="w-3.5 h-3.5 text-[#936B34]" />
+                  <span>{excelFileName}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Parse Errors / Warnings */}
+            {excelImportErrors.length > 0 && (
+              <div className="p-4 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-mono space-y-1">
+                <div className="font-semibold flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 text-amber-700" />
+                  <span>IMPORT VALIDATION WARNINGS ({excelImportErrors.length}):</span>
+                </div>
+                <ul className="list-disc list-inside space-y-0.5 text-[11px] text-amber-800 max-h-28 overflow-y-auto">
+                  {excelImportErrors.map((err, idx) => (
+                    <li key={idx}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Parsed Garments Preview */}
+            {parsedExcelProducts.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="font-semibold text-emerald-800 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>READY FOR IMPORT: {parsedExcelProducts.length} GARMENTS</span>
+                  </span>
+                </div>
+
+                <div className="border border-gray-200 bg-white max-h-48 overflow-y-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200 sticky top-0">
+                      <tr>
+                        <th className="p-2.5">SKU</th>
+                        <th className="p-2.5">NAME</th>
+                        <th className="p-2.5">CATEGORY</th>
+                        <th className="p-2.5">PRICE</th>
+                        <th className="p-2.5">VARIANTS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {parsedExcelProducts.map((p, idx) => (
+                        <tr key={idx} className="hover:bg-black/[0.02]">
+                          <td className="p-2.5 text-[#936B34] font-medium">{p.sku}</td>
+                          <td className="p-2.5 text-[#111827]">{p.name}</td>
+                          <td className="p-2.5 text-gray-500">{p.category}</td>
+                          <td className="p-2.5 tabular-nums">${p.price.toLocaleString()}</td>
+                          <td className="p-2.5 text-gray-500">{p.variants?.length || 0} sizes</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmExcelImport}
+                  disabled={isImportingExcel}
+                  className="w-full py-3.5 bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs uppercase tracking-widest transition-colors cursor-pointer shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <FileUp className="w-4 h-4" />
+                  <span>
+                    {isImportingExcel
+                      ? 'IMPORTING TO VAULT...'
+                      : `CONFIRM & IMPORT ${parsedExcelProducts.length} GARMENTS`}
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: MANUAL ORDER COMMISSION */}
+      {isManualOrderOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-3xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative shadow-2xl max-h-[92vh] overflow-y-auto">
+            <button
+              onClick={() => setIsManualOrderOpen(false)}
+              className="absolute top-5 right-5 text-gray-500 hover:text-[#111827] cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <div className="flex items-center gap-2 text-[#936B34] text-[10px] font-mono uppercase tracking-[0.25em] mb-1">
+                <Plus className="w-4 h-4" />
+                <span>SALON CONSIGNMENT PROTOCOL</span>
+              </div>
+              <h3 className="font-serif text-2xl text-[#111827] uppercase tracking-wide font-light">
+                ADD ORDER MANUALLY
+              </h3>
+              <p className="text-xs text-gray-500 font-mono mt-1">
+                Record an in-salon acquisition, bespoke phone order, or VIP private fitting commission.
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveManualOrder} className="space-y-6">
+              
+              {/* Customer Details */}
+              <div className="bg-white border border-gray-200 p-5 space-y-4 shadow-xs">
+                <h4 className="text-[11px] font-mono uppercase tracking-widest text-[#936B34] font-semibold border-b border-gray-100 pb-2">
+                  1. CLIENT INFORMATION
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
+                      PATRON NAME *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={manualOrderForm.customerName}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, customerName: e.target.value })}
+                      placeholder="Lord Sterling"
+                      className="w-full bg-[#F9F9F8] border border-gray-200 px-3 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
+                      EMAIL ADDRESS
+                    </label>
+                    <input
+                      type="email"
+                      value={manualOrderForm.customerEmail}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, customerEmail: e.target.value })}
+                      placeholder="client@private.com"
+                      className="w-full bg-[#F9F9F8] border border-gray-200 px-3 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
+                      TELEPHONE
+                    </label>
+                    <input
+                      type="tel"
+                      value={manualOrderForm.customerPhone}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, customerPhone: e.target.value })}
+                      placeholder="+1 (212) 555-0199"
+                      className="w-full bg-[#F9F9F8] border border-gray-200 px-3 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Garment Selection & Line Items */}
+              <div className="bg-white border border-gray-200 p-5 space-y-4 shadow-xs">
+                <h4 className="text-[11px] font-mono uppercase tracking-widest text-[#936B34] font-semibold border-b border-gray-100 pb-2">
+                  2. GARMENT LINE ITEMS
+                </h4>
+                
+                {/* Item Selector Form */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end bg-[#F9F9F8] p-3.5 border border-gray-200">
+                  <div className="sm:col-span-4">
+                    <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1">
+                      SELECT PRODUCT
+                    </label>
+                    <select
+                      value={itemBuilder.productId}
+                      onChange={(e) => {
+                        const prod = productsList.find(p => p.id === e.target.value);
+                        setItemBuilder({
+                          ...itemBuilder,
+                          productId: e.target.value,
+                          size: prod?.variants?.[0]?.size || '38R',
+                          price: prod?.price || 0
+                        });
+                      }}
+                      className="w-full bg-white border border-gray-300 px-2.5 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    >
+                      <option value="">-- Choose Catalogue Garment --</option>
+                      {productsList.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (${p.price})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1">
+                      SIZE
+                    </label>
+                    <input
+                      type="text"
+                      value={itemBuilder.size}
+                      onChange={(e) => setItemBuilder({ ...itemBuilder, size: e.target.value })}
+                      placeholder="40R"
+                      className="w-full bg-white border border-gray-300 px-2.5 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1">
+                      QTY
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={itemBuilder.quantity}
+                      onChange={(e) => setItemBuilder({ ...itemBuilder, quantity: parseInt(e.target.value) || 1 })}
+                      className="w-full bg-white border border-gray-300 px-2.5 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1">
+                      PRICE ($)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={itemBuilder.price}
+                      onChange={(e) => setItemBuilder({ ...itemBuilder, price: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-white border border-gray-300 px-2.5 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <button
+                      type="button"
+                      onClick={handleAddItemToManualOrder}
+                      className="w-full py-2 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      + ADD ITEM
+                    </button>
+                  </div>
+                </div>
+
+                {/* Selected Items Table */}
+                {manualOrderForm.items.length > 0 ? (
+                  <div className="border border-gray-200 overflow-x-auto">
+                    <table className="w-full text-left text-xs font-mono">
+                      <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200">
+                        <tr>
+                          <th className="p-3">PRODUCT</th>
+                          <th className="p-3">SIZE</th>
+                          <th className="p-3">QTY</th>
+                          <th className="p-3">UNIT PRICE</th>
+                          <th className="p-3">LINE TOTAL</th>
+                          <th className="p-3 text-right">ACTION</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {manualOrderForm.items.map((it, idx) => (
+                          <tr key={idx}>
+                            <td className="p-3 text-[#111827] font-medium">{it.productName}</td>
+                            <td className="p-3 text-gray-500">{it.size}</td>
+                            <td className="p-3">{it.quantity}</td>
+                            <td className="p-3 tabular-nums">${it.price.toLocaleString()}</td>
+                            <td className="p-3 tabular-nums font-semibold text-[#111827]">
+                              ${(it.price * it.quantity).toLocaleString()}
+                            </td>
+                            <td className="p-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveManualItem(idx)}
+                                className="text-red-500 hover:text-red-700 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 inline" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-700 bg-amber-50 p-3 border border-amber-200 font-mono">
+                    No garments added yet. Use the garment selector above to add at least one line item.
+                  </p>
+                )}
+              </div>
+
+              {/* Accounting & Status */}
+              <div className="bg-white border border-gray-200 p-5 space-y-4 shadow-xs">
+                <h4 className="text-[11px] font-mono uppercase tracking-widest text-[#936B34] font-semibold border-b border-gray-100 pb-2">
+                  3. STATUS &amp; SETTLEMENT DETAILS
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
+                      ORDER STATUS
+                    </label>
+                    <select
+                      value={manualOrderForm.orderStatus}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, orderStatus: e.target.value })}
+                      className="w-full bg-[#F9F9F8] border border-gray-200 px-3 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    >
+                      <option value="Order Confirmed">Order Confirmed</option>
+                      <option value="Processing">Processing</option>
+                      <option value="Packed">Packed</option>
+                      <option value="Shipped">Shipped</option>
+                      <option value="Delivered">Delivered</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
+                      PAYMENT STATUS
+                    </label>
+                    <select
+                      value={manualOrderForm.paymentStatus}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, paymentStatus: e.target.value })}
+                      className="w-full bg-[#F9F9F8] border border-gray-200 px-3 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    >
+                      <option value="Paid">Paid (Settled)</option>
+                      <option value="Authorized">Authorized / Reserved</option>
+                      <option value="Pending">Pending Payment</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
+                      PAYMENT METHOD
+                    </label>
+                    <select
+                      value={manualOrderForm.paymentMethod}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, paymentMethod: e.target.value })}
+                      className="w-full bg-[#F9F9F8] border border-gray-200 px-3 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    >
+                      <option value="In-Salon POS / Cash">In-Salon POS / Cash</option>
+                      <option value="Amex Luxury Concierge">Amex Luxury Concierge</option>
+                      <option value="Wire Transfer">Wire Transfer / Private Bank</option>
+                      <option value="Direct Client Ledger">Direct Client Ledger</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Alterations Toggle */}
+                <div className="pt-2 border-t border-gray-100 space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={manualOrderForm.alterationRequested}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, alterationRequested: e.target.checked })}
+                      className="accent-[#936B34] w-4 h-4"
+                    />
+                    <span className="text-xs font-mono uppercase tracking-wider text-[#111827] font-semibold">
+                      BESPOKE TAILORING / ALTERATION INCLUDED
+                    </span>
+                  </label>
+
+                  {manualOrderForm.alterationRequested && (
+                    <textarea
+                      rows={2}
+                      value={manualOrderForm.alterationNotes}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, alterationNotes: e.target.value })}
+                      placeholder="Fitting notes (e.g. Inseam 31.5in with 1.75in cuff, take in jacket waist 1in)..."
+                      className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Financial Calculation Breakdown */}
+              {(() => {
+                const subtotal = manualOrderForm.items.reduce((sum, it) => sum + (it.price * it.quantity), 0);
+                const tax = subtotal * 0.08875;
+                const shipping = Number(manualOrderForm.shippingFee || 0);
+                const grandTotal = subtotal + tax + shipping;
+
+                return (
+                  <div className="bg-[#111827] text-white p-5 space-y-2 font-mono text-xs shadow-md">
+                    <div className="flex justify-between text-gray-400">
+                      <span>GARMENT SUBTOTAL</span>
+                      <span>${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-400">
+                      <span>LUXURY SALES TAX (8.875%)</span>
+                      <span>${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-400">
+                      <span>EXPRESS FREIGHT / COURIER</span>
+                      <span>${shipping.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-base font-serif text-[#936B34] pt-2 border-t border-gray-800">
+                      <span>TOTAL CONSIGNMENT VALUE</span>
+                      <span className="tabular-nums font-bold">${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={manualOrderForm.items.length === 0}
+                  className="w-full py-4 bg-[#936B34] hover:bg-[#7D5A2B] text-white font-semibold text-xs uppercase tracking-widest transition-colors cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  RECORD CONSIGNMENT ORDER
+                </button>
+              </div>
+
             </form>
           </div>
         </div>
