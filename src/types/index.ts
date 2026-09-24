@@ -1,51 +1,43 @@
 export type ProductCategory =
   | 'Suits'
-  | 'Dress shirts'
-  | 'Dress Shirts'
-  | 'Ties'
-  | 'Shoe'
-  | 'Shoes'
-  | 'Boots'
-  | 'Loofers'
-  | 'Loafers'
+  | 'Blazers & Jackets'
+  | 'Shirts'
   | 'Pants'
-  | 'Dress Pants'
-  | 'Jeans'
-  | 'Leather jackets'
-  | 'Leather Jackets'
-  | 'Sweaters'
-  | 'Coats'
-  | 'Polo shirts'
-  | 'Polo Shirts'
+  | 'Outerwear'
+  | 'Sweaters & Knitwear'
+  | 'Footwear'
+  | 'Accessories'
   | 'Shorts'
-  | 'New Arrivals'
-  | 'All';
+  // Legacy product values kept for backwards compatibility with existing catalog data.
+  | 'Dress shirts' | 'Dress Shirts' | 'Ties' | 'Shoe' | 'Shoes' | 'Boots'
+  | 'Loofers' | 'Loafers' | 'Dress Pants' | 'Jeans' | 'Leather jackets'
+  | 'Leather Jackets' | 'Sweaters' | 'Coats' | 'Polo shirts' | 'Polo Shirts'
+  | 'New Arrivals' | 'All';
 
 export interface CategoryItem {
   id: string;
   name: string;
   queryValue: ProductCategory;
   description: string;
-  iconName?: string;
-  tagline?: string;
+  subcategories: string[];
 }
 
+export const PRODUCT_CATEGORY_CATALOG: CategoryItem[] = [
+  { id: 'suits', name: 'Suits', queryValue: 'Suits', description: 'Suits and formal tailoring', subcategories: ['Suits', 'Dress Suits'] },
+  { id: 'blazers-jackets', name: 'Blazers & Jackets', queryValue: 'Blazers & Jackets', description: 'Blazers and leather jackets', subcategories: ['Blazers', 'Leather Jackets'] },
+  { id: 'shirts', name: 'Shirts', queryValue: 'Shirts', description: 'Formal and casual shirts', subcategories: ['Dress Shirts', 'Polo Shirts'] },
+  { id: 'pants', name: 'Pants', queryValue: 'Pants', description: 'Tailored trousers and denim', subcategories: ['Dress Pants / Pants', 'Jeans'] },
+  { id: 'outerwear', name: 'Outerwear', queryValue: 'Outerwear', description: 'Coats and outer layers', subcategories: ['Coats'] },
+  { id: 'sweaters-knitwear', name: 'Sweaters & Knitwear', queryValue: 'Sweaters & Knitwear', description: 'Sweaters and knitwear', subcategories: ['Sweaters'] },
+  { id: 'footwear', name: 'Footwear', queryValue: 'Footwear', description: 'Shoes and boots', subcategories: ['Shoes', 'Boots'] },
+  { id: 'accessories', name: 'Accessories', queryValue: 'Accessories', description: 'Finishing accessories', subcategories: ['Ties'] },
+  { id: 'shorts', name: 'Shorts', queryValue: 'Shorts', description: 'Tailored and casual shorts', subcategories: ['Shorts'] }
+];
+
 export const OFFICIAL_CATEGORIES: CategoryItem[] = [
-  { id: 'all', name: 'All Collections', queryValue: 'All', description: 'Explore the complete Park Avenue Sartorial vault' },
-  { id: 'suits', name: 'Suits', queryValue: 'Suits', description: 'Double-breasted and two-piece suits hand-cut from Super 150s-180s wool' },
-  { id: 'dress-shirts', name: 'Dress Shirts', queryValue: 'Dress shirts', description: 'Tailored from Egyptian Giza 87 and Sea Island cotton' },
-  { id: 'ties', name: 'Ties', queryValue: 'Ties', description: 'Handcrafted Grenadine and 7-fold silk neckwear from Como' },
-  { id: 'shoe', name: 'Shoe', queryValue: 'Shoe', description: 'Goodyear-welted Oxford and Derby leather dress shoes' },
-  { id: 'boots', name: 'Boots', queryValue: 'Boots', description: 'Balmoral dress boots and sculpted Chelsea boots' },
-  { id: 'loofers', name: 'Loofers', queryValue: 'Loofers', description: 'Hand-sewn Belgian tasselled loofers and French calf penny loofers' },
-  { id: 'pants', name: 'Pants', queryValue: 'Pants', description: 'High-rise pleated trousers with side adjusters and unfinished hems' },
-  { id: 'jeans', name: 'Jeans', queryValue: 'Jeans', description: 'Japanese selvedge denim tailored to sartorial trouser proportions' },
-  { id: 'leather-jackets', name: 'Leather Jackets', queryValue: 'Leather jackets', description: 'Supple full-grain lambskin and burnished suede flight jackets' },
-  { id: 'sweaters', name: 'Sweaters', queryValue: 'Sweaters', description: '4-ply Scottish cashmere and extra-fine Merino knitwear' },
-  { id: 'coats', name: 'Coats', queryValue: 'Coats', description: 'Double-breasted overcoats in pure cashmere and camel hair' },
-  { id: 'polo-shirts', name: 'Polo Shirts', queryValue: 'Polo shirts', description: 'Long and short-sleeve knit polos in Sea Island silk-cotton' },
-  { id: 'shorts', name: 'Shorts', queryValue: 'Shorts', description: 'Pleated linen-cotton and tropical wool tailored walk shorts' },
-  { id: 'new-arrivals', name: 'New Arrivals', queryValue: 'New Arrivals', description: 'The latest seasonal cuts from the sartorial atelier' }
+  { id: 'all', name: 'All Collections', queryValue: 'All', description: 'Explore the complete Park Avenue collection', subcategories: [] },
+  ...PRODUCT_CATEGORY_CATALOG,
+  { id: 'new-arrivals', name: 'New Arrivals', queryValue: 'New Arrivals', description: 'The latest arrivals', subcategories: [] }
 ];
 
 export interface ProductVariant {
