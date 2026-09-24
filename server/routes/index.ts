@@ -9,6 +9,7 @@ import customerRoutes from './customerRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
+import categoryRoutes from './categoryRoutes.js';
 import { API_DOCUMENTATION } from '../docs/apiDocs.js';
 import { isDbConnected } from '../config/db.js';
 
@@ -35,6 +36,7 @@ apiRouter.get('/docs', (_req: Request, res: Response) => {
 // Core API Modules
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/products', productRoutes);
+apiRouter.use('/categories', categoryRoutes);
 apiRouter.use('/cart', cartRoutes);
 apiRouter.use('/orders', orderRoutes);
 apiRouter.use('/alterations', alterationRoutes);
