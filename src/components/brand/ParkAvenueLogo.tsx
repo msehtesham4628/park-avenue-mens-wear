@@ -91,82 +91,33 @@ export const ParkAvenueLogo: React.FC<ParkAvenueLogoProps> = ({
     </svg>
   );
 
-  // Mark-only layout
+  const logoSource = '/20260925_004137_0000.png';
+
+  // Use the supplied Park Avenue artwork as the single source of truth for
+  // the brand mark. Keeping it as an image prevents the header/favicon from
+  // drifting away from the client's supplied artwork.
   if (variant === 'mark') {
     const dim = size === 'sm' ? 32 : size === 'lg' ? 64 : size === 'xl' ? 84 : 44;
     return (
       <div className={`inline-flex items-center justify-center ${className}`}>
-        <Emblem w={dim} h={dim} />
+        <img src={logoSource} alt="Park Avenue Menswear" width={dim} height={dim} className="object-contain" />
       </div>
     );
   }
 
-  // Stacked Layout (Exact replication of official luxury mark)
   if (variant === 'stacked') {
-    const scale = size === 'sm' ? 'max-w-[200px]' : size === 'lg' ? 'max-w-[340px]' : size === 'xl' ? 'max-w-[420px]' : 'max-w-[260px]';
+    const width = size === 'sm' ? 200 : size === 'lg' ? 340 : size === 'xl' ? 420 : 260;
     return (
-      <div className={`flex flex-col items-center text-center ${scale} ${className}`}>
-        {/* Gentleman + Needle Emblem */}
-        <div className="mb-2">
-          <Emblem w={size === 'lg' || size === 'xl' ? 96 : 72} h={size === 'lg' || size === 'xl' ? 96 : 72} />
-        </div>
-
-        {/* "PARK AVENUE" Serif Typography */}
-        <h1 
-          className="font-serif font-semibold tracking-[0.24em] uppercase text-[#111827] transition-colors leading-none"
-          style={{
-            fontSize: size === 'xl' ? '2.25rem' : size === 'lg' ? '1.75rem' : size === 'sm' ? '1.1rem' : '1.35rem',
-            color: primaryColor
-          }}
-        >
-          PARK AVENUE
-        </h1>
-
-        {/* Subtitle Bar with Flanking Hairlines */}
-        <div className="w-full flex items-center justify-center gap-2 sm:gap-3 mt-1.5 opacity-90">
-          <div className="h-[1px] flex-1 max-w-[50px] sm:max-w-[70px] bg-current opacity-60" style={{ backgroundColor: primaryColor }} />
-          <span 
-            className="font-serif tracking-[0.38em] uppercase font-light text-[9px] sm:text-[10px] whitespace-nowrap"
-            style={{ color: primaryColor }}
-          >
-            MEN&apos;S WEAR
-          </span>
-          <div className="h-[1px] flex-1 max-w-[50px] sm:max-w-[70px] bg-current opacity-60" style={{ backgroundColor: primaryColor }} />
-        </div>
+      <div className={`flex items-center justify-center ${className}`} style={{ maxWidth: width }}>
+        <img src={logoSource} alt="Park Avenue Menswear" className="w-full h-auto max-h-40 object-contain" />
       </div>
     );
   }
 
-  // Horizontal Layout (Ideal for Sticky Navigation Bar)
-  const iconDim = size === 'sm' ? 36 : size === 'lg' ? 52 : 44;
-  const titleSize = size === 'sm' ? 'text-base tracking-[0.2em]' : size === 'lg' ? 'text-2xl tracking-[0.24em]' : 'text-lg sm:text-xl tracking-[0.22em]';
-  const subtitleSize = size === 'sm' ? 'text-[8px] tracking-[0.32em]' : 'text-[9px] sm:text-[10px] tracking-[0.36em]';
-
+  const width = size === 'sm' ? 150 : size === 'lg' ? 220 : 190;
   return (
-    <div className={`flex items-center gap-3 select-none ${className}`}>
-      {/* Emblem Icon */}
-      <Emblem w={iconDim} h={iconDim} showThread={true} />
-
-      {/* Typography Column */}
-      <div className="flex flex-col text-left leading-none">
-        <span 
-          className={`font-serif font-medium uppercase transition-colors whitespace-nowrap ${titleSize}`}
-          style={{ color: primaryColor }}
-        >
-          PARK AVENUE
-        </span>
-        
-        <div className="flex items-center gap-2 mt-1 opacity-80">
-          <div className="h-[1px] w-3 bg-current opacity-50" style={{ backgroundColor: primaryColor }} />
-          <span 
-            className={`font-serif font-light uppercase whitespace-nowrap ${subtitleSize}`}
-            style={{ color: primaryColor }}
-          >
-            MEN&apos;S WEAR
-          </span>
-          <div className="h-[1px] w-3 bg-current opacity-50" style={{ backgroundColor: primaryColor }} />
-        </div>
-      </div>
+    <div className={`flex items-center select-none ${className}`} style={{ width }}>
+      <img src={logoSource} alt="Park Avenue Menswear" className="w-full h-auto max-h-14 object-contain object-left" />
     </div>
   );
 };
