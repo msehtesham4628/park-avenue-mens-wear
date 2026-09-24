@@ -250,10 +250,11 @@ export const productService = {
 
     const productId = `PROD-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 900 + 100)}`;
 
-    const processedVariants: IProductVariant[] = data.variants.map((v, i) => ({
-      id: `var-${productId}-${i}`,
+    const processedVariants: IProductVariant[] = data.variants.map((v: any, i) => ({
+      id: v.id || `var-${productId}-${i}`,
       size: v.size,
       color: v.color,
+      colorHex: v.colorHex,
       stock: Math.max(0, v.stock || 0),
       sku: v.sku || `${data.sku}-${v.size.replace(/\s+/g, '')}`
     }));
