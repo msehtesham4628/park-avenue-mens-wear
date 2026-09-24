@@ -101,13 +101,24 @@ export const orderController = {
   /**
    * GET /api/orders/:id
    */
-  async getOrderById(req: Request, res: Response) {
+  async getOrderById(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params;
       const order = await OrderModel.findOne({ orderId: id }).lean();
 
       if (!order) {
         return res.status(404).json({ success: false, message: `Order ${id} not found.` });
+      }
+
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: 'Authentication required.' });
+      }
+
+      if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+        const ownsOrder = order.customerId === req.user.customerId || order.customerEmail === req.user.email.toLowerCase();
+        if (!ownsOrder) {
+          return res.status(403).json({ success: false, message: 'Access denied: this order does not belong to the authenticated customer.' });
+        }
       }
 
       return res.status(200).json({
