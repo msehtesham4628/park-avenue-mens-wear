@@ -145,6 +145,44 @@ export const productController = {
   },
 
   /**
+   * POST /api/admin/products/batch
+   * Creates already-grouped Excel products in MongoDB as one document per garment.
+   */
+  async batchCreateProducts(req: AuthenticatedRequest, res: Response) {
+    try {
+      const user = req.user || { id: 'ADMIN', name: 'Admin', email: 'admin@parkavenuemenswear.com', role: 'admin' };
+      const products = Array.isArray(req.body?.products) ? req.body.products : [];
+      if (products.length === 0) return res.status(400).json({ success: false, message: 'No products supplied.' });
+      if (products.length > 500) return res.status(400).json({ success: false, message: 'Maximum 500 products per import.' });
+
+      const created = [];
+      for (const item of products) {
+        created.push(await productService.createProduct({
+          name: item.name,
+          sku: item.sku,
+          description: item.description || 'Master crafted bespoke menswear.',
+          category: item.category,
+          subcategory: item.subcategory,
+          price: Number(item.price),
+          salePrice: item.salePrice !== undefined ? Number(item.salePrice) : undefined,
+          images: Array.isArray(item.images) ? item.images : [],
+          variants: Array.isArray(item.variants) ? item.variants : [],
+          lowStockThreshold: item.lowStockThreshold !== undefined ? Number(item.lowStockThreshold) : 3,
+          isFeatured: Boolean(item.isFeatured),
+          isNewArrival: item.isNewArrival !== undefined ? Boolean(item.isNewArrival) : true,
+          fabric: item.fabric,
+          fit: item.fit,
+          careInstructions: Array.isArray(item.care) ? item.care : (Array.isArray(item.careInstructions) ? item.careInstructions : [])
+        }, { id: user.id, name: user.name, email: user.email, role: user.role }));
+      }
+
+      return res.status(201).json({ success: true, data: created, message: `${created.length} products imported into MongoDB.` });
+    } catch (err: any) {
+      return res.status(400).json({ success: false, message: err.message || 'Batch import failed.' });
+    }
+  },
+
+  /**
    * PUT /api/admin/products/:id
    */
   async updateProduct(req: AuthenticatedRequest, res: Response) {
