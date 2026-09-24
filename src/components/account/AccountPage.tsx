@@ -12,6 +12,7 @@ import { useShop } from '../../context/ShopContext';
 import { AuthService } from '../../services/api';
 import { Order, AlterationRecord } from '../../types';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
+import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 
 export const AccountPage: React.FC = () => {
   const { 
@@ -68,9 +69,7 @@ export const AccountPage: React.FC = () => {
         {/* Profile Header */}
         <div className="py-8 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-[#F9F9F8] border border-[#936B34]/50 flex items-center justify-center font-serif text-xl text-[#936B34] tracking-widest shadow-md">
-              PA
-            </div>
+            <ParkAvenueLogo variant="mark" size="lg" className="w-16 h-16 bg-[#F9F9F8] border border-[#936B34]/50 p-1 shadow-md" />
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-serif text-2xl sm:text-3xl text-[#111827] uppercase tracking-wide font-light">
@@ -168,9 +167,7 @@ export const AccountPage: React.FC = () => {
           <div className="space-y-6">
             {customerOrders.length === 0 ? (
               <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-2xl">
-                <div className="w-12 h-12 mb-6 border border-[#936B34]/50 flex items-center justify-center font-serif text-base text-[#936B34] tracking-widest bg-white shadow-md">
-                  PA
-                </div>
+                <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6 border border-[#936B34]/50 p-1 bg-white shadow-md" />
                 <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
@@ -240,9 +237,7 @@ export const AccountPage: React.FC = () => {
           <div>
             {wishlistedProducts.length === 0 ? (
               <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-2xl">
-                <div className="w-12 h-12 mb-6 border border-[#936B34]/50 flex items-center justify-center font-serif text-base text-[#936B34] tracking-widest bg-white shadow-md">
-                  PA
-                </div>
+                <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6 border border-[#936B34]/50 p-1 bg-white shadow-md" />
                 <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
@@ -307,9 +302,7 @@ export const AccountPage: React.FC = () => {
           <div>
             {customerAlterations.length === 0 ? (
               <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-2xl">
-                <div className="w-12 h-12 mb-6 border border-[#936B34]/50 flex items-center justify-center font-serif text-base text-[#936B34] tracking-widest bg-white shadow-md">
-                  PA
-                </div>
+                <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6 border border-[#936B34]/50 p-1 bg-white shadow-md" />
                 <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
