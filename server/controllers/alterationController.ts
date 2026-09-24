@@ -108,13 +108,24 @@ export const alterationController = {
   /**
    * GET /api/alterations/:id
    */
-  async getAlterationById(req: Request, res: Response) {
+  async getAlterationById(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params;
       const alteration = await AlterationModel.findOne({ alterationId: id }).lean();
 
       if (!alteration) {
         return res.status(404).json({ success: false, message: `Alteration ticket ${id} not found.` });
+      }
+
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: 'Authentication required.' });
+      }
+
+      if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+        const ownsAlteration = alteration.customerId === req.user.customerId || alteration.customerEmail === req.user.email.toLowerCase();
+        if (!ownsAlteration) {
+          return res.status(403).json({ success: false, message: 'Access denied: this alteration does not belong to the authenticated customer.' });
+        }
       }
 
       return res.status(200).json({
