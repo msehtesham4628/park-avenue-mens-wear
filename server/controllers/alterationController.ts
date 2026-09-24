@@ -243,7 +243,7 @@ export const alterationController = {
       return res.status(200).json({
         success: true,
         data: alteration,
-        message: `Alteration status updated to ${status}. Notification dispatched.`
+        message: `Alteration status updated to ${status}. Notification recorded; delivery depends on the configured notification provider.`
       });
     } catch (err: any) {
       return res.status(400).json({ success: false, message: err.message });
