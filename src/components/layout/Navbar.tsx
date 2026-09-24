@@ -33,6 +33,7 @@ export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [openCategoryDropdown, setOpenCategoryDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export const Navbar: React.FC = () => {
     setSelectedCategory(category);
     setActiveView('shop');
     setIsCategoriesOpen(false);
+    setOpenCategoryDropdown(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -149,31 +151,47 @@ export const Navbar: React.FC = () => {
               >
                 NEW ARRIVALS
               </button>
-              <button 
-                onClick={() => handleNavCategory('Suits')} 
-                className="hover:text-black transition-colors relative py-1 cursor-pointer"
-              >
-                SUITS
-              </button>
-              <button 
-                onClick={() => handleNavCategory('Blazers & Jackets')} 
-                className="hover:text-black transition-colors relative py-1 cursor-pointer whitespace-nowrap"
-              >
-                BLAZERS & JACKETS
-              </button>
-              <button 
-                onClick={() => handleNavCategory('Shirts')} 
-                className="hover:text-black transition-colors relative py-1 cursor-pointer"
-              >
-                SHIRTS
-              </button>
-              <button 
-                onClick={() => handleNavCategory('Pants')} 
-                className="hover:text-black transition-colors relative py-1 cursor-pointer"
-              >
-                PANTS
-              </button>
-
+              {['suits', 'blazers-jackets', 'shirts', 'pants'].map(categoryId => {
+                const category = OFFICIAL_CATEGORIES.find(c => c.id === categoryId);
+                if (!category) return null;
+                const isOpen = openCategoryDropdown === category.id;
+                return (
+                  <div
+                    key={category.id}
+                    className="relative"
+                    onMouseEnter={() => setOpenCategoryDropdown(category.id)}
+                    onMouseLeave={() => setOpenCategoryDropdown(null)}
+                  >
+                    <button
+                      onClick={() => setOpenCategoryDropdown(isOpen ? null : category.id)}
+                      className={"flex items-center gap-1 hover:text-black transition-colors relative py-1 cursor-pointer whitespace-nowrap " + (isOpen ? 'text-[#936B34]' : '')}
+                      aria-expanded={isOpen}
+                    >
+                      <span>{category.name.toUpperCase()}</span>
+                      <ChevronDown className={"w-3 h-3 transition-transform duration-200 " + (isOpen ? 'rotate-180 text-[#936B34]' : '')} />
+                    </button>
+                    {isOpen && (
+                      <div className="absolute top-full left-0 mt-2 min-w-[190px] bg-white border border-gray-200 shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                        <button
+                          onClick={() => handleNavCategory(category.queryValue)}
+                          className="w-full text-left px-3 py-2 text-[10px] uppercase tracking-wider font-semibold text-[#936B34] hover:bg-[#F9F9F8]"
+                        >
+                          All {category.name}
+                        </button>
+                        {category.subcategories.map(subcategory => (
+                          <button
+                            key={subcategory}
+                            onClick={() => handleNavCategory(subcategory)}
+                            className="w-full text-left px-3 py-2 text-[11px] text-gray-700 hover:bg-[#F9F9F8] hover:text-[#936B34] transition-colors"
+                          >
+                            {subcategory}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {/* All Categories Dropdown Mega Menu */}
               <div 
                 ref={dropdownRef}
