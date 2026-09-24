@@ -5,7 +5,7 @@ interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElemen
   category?: string;
 }
 
-const BRAND_LOGO = '/park-avenue-logo.svg';
+const BRAND_LOGO = '/Park_Avenue_Logo.png';
 
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
