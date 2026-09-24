@@ -903,53 +903,11 @@ export const AuthService = {
       }
       return { success: true, customer, token, message: data.message };
     } catch (err: any) {
-      console.warn('[AuthService] Network login fallback:', err);
-      const cleanId = usernameOrEmail.trim().toLowerCase();
-      const isMasterAdminPass = password === 'ParkAvenue2026!' || password.toLowerCase() === 'parkavenue2026!' || password.toLowerCase() === 'parkmens' || password.toLowerCase() === 'admin';
-      
-      if ((cleanId === 'admin' || cleanId === 'admin@parkavenuemenswear.com' || cleanId === 'parkmens@admin.com' || cleanId === 'parkmens') && isMasterAdminPass) {
-        const adminUser = {
-          id: cleanId.includes('parkmens') ? 'CUST-ADMIN-PARKMENS' : 'CUST-ADM-001',
-          name: cleanId.includes('parkmens') ? 'Park Avenue Mens Admin' : 'Executive Director',
-          username: cleanId.includes('parkmens') ? 'parkmens' : 'admin',
-          email: cleanId === 'parkmens@admin.com' || cleanId === 'parkmens' ? 'parkmens@admin.com' : 'admin@parkavenuemenswear.com',
-          phone: '+1 (212) 555-0100',
-          role: 'admin'
-        };
-        const token = 'mock-jwt-admin-' + Date.now();
-        localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(adminUser));
-        return { success: true, customer: adminUser, token, message: 'Welcome to Park Avenue Mens Wear!' };
-      }
-      if ((cleanId === 'tailor' || cleanId === 'tailor@parkavenuemenswear.com' || cleanId === 'staff') && (isMasterAdminPass || password.toLowerCase() === 'tailor')) {
-        const staffUser = {
-          id: 'CUST-STF-001',
-          name: 'Giovanni Rossi (Head Tailor)',
-          username: 'tailor',
-          email: 'tailor@parkavenuemenswear.com',
-          phone: '+1 (212) 555-0102',
-          role: 'staff'
-        };
-        const token = 'mock-jwt-staff-' + Date.now();
-        localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(staffUser));
-        return { success: true, customer: staffUser, token, message: 'Welcome to Park Avenue Mens Wear!' };
-      }
-      if ((cleanId === 'marcus' || cleanId === 'marcus.sterling@example.com' || cleanId === 'patron' || cleanId === 'patron@parkavenuemenswear.com' || cleanId === 'client') && (isMasterAdminPass || password.toLowerCase() === 'patron')) {
-        const customerUser = {
-          id: 'CUST-2026-0001',
-          name: 'Marcus Sterling',
-          username: cleanId.includes('patron') ? 'patron' : 'marcus',
-          email: cleanId.includes('patron') ? 'patron@parkavenuemenswear.com' : 'marcus.sterling@example.com',
-          phone: '+1 (212) 555-0199',
-          role: 'customer'
-        };
-        const token = 'mock-jwt-cust-' + Date.now();
-        localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(customerUser));
-        return { success: true, customer: customerUser, token, message: 'Welcome to Park Avenue Mens Wear!' };
-      }
-      return { success: false, message: 'Invalid username or password. For demo access, use: ParkAvenue2026!' };
+      console.warn('[AuthService] Network login failed:', err);
+      return {
+        success: false,
+        message: 'Unable to reach the authentication service. Please try again.'
+      };
     }
   },
 
