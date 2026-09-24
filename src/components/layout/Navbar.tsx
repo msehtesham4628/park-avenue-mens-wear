@@ -156,22 +156,22 @@ export const Navbar: React.FC = () => {
                 SUITS
               </button>
               <button 
-                onClick={() => handleNavCategory('Dress shirts')} 
-                className="hover:text-black transition-colors relative py-1 cursor-pointer"
+                onClick={() => handleNavCategory('Blazers & Jackets')} 
+                className="hover:text-black transition-colors relative py-1 cursor-pointer whitespace-nowrap"
               >
-                DRESS SHIRTS
+                BLAZERS & JACKETS
               </button>
               <button 
-                onClick={() => handleNavCategory('Shoe')} 
+                onClick={() => handleNavCategory('Shirts')} 
                 className="hover:text-black transition-colors relative py-1 cursor-pointer"
               >
-                SHOES
+                SHIRTS
               </button>
               <button 
-                onClick={() => handleNavCategory('Coats')} 
+                onClick={() => handleNavCategory('Pants')} 
                 className="hover:text-black transition-colors relative py-1 cursor-pointer"
               >
-                COATS
+                PANTS
               </button>
 
               {/* All Categories Dropdown Mega Menu */}
@@ -205,11 +205,11 @@ export const Navbar: React.FC = () => {
                         onClick={() => handleNavCategory('All')} 
                         className="text-[10px] text-gray-500 hover:text-black underline uppercase tracking-widest"
                       >
-                        VIEW ALL (13 DEPARTMENTS)
+                        VIEW ALL COLLECTIONS
                       </button>
                     </div>
 
-                    {/* 13 Categories Grid */}
+                    {/* Complete category hierarchy */}
                     <div className="grid grid-cols-3 gap-2">
                       {OFFICIAL_CATEGORIES.filter(c => c.id !== 'all' && c.id !== 'new-arrivals').map(cat => (
                         <button
