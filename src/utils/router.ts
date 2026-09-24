@@ -99,6 +99,9 @@ export function parseRoute(pathname?: string): RouteMatch {
     case 'home':
       return { view: 'home' };
 
+    case 'welcome':
+      return { view: 'welcome' };
+
     case 'admin':
       return { view: 'admin' };
 
@@ -208,6 +211,9 @@ export function buildUrl(params: {
   switch (view) {
     case 'home':
       return '/';
+
+    case 'welcome':
+      return '/welcome';
 
     case 'admin':
       return '/admin';
