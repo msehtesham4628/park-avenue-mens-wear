@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Search, Heart, User, Compass, Scissors, Layers, LogIn, LogOut } from 'lucide-react';
+import { X, Search, Heart, User, Compass, Scissors, Layers, LogIn, LogOut, ChevronDown } from 'lucide-react';
 import { useShop, AppView } from '../../context/ShopContext';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { OFFICIAL_CATEGORIES } from '../../types';
@@ -22,6 +22,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
   } = useShop();
 
   if (!isOpen) return null;
+
+  const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null);
 
   const handleNav = (view: AppView, category?: string) => {
     if (category) {
@@ -100,17 +102,49 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                 DEPARTMENTS &amp; CATEGORIES
               </span>
             </div>
-            <div className="grid grid-cols-1 gap-1">
-              {OFFICIAL_CATEGORIES.filter(c => c.id !== 'all' && c.id !== 'new-arrivals').map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => handleNav('shop', cat.queryValue)}
-                  className="w-full text-left py-2 px-2 text-xs uppercase font-sans tracking-wider text-gray-700 hover:text-black hover:bg-[#F9F9F8] transition-colors flex items-center justify-between rounded-xs cursor-pointer"
-                >
-                  <span className="font-medium">{cat.name}</span>
-                  <span className="text-[10px] text-gray-600 font-mono tracking-normal capitalize">{cat.id}</span>
-                </button>
-              ))}
+            <div className="space-y-1">
+              {OFFICIAL_CATEGORIES.filter(c => c.id !== 'all' && c.id !== 'new-arrivals').map(cat => {
+                const isExpanded = expandedCategory === cat.id;
+                return (
+                  <div key={cat.id}>
+                    <div className="flex items-center">
+                      <button
+                        onClick={() => handleNav('shop', cat.queryValue)}
+                        className="flex-1 text-left py-2 px-2 text-xs uppercase font-sans tracking-wider text-gray-700 hover:text-black hover:bg-[#F9F9F8] transition-colors rounded-xs cursor-pointer"
+                      >
+                        <span className="font-medium">{cat.name}</span>
+                      </button>
+                      <button
+                        onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
+                        className="p-2 text-gray-500 hover:text-[#936B34] transition-colors"
+                        aria-label={"Expand " + cat.name}
+                        aria-expanded={isExpanded}
+                      >
+                        <ChevronDown className={"w-3.5 h-3.5 transition-transform duration-200 " + (isExpanded ? 'rotate-180 text-[#936B34]' : '')} />
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <div className="ml-4 mb-1 border-l border-[#936B34]/20 pl-2">
+                        <button
+                          onClick={() => handleNav('shop', cat.queryValue)}
+                          className="w-full text-left py-1.5 px-2 text-[10px] uppercase tracking-wider font-semibold text-[#936B34] hover:bg-[#F9F9F8]"
+                        >
+                          All {cat.name}
+                        </button>
+                        {cat.subcategories.map(sub => (
+                          <button
+                            key={sub}
+                            onClick={() => handleNav('shop', sub)}
+                            className="w-full text-left py-1.5 px-2 text-[11px] text-gray-600 hover:text-[#936B34] hover:bg-[#F9F9F8] transition-colors"
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
