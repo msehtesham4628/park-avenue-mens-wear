@@ -8,10 +8,13 @@ export const TailoringBanner: React.FC = () => {
 
   return (
     <section className="py-24 bg-[#F9F9F8] border-y border-white/10 text-[#F8FAFC] relative overflow-hidden">
-      {/* Background Subtle Watermark */}
-      <div className="absolute -right-12 -bottom-12 select-none pointer-events-none font-serif text-[180px] font-bold text-white/[0.02] tracking-tighter">
-        PA
-      </div>
+      {/* Background supplied-logo watermark */}
+      <img
+        src="/20260925_004137_0000.png"
+        alt=""
+        aria-hidden="true"
+        className="absolute -right-16 -bottom-16 w-72 h-72 object-contain opacity-[0.025] pointer-events-none select-none"
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
