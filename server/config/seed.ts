@@ -6,24 +6,60 @@ import { authService } from '../services/authService.js';
 
 export async function seedInitialData() {
   try {
-    // 1. Seed exclusive Admin account if not existing
-    const existingAdmin = await CustomerModel.findOne({ email: 'parkamw@admin.com' });
+    // 1. Seed Admin & Staff accounts if not existing
+    const existingAdmin = await CustomerModel.findOne({ email: 'admin@parkavenuemenswear.com' });
     if (!existingAdmin) {
-      const passwordHash = await authService.hashPassword('Parkmens@911');
+      const passwordHash = await authService.hashPassword('ParkAvenue2026!');
       await CustomerModel.create({
         customerId: 'CUST-ADMIN-001',
         firstName: 'Master',
         lastName: 'Director',
         name: 'Master Director',
-        username: 'parkamw@admin.com',
-        email: 'parkamw@admin.com',
+        username: 'admin',
+        email: 'admin@parkavenuemenswear.com',
         phone: '+1 (800) 555-7275',
         passwordHash,
         role: 'admin',
         status: 'active',
-        addresses: []
+        addresses: [{
+          id: 'addr-admin-1',
+          street: '725 Park Avenue',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10021',
+          country: 'United States',
+          isDefault: true
+        }]
       });
-      console.info('[Park Avenue DB Seed] Created default administrator: parkamw@admin.com (Password: Parkmens@911)');
+      console.info('[Park Avenue DB Seed] Created default administrator: admin@parkavenuemenswear.com (Password: ParkAvenue2026!)');
+    }
+
+    const existingParkmensAdmin = await CustomerModel.findOne({ email: 'parkmens@admin.com' });
+    if (!existingParkmensAdmin) {
+      const passwordHash = await authService.hashPassword('ParkAvenue2026!');
+      await CustomerModel.create({
+        customerId: 'CUST-ADMIN-PARKMENS',
+        firstName: 'Park',
+        lastName: 'Avenue Admin',
+        name: 'Park Avenue Mens Admin',
+        username: 'parkmens',
+        email: 'parkmens@admin.com',
+        phone: '+1 (800) 555-7275',
+        passwordHash,
+        role: 'admin',
+        status: 'active',
+        vipTier: 'Private Atelier Club',
+        addresses: [{
+          id: 'addr-admin-parkmens',
+          street: '725 Park Avenue',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10021',
+          country: 'United States',
+          isDefault: true
+        }]
+      });
+      console.info('[Park Avenue DB Seed] Created administrator: parkmens@admin.com (Password: ParkAvenue2026!)');
     }
 
     const existingStaff = await CustomerModel.findOne({ email: 'tailor@parkavenuemenswear.com' });
@@ -34,6 +70,7 @@ export async function seedInitialData() {
         firstName: 'Giovanni',
         lastName: 'Rossi',
         name: 'Giovanni Rossi',
+        username: 'tailor',
         email: 'tailor@parkavenuemenswear.com',
         phone: '+1 (800) 555-7276',
         passwordHash,
@@ -42,6 +79,35 @@ export async function seedInitialData() {
         addresses: []
       });
       console.info('[Park Avenue DB Seed] Created default staff tailor: tailor@parkavenuemenswear.com (Password: ParkAvenue2026!)');
+    }
+
+    const existingPatron = await CustomerModel.findOne({ email: 'patron@parkavenuemenswear.com' });
+    if (!existingPatron) {
+      const passwordHash = await authService.hashPassword('ParkAvenue2026!');
+      await CustomerModel.create({
+        customerId: 'CUST-PATRON-001',
+        firstName: 'Marcus',
+        lastName: 'Sterling',
+        name: 'Marcus Sterling',
+        username: 'patron',
+        email: 'patron@parkavenuemenswear.com',
+        phone: '+1 (212) 555-0199',
+        passwordHash,
+        role: 'customer',
+        status: 'active',
+        vipTier: 'Bespoke Patron',
+        addresses: [{
+          id: 'addr-patron-1',
+          street: '884 Fifth Avenue',
+          apartment: 'Penthouse B',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10021',
+          country: 'United States',
+          isDefault: true
+        }]
+      });
+      console.info('[Park Avenue DB Seed] Created default patron: patron@parkavenuemenswear.com (Password: ParkAvenue2026!)');
     }
 
     // 2. Seed Luxury Products if empty

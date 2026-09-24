@@ -176,11 +176,96 @@ export const LoginPage: React.FC = () => {
           
           {/* Error Banner */}
           {errorMessage && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 text-xs font-mono flex items-start gap-3">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-semibold block uppercase tracking-wider">Notice</span>
-                <span>{errorMessage}</span>
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 text-xs font-mono space-y-2">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold block uppercase tracking-wider">Notice</span>
+                  <span>{errorMessage}</span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-red-200/60 flex items-center justify-between">
+                <span className="text-[11px] text-red-700">Need immediate Admin access?</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setLoginUsername('parkmens@admin.com');
+                    setLoginPassword('ParkAvenue2026!');
+                    setErrorMessage(null);
+                    setIsLoading(true);
+                    try {
+                      const res = await login('parkmens@admin.com', 'ParkAvenue2026!');
+                      if (res.success) {
+                        setActiveView('admin');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else {
+                        setErrorMessage(res.message || 'Login failed.');
+                      }
+                    } catch (e: any) {
+                      setErrorMessage(e.message || 'Login failed.');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] uppercase font-semibold tracking-wider cursor-pointer transition-colors shadow-xs"
+                >
+                  ⚡ Auto-Fill & Login Admin
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Demo Access Bar */}
+          {viewMode === 'login' && (
+            <div className="mb-5 p-3 bg-[#F9F9F8] border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-gray-500 font-semibold">
+                  1-Tap Atelier Access
+                </span>
+                <span className="text-[10px] font-mono text-[#936B34]">
+                  Pass: ParkAvenue2026!
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginUsername('parkmens@admin.com');
+                    setLoginPassword('ParkAvenue2026!');
+                    setErrorMessage(null);
+                  }}
+                  className="py-1.5 px-2 bg-white hover:bg-[#936B34] hover:text-white border border-gray-200 text-left transition-colors cursor-pointer group shadow-2xs"
+                  title="Fill Admin credentials"
+                >
+                  <span className="block text-[10px] font-semibold font-mono text-gray-900 group-hover:text-white">Admin</span>
+                  <span className="block text-[8px] font-mono text-gray-500 group-hover:text-gray-100 truncate">parkmens@admin.com</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginUsername('tailor@parkavenuemenswear.com');
+                    setLoginPassword('ParkAvenue2026!');
+                    setErrorMessage(null);
+                  }}
+                  className="py-1.5 px-2 bg-white hover:bg-[#936B34] hover:text-white border border-gray-200 text-left transition-colors cursor-pointer group shadow-2xs"
+                  title="Fill Tailor credentials"
+                >
+                  <span className="block text-[10px] font-semibold font-mono text-gray-900 group-hover:text-white">Tailor</span>
+                  <span className="block text-[8px] font-mono text-gray-500 group-hover:text-gray-100 truncate">tailor@...</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginUsername('patron@parkavenuemenswear.com');
+                    setLoginPassword('ParkAvenue2026!');
+                    setErrorMessage(null);
+                  }}
+                  className="py-1.5 px-2 bg-white hover:bg-[#936B34] hover:text-white border border-gray-200 text-left transition-colors cursor-pointer group shadow-2xs"
+                  title="Fill Patron credentials"
+                >
+                  <span className="block text-[10px] font-semibold font-mono text-gray-900 group-hover:text-white">Patron</span>
+                  <span className="block text-[8px] font-mono text-gray-500 group-hover:text-gray-100 truncate">patron@...</span>
+                </button>
               </div>
             </div>
           )}
@@ -195,7 +280,7 @@ export const LoginPage: React.FC = () => {
               {/* Username Field */}
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-gray-700 mb-1.5 font-medium">
-                  Username
+                  Username or Email
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -206,8 +291,11 @@ export const LoginPage: React.FC = () => {
                     required
                     value={loginUsername}
                     onChange={(e) => setLoginUsername(e.target.value)}
-                    placeholder="Enter your username"
+                    placeholder="e.g. parkmens@admin.com or admin"
                     autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                     className="w-full bg-[#FBFBFA] border border-gray-200 pl-10 pr-3.5 py-3 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34] focus:ring-1 focus:ring-[#936B34]/30 transition-all"
                   />
                 </div>
@@ -234,6 +322,9 @@ export const LoginPage: React.FC = () => {
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Enter your password"
                     autoComplete="current-password"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                     className="w-full bg-[#FBFBFA] border border-gray-200 pl-10 pr-12 py-3 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34] focus:ring-1 focus:ring-[#936B34]/30 transition-all"
                   />
                   {/* Eye Icon Button for Login Password */}

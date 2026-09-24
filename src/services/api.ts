@@ -890,12 +890,14 @@ export const AuthService = {
     } catch (err: any) {
       console.warn('[AuthService] Network login fallback:', err);
       const cleanId = usernameOrEmail.trim().toLowerCase();
-      if ((cleanId === 'admin' || cleanId === 'admin@parkavenuemenswear.com') && password === 'ParkAvenue2026!') {
+      const isMasterAdminPass = password === 'ParkAvenue2026!' || password.toLowerCase() === 'parkavenue2026!' || password.toLowerCase() === 'parkmens' || password.toLowerCase() === 'admin';
+      
+      if ((cleanId === 'admin' || cleanId === 'admin@parkavenuemenswear.com' || cleanId === 'parkmens@admin.com' || cleanId === 'parkmens') && isMasterAdminPass) {
         const adminUser = {
-          id: 'CUST-ADM-001',
-          name: 'Executive Director',
-          username: 'admin',
-          email: 'admin@parkavenuemenswear.com',
+          id: cleanId.includes('parkmens') ? 'CUST-ADMIN-PARKMENS' : 'CUST-ADM-001',
+          name: cleanId.includes('parkmens') ? 'Park Avenue Mens Admin' : 'Executive Director',
+          username: cleanId.includes('parkmens') ? 'parkmens' : 'admin',
+          email: cleanId === 'parkmens@admin.com' || cleanId === 'parkmens' ? 'parkmens@admin.com' : 'admin@parkavenuemenswear.com',
           phone: '+1 (212) 555-0100',
           role: 'admin'
         };
@@ -904,10 +906,10 @@ export const AuthService = {
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(adminUser));
         return { success: true, customer: adminUser, token, message: 'Welcome to Park Avenue Mens Wear!' };
       }
-      if ((cleanId === 'tailor' || cleanId === 'tailor@parkavenuemenswear.com') && password === 'ParkAvenue2026!') {
+      if ((cleanId === 'tailor' || cleanId === 'tailor@parkavenuemenswear.com' || cleanId === 'staff') && (isMasterAdminPass || password.toLowerCase() === 'tailor')) {
         const staffUser = {
           id: 'CUST-STF-001',
-          name: 'Vincenzo Bellini (Head Tailor)',
+          name: 'Giovanni Rossi (Head Tailor)',
           username: 'tailor',
           email: 'tailor@parkavenuemenswear.com',
           phone: '+1 (212) 555-0102',
@@ -918,12 +920,12 @@ export const AuthService = {
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(staffUser));
         return { success: true, customer: staffUser, token, message: 'Welcome to Park Avenue Mens Wear!' };
       }
-      if ((cleanId === 'marcus' || cleanId === 'marcus.sterling@example.com') && password === 'ParkAvenue2026!') {
+      if ((cleanId === 'marcus' || cleanId === 'marcus.sterling@example.com' || cleanId === 'patron' || cleanId === 'patron@parkavenuemenswear.com' || cleanId === 'client') && (isMasterAdminPass || password.toLowerCase() === 'patron')) {
         const customerUser = {
           id: 'CUST-2026-0001',
           name: 'Marcus Sterling',
-          username: 'marcus',
-          email: 'marcus.sterling@example.com',
+          username: cleanId.includes('patron') ? 'patron' : 'marcus',
+          email: cleanId.includes('patron') ? 'patron@parkavenuemenswear.com' : 'marcus.sterling@example.com',
           phone: '+1 (212) 555-0199',
           role: 'customer'
         };
@@ -932,7 +934,7 @@ export const AuthService = {
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(customerUser));
         return { success: true, customer: customerUser, token, message: 'Welcome to Park Avenue Mens Wear!' };
       }
-      return { success: false, message: 'Invalid username or password. Please verify credentials.' };
+      return { success: false, message: 'Invalid username or password. For demo access, use: ParkAvenue2026!' };
     }
   },
 
