@@ -5,39 +5,53 @@ import { Product, Order, Customer, ProductCategory, OFFICIAL_CATEGORIES, Product
  * Downloads a standardized Excel template for bulk product upload
  */
 export function downloadProductExcelTemplate() {
+  // One row represents one color of a garment. Use the SAME Garment Name
+  // for all colors; the storefront groups those rows into one product card.
   const templateRows = [
     {
-      'SKU': 'PA-SUIT-CHAR-001',
-      'Garment Name': 'Park Avenue Bespoke Charcoal Three-Piece Suit',
+      'Product Group': 'PA-SUIT-001',
+      'SKU': 'PA-SUIT-001-NAVY',
+      'Garment Name': 'Park Avenue Modern Tailored Suit',
       'Category': 'Suits',
+      'Subcategory': 'Suits',
       'Price ($)': 2850,
-      'Fabric': 'Super 150s Tasmanian Wool by Loro Piana',
+      'Color': 'Navy',
+      'Color Hex': '#1E2A44',
+      'Sizes & Stock': '38R:3, 40R:5, 42R:4, 44R:2',
+      'Image URL': 'https://example.com/images/park-avenue-suit-navy.jpg',
+      'Fabric': 'Super 150s Tasmanian Wool',
       'Fit': 'Modern Tailored',
-      'Description': 'Handcrafted with full-canvas construction, horn buttons, and cupro lining.',
-      'Sizes & Stock (e.g. 38R:3, 40R:5, 42R:2)': '38R:3, 40R:5, 42R:4, 44R:2',
-      'Image URL': 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200'
+      'Description': 'Handcrafted Park Avenue tailored suit.'
     },
     {
-      'SKU': 'PA-SHIRT-WHT-002',
-      'Garment Name': 'Neapolitan Spread Collar Sea Island Cotton Shirt',
-      'Category': 'Dress shirts',
+      'Product Group': 'PA-SUIT-001',
+      'SKU': 'PA-SUIT-001-BLACK',
+      'Garment Name': 'Park Avenue Modern Tailored Suit',
+      'Category': 'Suits',
+      'Subcategory': 'Suits',
+      'Price ($)': 2850,
+      'Color': 'Black',
+      'Color Hex': '#111111',
+      'Sizes & Stock': '38R:2, 40R:4, 42R:3, 44R:1',
+      'Image URL': 'https://example.com/images/park-avenue-suit-black.jpg',
+      'Fabric': 'Super 150s Tasmanian Wool',
+      'Fit': 'Modern Tailored',
+      'Description': 'Handcrafted Park Avenue tailored suit.'
+    },
+    {
+      'Product Group': 'PA-SHIRT-002',
+      'SKU': 'PA-SHIRT-002-WHITE',
+      'Garment Name': 'Park Avenue Premium Dress Shirt',
+      'Category': 'Shirts',
+      'Subcategory': 'Dress Shirts',
       'Price ($)': 395,
-      'Fabric': '200/2 2-Ply Sea Island Cotton',
+      'Color': 'White',
+      'Color Hex': '#F5F5F5',
+      'Sizes & Stock': 'S:8, M:10, L:6, XL:4',
+      'Image URL': 'https://example.com/images/park-avenue-shirt-white.jpg',
+      'Fabric': 'Sea Island Cotton',
       'Fit': 'Slim Fit',
-      'Description': 'Australian mother-of-pearl buttons with hand-sewn crowfoot stitching.',
-      'Sizes & Stock (e.g. 38R:3, 40R:5, 42R:2)': '15.5:8, 16.0:10, 16.5:6, 17.0:4',
-      'Image URL': 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&q=80&w=1200'
-    },
-    {
-      'SKU': 'PA-SHOE-OXF-003',
-      'Garment Name': 'Goodyear Welted Museum Calfskin Oxford',
-      'Category': 'Shoe',
-      'Price ($)': 895,
-      'Fabric': 'Full-grain Parisian Box Calfskin',
-      'Fit': 'Standard D Width',
-      'Description': 'Single leather sole with oak bark tanning and hand-beveled waist.',
-      'Sizes & Stock (e.g. 38R:3, 40R:5, 42R:2)': '8:4, 9:6, 10:8, 11:5, 12:2',
-      'Image URL': 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&q=80&w=1200'
+      'Description': 'Premium Park Avenue dress shirt.'
     }
   ];
 
@@ -45,17 +59,20 @@ export function downloadProductExcelTemplate() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Product_Template');
 
-  // Adjust column widths for clear presentation
   ws['!cols'] = [
-    { wch: 18 }, // SKU
+    { wch: 18 }, // Product Group
+    { wch: 24 }, // SKU
     { wch: 38 }, // Garment Name
-    { wch: 16 }, // Category
+    { wch: 22 }, // Category
+    { wch: 24 }, // Subcategory
     { wch: 12 }, // Price
-    { wch: 35 }, // Fabric
-    { wch: 20 }, // Fit
-    { wch: 55 }, // Description
+    { wch: 16 }, // Color
+    { wch: 14 }, // Color Hex
     { wch: 35 }, // Sizes & Stock
-    { wch: 45 }  // Image URL
+    { wch: 55 }, // Image URL
+    { wch: 30 }, // Fabric
+    { wch: 20 }, // Fit
+    { wch: 55 }  // Description
   ];
 
   XLSX.writeFile(wb, 'park_avenue_products_upload_template.xlsx');
@@ -70,99 +87,95 @@ export async function parseProductsExcel(file: File): Promise<{
 }> {
   const data = await file.arrayBuffer();
   const workbook = XLSX.read(data, { type: 'array' });
-
   const firstSheetName = workbook.SheetNames[0];
-  if (!firstSheetName) {
-    throw new Error('Spreadsheet has no sheets.');
-  }
+  if (!firstSheetName) throw new Error('Spreadsheet has no sheets.');
 
   const worksheet = workbook.Sheets[firstSheetName];
   const rows = XLSX.utils.sheet_to_json<any>(worksheet, { defval: '' });
-
-  if (rows.length === 0) {
-    throw new Error('Uploaded spreadsheet contains no data rows.');
-  }
+  if (rows.length === 0) throw new Error('Uploaded spreadsheet contains no data rows.');
 
   const products: Omit<Product, 'id' | 'totalStock'>[] = [];
   const errors: string[] = [];
 
   rows.forEach((row, index) => {
-    const rowNum = index + 2; // +1 for 0-index, +1 for header row
+    const rowNum = index + 2;
     const sku = String(row['SKU'] || row['sku'] || `PA-IMP-${Date.now()}-${index}`).trim();
     const name = String(row['Garment Name'] || row['Name'] || row['name'] || '').trim();
     const rawCategory = String(row['Category'] || row['category'] || 'Suits').trim();
+    const subcategory = String(row['Subcategory'] || row['subcategory'] || '').trim();
     const priceNum = parseFloat(String(row['Price ($)'] || row['Price'] || row['price'] || '0').replace(/[^0-9.]/g, ''));
+    const color = String(row['Color'] || row['color'] || 'Default').trim() || 'Default';
+    const colorHex = String(row['Color Hex'] || row['ColorHex'] || row['colorHex'] || '#111827').trim();
     const fabric = String(row['Fabric'] || row['fabric'] || '').trim();
     const fit = String(row['Fit'] || row['fit'] || '').trim();
     const description = String(row['Description'] || row['description'] || '').trim();
-    const rawSizes = String(row['Sizes & Stock'] || row['Sizes & Stock (e.g. 38R:3, 40R:5, 42R:2)'] || row['sizes'] || '38R:5, 40R:5, 42R:5').trim();
-    const imageUrl = String(row['Image URL'] || row['Image'] || row['image'] || '').trim() ||
-      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200';
+    const rawSizes = String(row['Sizes & Stock'] || row['Sizes & Stock (e.g. 38R:3, 40R:5, 42R:2)' ] || row['sizes'] || '').trim();
+    const imageUrl = String(row['Image URL'] || row['Image'] || row['image'] || '').trim();
 
     if (!name) {
       errors.push(`Row ${rowNum}: Missing Garment Name. Skipped.`);
       return;
     }
-
+    if (!imageUrl) {
+      errors.push(`Row ${rowNum} (${name} / ${color}): Missing Image URL. The color will use the product's fallback image.`);
+    }
     if (isNaN(priceNum) || priceNum <= 0) {
-      errors.push(`Row ${rowNum} (${name}): Invalid Price ($${row['Price']}). Defaulted to $450.`);
+      errors.push(`Row ${rowNum} (${name}): Invalid Price. Defaulted to $450.`);
     }
 
-    // Match or normalize category
     let category: ProductCategory = 'Suits';
-    const foundCat = OFFICIAL_CATEGORIES.find(
-      c => c.name.toLowerCase() === rawCategory.toLowerCase() || c.queryValue.toLowerCase() === rawCategory.toLowerCase()
+    const foundCat = OFFICIAL_CATEGORIES.find(c =>
+      c.name.toLowerCase() === rawCategory.toLowerCase() ||
+      c.queryValue.toLowerCase() === rawCategory.toLowerCase()
     );
     if (foundCat) {
       category = foundCat.queryValue;
     } else {
-      category = 'Suits';
-      if (rawCategory) {
-        errors.push(`Row ${rowNum}: Category "${rawCategory}" normalized to "Suits".`);
-      }
+      const parent = OFFICIAL_CATEGORIES.find(c =>
+        c.subcategories.some(s => s.toLowerCase() === rawCategory.toLowerCase())
+      );
+      if (parent) category = parent.queryValue;
+      else errors.push(`Row ${rowNum}: Category "${rawCategory}" normalized to "Suits".`);
     }
 
-    // Parse sizes & stock: e.g. "38R:4, 40R:6, 42R:2"
+    // A row is one color. Example: 38R:3, 40R:5 creates size variants
+    // under that color, allowing same-name rows to be grouped in the storefront.
     const variants: ProductVariant[] = [];
-    const sizeTokens = rawSizes.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
-
+    const sizeTokens = rawSizes.split(/[,;\\n]/).map(s => s.trim()).filter(Boolean);
     if (sizeTokens.length > 0) {
       sizeTokens.forEach((tok, sIdx) => {
         const parts = tok.split(':');
         const sizeStr = parts[0]?.trim() || `SZ-${sIdx + 1}`;
-        const stockStr = parts[1]?.trim() || '5';
-        const stockNum = parseInt(stockStr, 10) || 5;
+        const stockNum = Math.max(0, parseInt(parts[1]?.trim() || '0', 10) || 0);
         variants.push({
-          id: `var-${sIdx + 1}`,
+          id: `${sku}-var-${sIdx + 1}`,
           size: sizeStr,
           stock: stockNum,
-          color: 'Default',
-          colorHex: '#111827',
+          color,
+          colorHex,
           sku: `${sku}-${sizeStr}`
         });
       });
     } else {
-      variants.push(
-        { id: 'var-1', size: '38R', stock: 4, color: 'Default', colorHex: '#111827', sku: `${sku}-38R` },
-        { id: 'var-2', size: '40R', stock: 6, color: 'Default', colorHex: '#111827', sku: `${sku}-40R` },
-        { id: 'var-3', size: '42R', stock: 3, color: 'Default', colorHex: '#111827', sku: `${sku}-42R` }
-      );
+      errors.push(`Row ${rowNum} (${name} / ${color}): Missing Sizes & Stock.`);
     }
 
     products.push({
       sku,
       name,
-      subtitle: 'Sartorial Collection',
+      subtitle: subcategory || 'Sartorial Collection',
       category,
       price: priceNum > 0 ? priceNum : 450,
       collection: 'Park Avenue Sartorial',
-      description: description || `Bespoke sartorial garment handcrafted with traditional craftsmanship.`,
+      description: description || 'Bespoke sartorial garment handcrafted with traditional craftsmanship.',
       details: ['Hand-finished tailoring', 'Classic drape', 'Bespoke fit'],
       care: ['Professional Dry Clean Only'],
       fabric: fabric || 'Pure Wool / Silk Blend',
       fit: fit || 'Contemporary Tailored',
-      images: [imageUrl],
-      variants
+      images: imageUrl ? [imageUrl] : [],
+      colorImages: imageUrl ? { [color]: [imageUrl] } : {},
+      variants,
+      totalStock: variants.reduce((sum, v) => sum + v.stock, 0)
     });
   });
 
