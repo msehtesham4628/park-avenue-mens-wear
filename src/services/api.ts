@@ -544,13 +544,65 @@ export const OrderService = {
    ALTERATIONS SERVICE
    ========================================================================= */
 
+function mapBackendAlterationToFrontend(a: any): AlterationRecord {
+  const backendStatus = a.currentStatus || a.status || 'Received';
+  const statusMap: Record<string, AlterationStatus> = {
+    'Received': 'Alteration Received',
+    'Review': 'Measurement/Review',
+    'In Progress': 'Alteration In Progress',
+    'Quality Check': 'Quality Check',
+    'Ready for Pickup': 'Ready for Pickup',
+    'Completed': 'Completed',
+    'Cancelled': 'Cancelled',
+    'received': 'Alteration Received',
+    'review': 'Measurement/Review',
+    'in_progress': 'Alteration In Progress',
+    'quality_check': 'Quality Check',
+    'ready_for_pickup': 'Ready for Pickup',
+    'completed': 'Completed',
+    'cancelled': 'Cancelled'
+  };
+  const status = statusMap[backendStatus] || (backendStatus as AlterationStatus);
+  const history = Array.isArray(a.statusHistory)
+    ? a.statusHistory.map((h: any) => ({
+        status: statusMap[h.newStatus] || h.newStatus || status,
+        timestamp: h.timestamp ? new Date(h.timestamp).toLocaleString() : '—',
+        note: h.note || ''
+      }))
+    : (Array.isArray(a.history) ? a.history : []);
+
+  return {
+    id: a.alterationId || a.id || a._id,
+    orderId: a.orderId || '',
+    customerName: a.customerName || '',
+    customerEmail: a.customerEmail || '',
+    customerPhone: a.customerPhone || '',
+    items: a.items || [{
+      name: a.productName || 'Bespoke Garment',
+      type: a.alterationType || 'Tailoring',
+      specifications: a.notes || ''
+    }],
+    productName: a.productName || '',
+    alterationDetails: a.alterationType || '',
+    status,
+    currentStep: ['Alteration Received', 'Measurement/Review', 'Alteration In Progress', 'Quality Check', 'Ready for Pickup', 'Completed'].indexOf(status),
+    tailorAssigned: a.tailorAssigned || 'Master Tailor',
+    createdAt: a.createdAt || '',
+    expectedCompletion: a.expectedCompletionDate || '',
+    tailorNotes: a.notes || '',
+    history,
+    completedAt: a.actualCompletionDate || undefined
+  };
+}
+
 export const AlterationService = {
   async getAll(): Promise<AlterationRecord[]> {
-    const remote = await fetchRemote<AlterationRecord[]>('/alterations/admin/list');
+    const remote = await fetchRemote<any[]>('/alterations/admin/list');
     if (remote && Array.isArray(remote)) {
-      alterationsCache = remote;
+      const mapped = remote.map(mapBackendAlterationToFrontend);
+      alterationsCache = mapped;
       saveStorage(STORAGE_KEYS.ALTERATIONS, alterationsCache);
-      return remote;
+      return mapped;
     }
     await delay(180);
     return [...alterationsCache];
@@ -651,40 +703,37 @@ export const AlterationService = {
     expectedDate?: string,
     tailorNotes?: string
   ): Promise<AlterationRecord> {
+    const backendStatusMap: Record<string, string> = {
+      'Alteration Received': 'Received',
+      'Measurement/Review': 'Review',
+      'Alteration In Progress': 'In Progress',
+      'Quality Check': 'Quality Check',
+      'Ready for Pickup': 'Ready for Pickup',
+      'Completed': 'Completed',
+      'Cancelled': 'Cancelled'
+    };
+    const remote = await fetchRemote<any>(`/admin/alterations/${encodeURIComponent(id)}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        status: backendStatusMap[newStatus] || newStatus,
+        note,
+        expectedCompletionDate: expectedDate,
+        tailorAssigned: tailorNotes
+      })
+    });
+    if (remote) {
+      const mapped = mapBackendAlterationToFrontend(remote);
+      const index = alterationsCache.findIndex(a => a.id === id);
+      if (index >= 0) alterationsCache[index] = mapped;
+      saveStorage(STORAGE_KEYS.ALTERATIONS, alterationsCache);
+      return mapped;
+    }
+
     await delay(250);
     const index = alterationsCache.findIndex(a => a.id === id);
     if (index === -1) throw new Error('Alteration record not found');
-
-    const steps: AlterationStatus[] = [
-      'Alteration Received',
-      'Measurement/Review',
-      'Alteration In Progress',
-      'Quality Check',
-      'Ready for Pickup',
-      'Completed'
-    ];
-    const stepIndex = steps.indexOf(newStatus);
-
     const record = alterationsCache[index];
-    const updatedHistory = [
-      ...record.history,
-      {
-        status: newStatus,
-        timestamp: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-        note: note || `Status updated to ${newStatus}`
-      }
-    ];
-
-    const updated: AlterationRecord = {
-      ...record,
-      status: newStatus,
-      currentStep: stepIndex >= 0 ? stepIndex : record.currentStep,
-      history: updatedHistory,
-      expectedCompletion: expectedDate || record.expectedCompletion,
-      tailorNotes: tailorNotes || record.tailorNotes,
-      completedAt: newStatus === 'Completed' ? new Date().toISOString() : record.completedAt
-    };
-
+    const updated = { ...record, status: newStatus };
     alterationsCache[index] = updated;
     saveStorage(STORAGE_KEYS.ALTERATIONS, alterationsCache);
     return updated;
