@@ -881,23 +881,13 @@ export const NotificationService = {
 export const AuthService = {
   async login(usernameOrEmail: string, password: string): Promise<{ success: boolean; customer?: any; token?: string; message?: string }> {
     try {
-      const cleanIdentifier = usernameOrEmail.trim();
-      if (!cleanIdentifier || !password) {
-        return { success: false, message: 'Please provide both Username/Email and Password.' };
-      }
+      const base = API_CONFIG.baseUrl || '/api';
+      const identifier = usernameOrEmail.trim();
 
-      // Authentication is always same-origin. Do not let a stale/missing
-      // NEXT_PUBLIC_API_URL or VITE_API_URL redirect login to localhost or
-      // another backend. This guarantees Vercel receives the request at
-      // /api/auth/login.
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`${base.replace(/\/$/, '')}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          username: cleanIdentifier,
-          password
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password })
       });
 
       const responseText = await res.text();
@@ -905,24 +895,26 @@ export const AuthService = {
       try {
         data = responseText ? JSON.parse(responseText) : null;
       } catch {
-        console.error('[AuthService] Login endpoint returned non-JSON:', res.status, responseText.slice(0, 200));
         return {
           success: false,
-          message: `Authentication endpoint returned HTTP ${res.status} with a non-JSON response.`
+          message: `Authentication endpoint returned HTTP ${res.status} instead of JSON. Check the deployed /api/auth/login route.`
         };
       }
 
       if (!res.ok || !data?.success) {
         return {
           success: false,
-          message: data?.error || data?.message || 'Invalid username or password.'
+          message: data?.error || data?.message || `Authentication failed (HTTP ${res.status}).`
         };
       }
 
-      const customer = data?.data?.customer;
-      const token = data?.data?.token;
+      const customer = data.data?.customer;
+      const token = data.data?.token;
       if (!customer || !token) {
-        return { success: false, message: 'Authentication succeeded but no session was returned.' };
+        return {
+          success: false,
+          message: 'Authentication service returned an incomplete session response.'
+        };
       }
 
       if (typeof localStorage !== 'undefined') {
@@ -932,7 +924,7 @@ export const AuthService = {
 
       return { success: true, customer, token, message: data.message };
     } catch (err: any) {
-      console.error('[AuthService] Network login failed:', err);
+      console.warn('[AuthService] Network login failed:', err);
       return {
         success: false,
         message: 'Unable to reach the authentication service. Please try again.'
