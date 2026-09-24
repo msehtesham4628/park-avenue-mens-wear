@@ -17,10 +17,11 @@ const apiRouter = Router();
 
 // Health check endpoint
 apiRouter.get('/health', (_req: Request, res: Response) => {
-  res.status(200).json({
+  const connected = isDbConnected();
+  res.status(connected ? 200 : 503).json({
     status: 'online',
     service: 'Park Avenue Menswear API',
-    database: isDbConnected() ? 'connected' : 'in-memory-fallback',
+    database: connected ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString()
   });
 });
