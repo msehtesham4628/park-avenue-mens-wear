@@ -64,6 +64,8 @@ export interface Product {
   fit: string;
   care: string[];
   images: string[];
+  /** Images associated with each color when products are grouped by name. */
+  colorImages?: Record<string, string[]>;
   variants: ProductVariant[];
   isFeatured?: boolean;
   isNewArrival?: boolean;
