@@ -5,6 +5,8 @@ interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElemen
   category?: string;
 }
 
+const BRAND_LOGO = '/20260925_004137_0000.png';
+
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
   alt = 'Park Avenue Menswear',
@@ -20,7 +22,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     return (
       <div className={`relative flex items-center justify-center overflow-hidden bg-[#F8F9FA] border border-gray-200 ${className}`}>
         <img
-          src="/20260925_004137_0000.png"
+          src={BRAND_LOGO}
           alt="Park Avenue Menswear"
           className="w-full h-full object-contain p-8"
         />
@@ -31,12 +33,15 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
-  return (
-    <div className={`relative overflow-hidden ${className}`}>
-      {/* Skeleton / Shimmer placeholder while loading */}
+      {/* Supplied Park Avenue PNG while the real product image loads. */}
       {!isLoaded && (
-        <div className="absolute inset-0 bg-[#16181E] animate-pulse flex items-center justify-center">
-          <span className="font-serif text-xs tracking-widest text-[#C5A880]/40">PA</span>
+        <div className="absolute inset-0 bg-[#F8F9FA] flex items-center justify-center z-10">
+          <img
+            src={BRAND_LOGO}
+            alt=""
+            aria-hidden="true"
+            className="w-24 sm:w-32 max-h-24 object-contain opacity-80"
+          />
         </div>
       )}
       <img
