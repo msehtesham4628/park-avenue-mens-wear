@@ -988,10 +988,24 @@ export const AuthService = {
           reEnterPassword: payload.reEnterPassword
         })
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        return { success: false, message: data.message || 'Registration failed.' };
+      const responseText = await res.text();
+      let data: any = null;
+      try {
+        data = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        return {
+          success: false,
+          message: `Registration request returned HTTP ${res.status}. The server did not return valid JSON.`
+        };
       }
+
+      if (!res.ok || !data?.success) {
+        return {
+          success: false,
+          message: data?.message || `Registration failed (HTTP ${res.status}).`
+        };
+      }
+
       const { customer, token } = data.data;
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(STORAGE_KEYS.TOKEN, token);
