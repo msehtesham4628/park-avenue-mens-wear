@@ -223,7 +223,7 @@ export const LoginPage: React.FC = () => {
                     required
                     value={loginUsername}
                     onChange={(e) => setLoginUsername(e.target.value)}
-                    placeholder="e.g. parkmens@admin.com or admin"
+                    placeholder="Enter your username or email"
                     autoComplete="username"
                     autoCapitalize="none"
                     autoCorrect="off"
