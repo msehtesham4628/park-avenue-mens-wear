@@ -46,21 +46,14 @@ export const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({
       <div className="absolute bottom-3 left-3 w-2.5 h-2.5 border-b border-l border-[#936B34]/60 transition-colors group-hover:border-[#936B34]" />
       <div className="absolute bottom-3 right-3 w-2.5 h-2.5 border-b border-r border-[#936B34]/60 transition-colors group-hover:border-[#936B34]" />
 
-      {/* Supplied brand artwork is used instead of an empty media frame. */}
-      <img
-        src="/20260925_004137_0000.png"
-        alt="Park Avenue Menswear"
-        className="absolute inset-0 w-full h-full object-contain p-8 opacity-95"
-        loading="lazy"
-      />
-
-      {/* Center Monogram / Brand Block */}
+      {/* Supplied official Park Avenue artwork — no generated/text logo. */}
       <div className="relative z-10 flex flex-col items-center max-w-[85%]">
-        {!minimal && (
-          <div className="w-10 h-10 mb-3 rounded-none border border-[#936B34] flex items-center justify-center font-serif text-sm text-[#111827] tracking-widest bg-white shadow-xs transition-transform group-hover:scale-105 duration-500">
-            PA
-          </div>
-        )}
+        <img
+          src="/20260925_004137_0000.png"
+          alt="Park Avenue Menswear"
+          className={`${minimal ? 'w-28 sm:w-36' : 'w-36 sm:w-48'} max-h-40 object-contain mb-4 transition-transform duration-500 group-hover:scale-105`}
+          loading="lazy"
+        />
 
         {category && (
           <span className="text-[9px] uppercase tracking-[0.3em] text-[#936B34] font-mono mb-1 font-semibold">
@@ -68,9 +61,11 @@ export const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({
           </span>
         )}
 
-        <div className="font-serif text-xs sm:text-sm tracking-[0.25em] text-[#111827] uppercase font-light">
-          [{' '}{label}{' '}]
-        </div>
+        {!minimal && (
+          <div className="font-serif text-xs sm:text-sm tracking-[0.25em] text-[#111827] uppercase font-light">
+            [{' '}{label}{' '}]
+          </div>
+        )}
 
         {subtext && (
           <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 mt-2 font-mono">
