@@ -228,7 +228,8 @@ export const productService = {
     price: number;
     salePrice?: number;
     images?: string[];
-    variants: Array<{ size: string; color: string; stock: number; sku?: string }>;
+    colorImages?: Record<string, string[]>;
+    variants: Array<{ size: string; color: string; colorHex?: string; stock: number; sku?: string }>;
     lowStockThreshold?: number;
     isFeatured?: boolean;
     isNewArrival?: boolean;
@@ -272,6 +273,7 @@ export const productService = {
       price: data.price,
       salePrice: data.salePrice,
       images: data.images || [],
+      colorImages: data.colorImages || {},
       sizes,
       colors,
       variants: processedVariants,
