@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { alterationController } from '../controllers/alterationController.js';
 import { orderLookupLimiter } from '../middleware/rateLimiter.js';
-import { requireAdminOrStaff } from '../middleware/authMiddleware.js';
+import { authenticateJWT, requireAdminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-router.get('/', ...requireAdminOrStaff, alterationController.getAlterations);
+router.get('/', authenticateJWT, alterationController.getAlterations);
 router.post('/', alterationController.createAlteration);
 router.post('/lookup', orderLookupLimiter, alterationController.customerLookup);
 
