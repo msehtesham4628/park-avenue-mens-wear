@@ -1,32 +1,69 @@
 import mongoose from 'mongoose';
 import { ENV } from './env.js';
 
-let isConnected = false;
+type MongooseCache = {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+};
+
+const globalForMongoose = globalThis as typeof globalThis & {
+  __parkAvenueMongoose?: MongooseCache;
+};
+
+const cache: MongooseCache = globalForMongoose.__parkAvenueMongoose || {
+  conn: null,
+  promise: null
+};
+globalForMongoose.__parkAvenueMongoose = cache;
 
 export async function connectDB(): Promise<boolean> {
-  if (isConnected && mongoose.connection.readyState === 1) return true;
+  if (mongoose.connection.readyState === 1) {
+    cache.conn = mongoose;
+    return true;
+  }
 
   const uri = ENV.MONGODB_URI?.trim();
-  if (ENV.NODE_ENV === 'production') {
-    if (!uri) throw new Error('[Park Avenue DB] MONGODB_URI is missing in production. Add it to Vercel environment variables.');
-    if (/mongodb(?:\+srv)?:\/\/(?:127\.0\.0\.1|localhost)/i.test(uri)) throw new Error('[Park Avenue DB] Production MONGODB_URI points to localhost. Use the MongoDB Atlas connection string in Vercel.');
-    await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000, connectTimeoutMS: 10000, socketTimeoutMS: 45000, maxPoolSize: 10, minPoolSize: 1 });
-    isConnected = true; console.info('[Park Avenue DB] Connected to production MongoDB.'); return true;
+  if (!uri) {
+    throw new Error('[Park Avenue DB] MONGODB_URI is missing. Add the MongoDB Atlas connection string to Vercel Production.');
   }
 
-  if (uri && !/mongodb(?:\+srv)?:\/\/(?:127\.0\.0\.1|localhost)/i.test(uri)) {
-    try { await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 }); isConnected = true; console.info('[Park Avenue DB] Connected to configured MongoDB.'); return true; }
-    catch (err: any) { console.warn('[Park Avenue DB] Configured MongoDB connection failed in development:', err.message); }
+  if (/mongodb(?:\+srv)?:\/\/(?:127\.0\.0\.1|localhost)/i.test(uri)) {
+    throw new Error('[Park Avenue DB] Production MONGODB_URI points to localhost. Use the MongoDB Atlas connection string.');
   }
+
+  if (cache.promise) {
+    await cache.promise;
+    return mongoose.connection.readyState === 1;
+  }
+
+  cache.promise = mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 10000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 10,
+    minPoolSize: 0
+  });
+
   try {
-    const { MongoMemoryServer } = await import('mongodb-memory-server');
-    const mongoMemoryServer = await MongoMemoryServer.create();
-    await mongoose.connect(mongoMemoryServer.getUri(), { serverSelectionTimeoutMS: 5000 });
-    isConnected = true; console.info('[Park Avenue DB] Connected to development in-memory MongoDB.'); return true;
+    cache.conn = await cache.promise;
+    console.info('[Park Avenue DB] MongoDB Atlas connection ready.');
+    return true;
   } catch (err: any) {
-    isConnected = false; mongoose.set('bufferTimeoutMS', 2500); console.error('[Park Avenue DB] Database initialization failed:', err.message); throw err;
+    cache.conn = null;
+    throw new Error('[Park Avenue DB] MongoDB connection failed: ' + (err?.message || 'unknown connection error'));
+  } finally {
+    cache.promise = null;
   }
 }
 
-export async function disconnectDB(): Promise<void> { if (mongoose.connection.readyState !== 0) await mongoose.disconnect(); isConnected = false; }
-export function isDbConnected(): boolean { return isConnected && mongoose.connection.readyState === 1; }
+export async function disconnectDB(): Promise<void> {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+  cache.conn = null;
+  cache.promise = null;
+}
+
+export function isDbConnected(): boolean {
+  return mongoose.connection.readyState === 1;
+}
