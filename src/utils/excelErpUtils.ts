@@ -167,7 +167,37 @@ export async function parseProductsExcel(file: File): Promise<{
     });
   });
 
-  return { products, errors };
+  // Merge rows belonging to the same Product Group / Garment Name into one
+  // MongoDB product document. Each Excel row remains a distinct color + size
+  // variant, while color-specific images are retained.
+  const grouped = new Map<string, Product>();
+  for (const product of products) {
+    const groupKey = product.name.trim().toLowerCase();
+    const existing = grouped.get(groupKey);
+    if (!existing) {
+      grouped.set(groupKey, {
+        ...product,
+        sku: product.sku.split('-').slice(0, -1).join('-') || product.sku,
+        variants: [...product.variants],
+        images: [...new Set(product.images)],
+        colorImages: { ...(product as any).colorImages }
+      });
+      continue;
+    }
+
+    existing.variants = [...existing.variants, ...product.variants];
+    existing.images = [...new Set([...(existing.images || []), ...(product.images || [])])];
+    existing.totalStock = existing.variants.reduce((sum, v) => sum + v.stock, 0);
+
+    const existingColorImages = (existing as any).colorImages || {};
+    const incomingColorImages = (product as any).colorImages || {};
+    (existing as any).colorImages = { ...existingColorImages, ...incomingColorImages };
+
+    existing.colors = Array.from(new Set(existing.variants.map(v => v.color)));
+  }
+
+  const groupedProducts = Array.from(grouped.values());
+  return { products: groupedProducts, errors };
 }
 
 /**
