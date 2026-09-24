@@ -37,14 +37,8 @@ export const Hero: React.FC = () => {
       {/* Main Architectural Visual Composition - Strictly Zero Text */}
       <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center justify-center">
         
-        {/* Large Architectural Fashion Podium / Frame (No Text) */}
-        <div className="w-full aspect-[16/10] sm:aspect-[21/9] max-h-[580px] bg-white/95 border border-gray-200 shadow-xl relative p-6 sm:p-10 flex items-center justify-center transition-all duration-700 hover:shadow-2xl group backdrop-blur-xs">
-          
-          {/* Atelier Precision Corner Brass Brackets */}
-          <div className="absolute top-3 left-3 w-4 h-4 border-t-2 border-l-2 border-[#936B34] transition-transform duration-300 group-hover:scale-110" />
-          <div className="absolute top-3 right-3 w-4 h-4 border-t-2 border-r-2 border-[#936B34] transition-transform duration-300 group-hover:scale-110" />
-          <div className="absolute bottom-3 left-3 w-4 h-4 border-b-2 border-l-2 border-[#936B34] transition-transform duration-300 group-hover:scale-110" />
-          <div className="absolute bottom-3 right-3 w-4 h-4 border-b-2 border-r-2 border-[#936B34] transition-transform duration-300 group-hover:scale-110" />
+        {/* Hero visual — no card/container, logo sits directly on the architectural background */}
+        <div className="w-full aspect-[16/10] sm:aspect-[21/9] max-h-[580px] relative flex items-center justify-center group">
 
           {/* Precision Tailor Silhouette Drafting Lines (SVG Graphic - Pure Visual Aesthetics, Zero Text) */}
           <svg 
@@ -88,7 +82,7 @@ export const Hero: React.FC = () => {
             <circle cx="300" cy="150" r="130" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.4" />
           </svg>
 
-          {/* Official supplied Park Avenue PNG logo */}
+          {/* Official supplied Park Avenue SVG logo */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <img
               src="/park-avenue-logo.svg"
