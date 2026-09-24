@@ -49,7 +49,7 @@ export const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({
       {/* Supplied official Park Avenue artwork — no generated/text logo. */}
       <div className="relative z-10 flex flex-col items-center max-w-[85%]">
         <img
-          src="/park-avenue-logo.svg"
+          src="/Park_Avenue_Logo.png"
           alt="Park Avenue Menswear"
           className={`${minimal ? 'w-28 sm:w-36' : 'w-36 sm:w-48'} max-h-40 object-contain mb-4 transition-transform duration-500 group-hover:scale-105`}
           loading="lazy"
