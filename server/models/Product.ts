@@ -18,6 +18,11 @@ export interface IProduct extends Document {
   description: string;
   category: 
     | 'Suits'
+    | 'Blazers & Jackets'
+    | 'Shirts'
+    | 'Outerwear'
+    | 'Sweaters & Knitwear'
+    | 'Footwear'
     | 'Dress shirts'
     | 'Dress Shirts'
     | 'Ties'
@@ -78,6 +83,11 @@ const ProductSchema = new Schema<IProduct>({
     required: true, 
     enum: [
       'Suits',
+      'Blazers & Jackets',
+      'Shirts',
+      'Outerwear',
+      'Sweaters & Knitwear',
+      'Footwear',
       'Dress shirts',
       'Dress Shirts',
       'Ties',
