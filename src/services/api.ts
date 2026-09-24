@@ -972,7 +972,7 @@ export const AuthService = {
       const effEmail = (payload.emailId || payload.email || '').trim();
       const effUser = (payload.username || '').trim();
 
-      const res = await fetch(`${base.replace(/\/$/, '')}/auth/register`, {
+      const res = await fetch(`${base.replace(/\/$/, '')}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
