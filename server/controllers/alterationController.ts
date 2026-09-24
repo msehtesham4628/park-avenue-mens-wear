@@ -60,6 +60,51 @@ export const alterationController = {
     }
   },
 
+
+  /**
+   * GET /api/alterations (authenticated customer/admin list)
+   * Customers only receive their own alteration records.
+   */
+  async getAlterations(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: 'Authentication required.' });
+      }
+
+      const { status, search, page, limit } = req.query;
+      const pageNumber = page ? parseInt(page as string, 10) : 1;
+      const limitNumber = limit ? parseInt(limit as string, 10) : 20;
+
+      if (req.user.role === 'admin' || req.user.role === 'staff') {
+        const result = await alterationService.getAlterations({
+          status: status as string,
+          search: search as string,
+          page: pageNumber,
+          limit: limitNumber
+        });
+        return res.status(200).json({ success: true, data: result.alterations, pagination: result.pagination });
+      }
+
+      const customer = await import('../models/Customer.js').then(m =>
+        m.CustomerModel.findOne({ customerId: req.user!.customerId }).lean()
+      );
+      if (!customer) {
+        return res.status(404).json({ success: false, message: 'Customer profile not found.' });
+      }
+
+      const alterations = await AlterationModel.find({
+        $or: [
+          { customerId: customer.customerId },
+          { customerEmail: customer.email }
+        ]
+      }).sort({ createdAt: -1 }).lean();
+
+      return res.status(200).json({ success: true, data: alterations, pagination: { page: 1, limit: alterations.length, total: alterations.length, totalPages: 1 } });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message || 'Unable to load alterations.' });
+    }
+  },
+
   /**
    * GET /api/alterations/:id
    */
