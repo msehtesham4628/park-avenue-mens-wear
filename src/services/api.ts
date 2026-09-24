@@ -111,11 +111,11 @@ function mapBackendProductToFrontend(bp: any): Product {
     id: v.id || v._id || `var-${v.size}`,
     size: v.size,
     color: v.color,
-    colorHex: v.color?.toLowerCase().includes('navy') ? '#1B2A4A' :
+    colorHex: v.colorHex || (v.color?.toLowerCase().includes('navy') ? '#1B2A4A' :
               v.color?.toLowerCase().includes('black') ? '#111827' :
               v.color?.toLowerCase().includes('white') ? '#FFFFFF' :
               v.color?.toLowerCase().includes('charcoal') ? '#374151' :
-              v.color?.toLowerCase().includes('burgundy') ? '#722F37' : '#4B5563',
+              v.color?.toLowerCase().includes('burgundy') ? '#722F37' : '#4B5563'),
     stock: v.stock !== undefined ? v.stock : 5,
     sku: v.sku || `${bp.sku}-${v.size}`
   }));
@@ -142,6 +142,7 @@ function mapBackendProductToFrontend(bp: any): Product {
     fabric: bp.fabric || 'Super 150s Pure Virgin Wool',
     fit: bp.fit || 'Tailored English Silhouette',
     care: bp.careInstructions && bp.careInstructions.length > 0 ? bp.careInstructions : ['Specialist dry clean only', 'Store on cedar hanger'],
+    colorImages: bp.colorImages || undefined,
     images: bp.images && bp.images.length > 0 ? bp.images : [
       'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200'
     ],
