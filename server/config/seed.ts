@@ -33,13 +33,17 @@ export async function seedInitialData() {
       });
       console.info('[Park Avenue DB Seed] Created administrator:', seedAdminEmail);
     } else if (existingAdmin && seedAdminPassword) {
-      const updates: Record<string, unknown> = {};
-      if (existingAdmin.role !== 'admin') updates.role = 'admin';
-      if (existingAdmin.status !== 'active') updates.status = 'active';
-      if (existingAdmin.username !== seedAdminUsername) updates.username = seedAdminUsername;
-      if (updates.role || updates.status || updates.username) {
-        await CustomerModel.updateOne({ _id: existingAdmin._id }, { $set: updates });
-      }
+      // Keep the configured bootstrap account synchronized. This is important when
+      // the email already existed from an earlier seed with a different password.
+      const passwordHash = await authService.hashPassword(seedAdminPassword);
+      const updates: Record<string, unknown> = {
+        role: 'admin',
+        status: 'active',
+        username: seedAdminUsername,
+        passwordHash
+      };
+      await CustomerModel.updateOne({ _id: existingAdmin._id }, { $set: updates });
+      console.info('[Park Avenue DB Seed] Synchronized administrator:', seedAdminEmail);
     }
 
     const existingParkmensAdmin = await CustomerModel.findOne({ email: 'parkmens@admin.com' });
