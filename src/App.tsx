@@ -47,7 +47,7 @@ const MainContent: React.FC = () => {
         {activeView === 'track-alteration' && <AlterationTrackingPage />}
         {activeView === 'account' && <AccountPage />}
         {activeView === 'login' && <LoginPage />}
-        {activeView === 'admin' && <AdminDashboard />}
+        {(activeView === 'admin' || activeView === 'dashboard') && <AdminDashboard />}
       </main>
 
       {/* Persistent global layout overlays */}

@@ -103,8 +103,7 @@ export function parseRoute(pathname?: string): RouteMatch {
       return { view: 'admin' };
 
     case 'dashboard':
-      // Direct access to patron/customer or staff dashboard
-      return { view: 'account' };
+      return { view: 'dashboard' };
 
     case 'account':
       return { view: 'account' };
@@ -212,6 +211,9 @@ export function buildUrl(params: {
 
     case 'admin':
       return '/admin';
+
+    case 'dashboard':
+      return '/dashboard';
 
     case 'account':
       return '/account';

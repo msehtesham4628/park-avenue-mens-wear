@@ -34,7 +34,8 @@ export type AppView =
   | 'track-alteration'
   | 'account'
   | 'login'
-  | 'admin';
+  | 'admin'
+  | 'dashboard';
 
 interface ToastMessage {
   id: string;
@@ -234,10 +235,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const storedUser = AuthService.getCurrentUser();
     if (storedUser) {
       setCurrentCustomer(storedUser);
-      if (storedUser.role === 'admin' && (storedUser.email === 'parkamw@admin.com' || storedUser.username === 'parkamw@admin.com')) {
+      if (storedUser.role === 'admin' || storedUser.role === 'staff') {
         setIsAdminLoggedIn(true);
-      } else {
-        setIsAdminLoggedIn(false);
       }
     }
   }, []);
@@ -309,10 +308,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const result = await AuthService.login(usernameOrEmail, password);
     if (result.success && result.customer) {
       setCurrentCustomer(result.customer);
-      if (result.customer.role === 'admin' && (result.customer.email === 'parkamw@admin.com' || result.customer.username === 'parkamw@admin.com')) {
+      if (result.customer.role === 'admin' || result.customer.role === 'staff') {
         setIsAdminLoggedIn(true);
-      } else {
-        setIsAdminLoggedIn(false);
       }
       showToast(result.message || `Welcome to Park Avenue Mens Wear, ${result.customer.name || 'Patron'}!`, 'success');
       return { success: true, role: result.customer.role };

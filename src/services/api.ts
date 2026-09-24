@@ -203,11 +203,20 @@ export const ProductService = {
     return newProduct;
   },
 
-  async batchCreate(newProducts: Product[]): Promise<Product[]> {
-    await delay(300);
-    productsCache = [...newProducts, ...productsCache];
+  async batchCreate(products: Omit<Product, 'id' | 'totalStock'>[]): Promise<Product[]> {
+    const createdList: Product[] = [];
+    for (const p of products) {
+      const totalStock = p.variants ? p.variants.reduce((acc, v) => acc + (v.stock || 0), 0) : 0;
+      const newProd: Product = {
+        ...p,
+        id: `prod-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+        totalStock
+      };
+      createdList.push(newProd);
+    }
+    productsCache = [...createdList, ...productsCache];
     saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
-    return newProducts;
+    return createdList;
   },
 
   async update(id: string, updates: Partial<Product>): Promise<Product> {
@@ -413,6 +422,60 @@ export const OrderService = {
     return newOrder;
   },
 
+  async createManualOrder(manualPayload: Partial<Order> & {
+    customerName: string;
+    items: Order['items'];
+    subtotal: number;
+    tax: number;
+    total: number;
+  }): Promise<Order> {
+    const today = new Date().toISOString().split('T')[0];
+    const newOrderId = `PA-MAN-${Math.floor(10000 + Math.random() * 90000)}`;
+    const newOrder: Order = {
+      id: newOrderId,
+      date: today,
+      customerName: manualPayload.customerName,
+      customerEmail: manualPayload.customerEmail || 'patron@parkavenuemenswear.com',
+      customerPhone: manualPayload.customerPhone || '+1 (800) 555-7275',
+      shippingMethod: manualPayload.shippingMethod || 'White-Glove Private Courier',
+      orderStatus: manualPayload.orderStatus || 'Order Confirmed',
+      paymentStatus: manualPayload.paymentStatus || 'Paid',
+      paymentMethod: manualPayload.paymentMethod || 'In-Salon POS / Cash',
+      items: manualPayload.items,
+      subtotal: manualPayload.subtotal,
+      tax: manualPayload.tax,
+      total: manualPayload.total,
+      shippingFee: manualPayload.shippingFee || 0,
+      alterationRequested: !!manualPayload.alterationRequested,
+      alterationNotes: manualPayload.alterationNotes || '',
+      timeline: [
+        {
+          status: 'Order Confirmed',
+          timestamp: 'Just now',
+          location: 'Atelier Private Salon',
+          description: 'Consignment order manually recorded into Atelier ledger',
+          completed: true
+        }
+      ]
+    };
+    ordersCache = [newOrder, ...ordersCache];
+    saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
+
+    if (newOrder.alterationRequested) {
+      await AlterationService.create({
+        orderId: newOrderId,
+        customerName: newOrder.customerName,
+        customerPhone: newOrder.customerPhone,
+        productName: newOrder.items[0]?.productName || 'Custom Sartorial Garment',
+        alterationDetails: 'Bespoke Salon Commission Fitting',
+        tailorNotes: newOrder.alterationNotes || 'Custom fitting noted during consignment record.',
+        tailorAssigned: 'Giovanni Rossi (Master Tailor)'
+      });
+    }
+
+    return newOrder;
+  },
+
   async updateStatus(orderId: string, newStatus: any, trackingNumber?: string, carrier?: string): Promise<Order> {
     await delay(250);
     const index = ordersCache.findIndex(o => o.id === orderId);
@@ -459,71 +522,6 @@ export const OrderService = {
     ordersCache[index] = updated;
     saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
     return updated;
-  },
-
-  async createManualOrder(orderData: Partial<Order>): Promise<Order> {
-    await delay(250);
-    const newOrderId = orderData.id || `PA-${Math.floor(10000 + Math.random() * 90000)}`;
-    const today = orderData.date || new Date().toISOString().split('T')[0];
-
-    const subtotal = orderData.subtotal ?? (orderData.items || []).reduce((acc, i) => acc + (i.price * i.quantity), 0);
-    const tax = orderData.tax ?? (subtotal * 0.08875);
-    const shippingFee = orderData.shippingFee ?? 0;
-    const total = orderData.total ?? (subtotal + tax + shippingFee);
-
-    const manualOrder: Order = {
-      id: newOrderId,
-      date: today,
-      createdAt: new Date().toISOString(),
-      customerName: orderData.customerName || 'In-Salon Patron',
-      customerEmail: orderData.customerEmail || 'salon@parkavenuemenswear.com',
-      customerPhone: orderData.customerPhone || 'On File',
-      orderStatus: orderData.orderStatus || 'Order Confirmed',
-      status: orderData.orderStatus || 'Order Confirmed',
-      paymentStatus: orderData.paymentStatus || 'Paid',
-      paymentMethod: orderData.paymentMethod || 'In-Salon POS / Cash',
-      items: orderData.items || [],
-      subtotal,
-      tax,
-      shippingFee,
-      total,
-      shippingAddress: orderData.shippingAddress || {
-        street: 'Atelier In-Salon Handover',
-        city: 'Metropolitan',
-        state: 'NY',
-        zipCode: '10021',
-        country: 'United States'
-      },
-      trackingNumber: orderData.trackingNumber || `TRK-${Math.floor(100000 + Math.random() * 900000)}`,
-      carrier: orderData.carrier || 'Atelier Concierge',
-      alterationRequested: Boolean(orderData.alterationRequested),
-      alterationNotes: orderData.alterationNotes || '',
-      timeline: [
-        {
-          status: 'Order Confirmed',
-          timestamp: 'Just now',
-          location: 'Park Avenue Flagship Atelier',
-          description: 'Manual order commissioned via Atelier ERP.',
-          completed: true
-        }
-      ]
-    };
-
-    // Deduct stock if items exist
-    for (const item of manualOrder.items) {
-      const prod = productsCache.find(p => p.id === item.productId);
-      if (prod) {
-        const variant = prod.variants.find(v => v.size === item.size && v.color === item.color);
-        if (variant) {
-          const nextStock = Math.max(0, variant.stock - item.quantity);
-          await ProductService.updateStock(prod.id, variant.id, nextStock);
-        }
-      }
-    }
-
-    ordersCache = [manualOrder, ...ordersCache];
-    saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
-    return manualOrder;
   }
 };
 
@@ -892,19 +890,19 @@ export const AuthService = {
     } catch (err: any) {
       console.warn('[AuthService] Network login fallback:', err);
       const cleanId = usernameOrEmail.trim().toLowerCase();
-      if (cleanId === 'parkamw@admin.com' && password === 'Parkmens@911') {
+      if ((cleanId === 'admin' || cleanId === 'admin@parkavenuemenswear.com') && password === 'ParkAvenue2026!') {
         const adminUser = {
           id: 'CUST-ADM-001',
-          name: 'Executive Administrator',
-          username: 'parkamw@admin.com',
-          email: 'parkamw@admin.com',
-          phone: '+1 (800) 555-0100',
+          name: 'Executive Director',
+          username: 'admin',
+          email: 'admin@parkavenuemenswear.com',
+          phone: '+1 (212) 555-0100',
           role: 'admin'
         };
         const token = 'mock-jwt-admin-' + Date.now();
         localStorage.setItem(STORAGE_KEYS.TOKEN, token);
         localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(adminUser));
-        return { success: true, customer: adminUser, token, message: 'Welcome to Park Avenue Mens Wear Administrator Portal!' };
+        return { success: true, customer: adminUser, token, message: 'Welcome to Park Avenue Mens Wear!' };
       }
       if ((cleanId === 'tailor' || cleanId === 'tailor@parkavenuemenswear.com') && password === 'ParkAvenue2026!') {
         const staffUser = {

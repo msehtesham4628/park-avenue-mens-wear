@@ -91,18 +91,18 @@ export interface CartItem {
 
 export type OrderStatus = 'Order Confirmed' | 'Processing' | 'Packed' | 'Shipped' | 'Out for Delivery' | 'Delivered' | 'Cancelled';
 
-export type PaymentStatus = 'Paid' | 'Pending' | 'Authorized' | 'Refunded';
+export type PaymentStatus = 'Paid' | 'Pending' | 'Authorized' | 'Refunded' | 'Invoice';
 
 export interface OrderItem {
   productId: string;
   productName: string;
-  category: ProductCategory;
+  category?: ProductCategory;
   size: string;
-  color: string;
+  color?: string;
   quantity: number;
   price: number;
-  image: string;
-  sku: string;
+  image?: string;
+  sku?: string;
 }
 
 export interface OrderTimelineEvent {
@@ -123,13 +123,14 @@ export interface Order {
   items: OrderItem[];
   subtotal: number;
   shippingFee: number;
+  shippingMethod?: string;
   tax: number;
   total: number;
   orderStatus: OrderStatus;
   status?: string; // convenient alias
   paymentStatus: PaymentStatus;
   paymentMethod: string;
-  shippingAddress: {
+  shippingAddress?: {
     street: string;
     apartment?: string;
     city: string;
@@ -197,6 +198,7 @@ export interface Customer {
   name: string;
   email: string;
   phone: string;
+  role?: string;
   avatar?: string;
   tier?: string;
   measurements?: {

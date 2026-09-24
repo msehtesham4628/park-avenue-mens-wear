@@ -1,611 +1,313 @@
 import * as XLSX from 'xlsx';
-import { Product, Order, Customer, ProductCategory } from '../types';
+import { Product, Order, Customer, ProductCategory, OFFICIAL_CATEGORIES, ProductVariant } from '../types';
 
 /**
- * PARK AVENUE MENSWEAR — Enterprise Excel & ERP Integration Utility
- * Supports Microsoft Excel (.xlsx), CSV, Tally Prime / Tally.ERP 9 XML, and Financial Reporting.
+ * Downloads a standardized Excel template for bulk product upload
  */
-
-// Helper: Trigger browser download for Blob or data string
-function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-const getFormattedDate = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-
-// ==========================================
-// 1. PRODUCTS EXCEL EXPORT & TEMPLATE
-// ==========================================
-
-export function exportProductsToExcel(products: Product[]) {
-  const data = products.map(p => {
-    const sizeStockStr = (p.variants || [])
-      .map(v => `${v.size}:${v.stock}`)
-      .join(', ');
-
-    return {
-      'SKU': p.sku || '',
-      'Product Name': p.name || '',
-      'Category': p.category || '',
-      'Price ($)': p.price || 0,
-      'Original Price ($)': p.originalPrice || '',
-      'Total Stock': p.totalStock ?? (p.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) ?? 0),
-      'Sizes & Stock (Size:Qty)': sizeStockStr,
-      'Collection': p.collection || 'Heritage Sartorial',
-      'Fabric': p.fabric || '',
-      'Fit': p.fit || 'Tailored Fit',
-      'Bespoke Alteration Eligible': p.alterationEligible ? 'Yes' : 'No',
-      'Description': p.description || '',
-      'Image URL': p.images?.[0] || ''
-    };
-  });
-
-  const worksheet = XLSX.utils.json_to_sheet(data);
-
-  // Set column widths for readability in Excel
-  worksheet['!cols'] = [
-    { wch: 14 }, // SKU
-    { wch: 32 }, // Product Name
-    { wch: 16 }, // Category
-    { wch: 12 }, // Price
-    { wch: 16 }, // Original Price
-    { wch: 12 }, // Total Stock
-    { wch: 28 }, // Sizes & Stock
-    { wch: 22 }, // Collection
-    { wch: 24 }, // Fabric
-    { wch: 16 }, // Fit
-    { wch: 26 }, // Alteration Eligible
-    { wch: 40 }, // Description
-    { wch: 35 }  // Image URL
-  ];
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Atelier Inventory');
-
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  triggerDownload(blob, `Park_Avenue_Products_${getFormattedDate()}.xlsx`);
-}
-
 export function downloadProductExcelTemplate() {
-  const sampleData = [
+  const templateRows = [
     {
-      'SKU': 'PA-SUIT-101',
-      'Product Name': 'Double-Breasted Peak Lapel Suit',
+      'SKU': 'PA-SUIT-CHAR-001',
+      'Garment Name': 'Park Avenue Bespoke Charcoal Three-Piece Suit',
       'Category': 'Suits',
       'Price ($)': 2850,
-      'Original Price ($)': 3200,
-      'Total Stock': 15,
-      'Sizes & Stock (Size:Qty)': '38R:4, 40R:6, 42R:5',
-      'Collection': 'Presidential Sartorial',
-      'Fabric': 'Super 160s Vitale Barberis Canonico Wool',
-      'Fit': 'Tailored Structured Fit',
-      'Bespoke Alteration Eligible': 'Yes',
-      'Description': 'Hand-canvassed double-breasted suit tailored with horn buttons and pick-stitched lapels.',
-      'Image URL': 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80'
+      'Fabric': 'Super 150s Tasmanian Wool by Loro Piana',
+      'Fit': 'Modern Tailored',
+      'Description': 'Handcrafted with full-canvas construction, horn buttons, and cupro lining.',
+      'Sizes & Stock (e.g. 38R:3, 40R:5, 42R:2)': '38R:3, 40R:5, 42R:4, 44R:2',
+      'Image URL': 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200'
     },
     {
-      'SKU': 'PA-SHIRT-202',
-      'Product Name': 'Egyptian Cotton Royal Oxford Shirt',
+      'SKU': 'PA-SHIRT-WHT-002',
+      'Garment Name': 'Neapolitan Spread Collar Sea Island Cotton Shirt',
       'Category': 'Dress shirts',
-      'Price ($)': 480,
-      'Original Price ($)': '',
-      'Total Stock': 20,
-      'Sizes & Stock (Size:Qty)': '15.5:5, 16.0:10, 16.5:5',
-      'Collection': 'Milanese Business',
-      'Fabric': '140/2 Egyptian Giza Cotton',
+      'Price ($)': 395,
+      'Fabric': '200/2 2-Ply Sea Island Cotton',
       'Fit': 'Slim Fit',
-      'Bespoke Alteration Eligible': 'No',
-      'Description': 'French cuff luxury dress shirt cut from luminous Sea Island cotton yarn.',
-      'Image URL': 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=800&q=80'
+      'Description': 'Australian mother-of-pearl buttons with hand-sewn crowfoot stitching.',
+      'Sizes & Stock (e.g. 38R:3, 40R:5, 42R:2)': '15.5:8, 16.0:10, 16.5:6, 17.0:4',
+      'Image URL': 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&q=80&w=1200'
     },
     {
-      'SKU': 'PA-SHOE-303',
-      'Product Name': 'Cap-Toe Goodyear Oxford Shoes',
+      'SKU': 'PA-SHOE-OXF-003',
+      'Garment Name': 'Goodyear Welted Museum Calfskin Oxford',
       'Category': 'Shoe',
-      'Price ($)': 920,
-      'Original Price ($)': '',
-      'Total Stock': 12,
-      'Sizes & Stock (Size:Qty)': '9:3, 10:5, 11:4',
-      'Collection': 'St. James Footwear',
-      'Fabric': 'French Box Calf Leather with Oak Bark Sole',
-      'Fit': 'Standard Width E',
-      'Bespoke Alteration Eligible': 'No',
-      'Description': 'Hand-lasted Goodyear welted cap-toe dress shoes with beveled fiddleback waist.',
-      'Image URL': 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&w=800&q=80'
+      'Price ($)': 895,
+      'Fabric': 'Full-grain Parisian Box Calfskin',
+      'Fit': 'Standard D Width',
+      'Description': 'Single leather sole with oak bark tanning and hand-beveled waist.',
+      'Sizes & Stock (e.g. 38R:3, 40R:5, 42R:2)': '8:4, 9:6, 10:8, 11:5, 12:2',
+      'Image URL': 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&q=80&w=1200'
     }
   ];
 
-  const worksheet = XLSX.utils.json_to_sheet(sampleData);
-  worksheet['!cols'] = [
-    { wch: 14 },
-    { wch: 34 },
-    { wch: 16 },
-    { wch: 12 },
-    { wch: 16 },
-    { wch: 12 },
-    { wch: 28 },
-    { wch: 24 },
-    { wch: 32 },
-    { wch: 20 },
-    { wch: 26 },
-    { wch: 45 },
-    { wch: 40 }
+  const ws = XLSX.utils.json_to_sheet(templateRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Product_Template');
+
+  // Adjust column widths for clear presentation
+  ws['!cols'] = [
+    { wch: 18 }, // SKU
+    { wch: 38 }, // Garment Name
+    { wch: 16 }, // Category
+    { wch: 12 }, // Price
+    { wch: 35 }, // Fabric
+    { wch: 20 }, // Fit
+    { wch: 55 }, // Description
+    { wch: 35 }, // Sizes & Stock
+    { wch: 45 }  // Image URL
   ];
 
-  const instructions = [
-    { 'Column': 'SKU', 'Requirement': 'Required', 'Format / Example': 'Unique product identifier, e.g. PA-SUIT-101' },
-    { 'Column': 'Product Name', 'Requirement': 'Required', 'Format / Example': 'Full garment name' },
-    { 'Column': 'Category', 'Requirement': 'Required', 'Format / Example': 'Suits, Dress shirts, Ties, Shoe, Boots, Loofers, Pants, Jeans, Leather jackets, Sweaters, Coats, Polo shirts, Shorts' },
-    { 'Column': 'Price ($)', 'Requirement': 'Required', 'Format / Example': 'Numeric price without dollar sign, e.g. 1850' },
-    { 'Column': 'Original Price ($)', 'Requirement': 'Optional', 'Format / Example': 'Numeric strikethrough price, e.g. 2100' },
-    { 'Column': 'Total Stock', 'Requirement': 'Optional', 'Format / Example': 'Integer stock quantity' },
-    { 'Column': 'Sizes & Stock (Size:Qty)', 'Requirement': 'Recommended', 'Format / Example': 'Comma-separated pairs, e.g. "38R:4, 40R:6, 42R:2"' },
-    { 'Column': 'Collection', 'Requirement': 'Optional', 'Format / Example': 'e.g. "Heritage Sartorial", "Monaco Evening"' },
-    { 'Column': 'Fabric', 'Requirement': 'Optional', 'Format / Example': 'e.g. "Super 150s Pure Wool"' },
-    { 'Column': 'Fit', 'Requirement': 'Optional', 'Format / Example': 'e.g. "Tailored Fit", "Classic Fit"' },
-    { 'Column': 'Bespoke Alteration Eligible', 'Requirement': 'Optional', 'Format / Example': '"Yes" or "No"' },
-    { 'Column': 'Description', 'Requirement': 'Optional', 'Format / Example': 'Detailed garment description and craftsmanship notes' },
-    { 'Column': 'Image URL', 'Requirement': 'Optional', 'Format / Example': 'Direct web URL to product photography' }
-  ];
-
-  const instrWorksheet = XLSX.utils.json_to_sheet(instructions);
-  instrWorksheet['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 60 }];
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Products Template');
-  XLSX.utils.book_append_sheet(workbook, instrWorksheet, 'Instructions & Schema');
-
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  triggerDownload(blob, `Park_Avenue_Product_Import_Template.xlsx`);
+  XLSX.writeFile(wb, 'park_avenue_products_upload_template.xlsx');
 }
 
-// ==========================================
-// 2. PARSE PRODUCTS FROM EXCEL UPLOAD
-// ==========================================
-
-export async function parseProductsFromExcel(file: File): Promise<{
-  success: boolean;
-  products: Product[];
+/**
+ * Parses an uploaded Excel or CSV file into Product items
+ */
+export async function parseProductsExcel(file: File): Promise<{
+  products: Omit<Product, 'id' | 'totalStock'>[];
   errors: string[];
-  totalRows: number;
 }> {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
+  const data = await file.arrayBuffer();
+  const workbook = XLSX.read(data, { type: 'array' });
 
-    reader.onload = (e) => {
-      try {
-        const buffer = e.target?.result;
-        if (!buffer) {
-          resolve({ success: false, products: [], errors: ['File could not be read.'], totalRows: 0 });
-          return;
-        }
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) {
+    throw new Error('Spreadsheet has no sheets.');
+  }
 
-        const workbook = XLSX.read(buffer, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+  const worksheet = workbook.Sheets[firstSheetName];
+  const rows = XLSX.utils.sheet_to_json<any>(worksheet, { defval: '' });
 
-        if (!worksheet) {
-          resolve({ success: false, products: [], errors: ['No valid sheet found in uploaded spreadsheet.'], totalRows: 0 });
-          return;
-        }
+  if (rows.length === 0) {
+    throw new Error('Uploaded spreadsheet contains no data rows.');
+  }
 
-        const rawRows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-        if (rawRows.length === 0) {
-          resolve({ success: false, products: [], errors: ['Uploaded spreadsheet contains no data rows.'], totalRows: 0 });
-          return;
-        }
+  const products: Omit<Product, 'id' | 'totalStock'>[] = [];
+  const errors: string[] = [];
 
-        const products: Product[] = [];
-        const errors: string[] = [];
+  rows.forEach((row, index) => {
+    const rowNum = index + 2; // +1 for 0-index, +1 for header row
+    const sku = String(row['SKU'] || row['sku'] || `PA-IMP-${Date.now()}-${index}`).trim();
+    const name = String(row['Garment Name'] || row['Name'] || row['name'] || '').trim();
+    const rawCategory = String(row['Category'] || row['category'] || 'Suits').trim();
+    const priceNum = parseFloat(String(row['Price ($)'] || row['Price'] || row['price'] || '0').replace(/[^0-9.]/g, ''));
+    const fabric = String(row['Fabric'] || row['fabric'] || '').trim();
+    const fit = String(row['Fit'] || row['fit'] || '').trim();
+    const description = String(row['Description'] || row['description'] || '').trim();
+    const rawSizes = String(row['Sizes & Stock'] || row['Sizes & Stock (e.g. 38R:3, 40R:5, 42R:2)'] || row['sizes'] || '38R:5, 40R:5, 42R:5').trim();
+    const imageUrl = String(row['Image URL'] || row['Image'] || row['image'] || '').trim() ||
+      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=1200';
 
-        rawRows.forEach((row, index) => {
-          const rowNum = index + 2; // Accounting for 1-based index and header row
+    if (!name) {
+      errors.push(`Row ${rowNum}: Missing Garment Name. Skipped.`);
+      return;
+    }
 
-          // Helper to get field case-insensitively
-          const getField = (...keys: string[]): string => {
-            for (const key of keys) {
-              const foundKey = Object.keys(row).find(k => k.trim().toLowerCase() === key.toLowerCase());
-              if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
-                return String(row[foundKey]).trim();
-              }
-            }
-            return '';
-          };
+    if (isNaN(priceNum) || priceNum <= 0) {
+      errors.push(`Row ${rowNum} (${name}): Invalid Price ($${row['Price']}). Defaulted to $450.`);
+    }
 
-          const name = getField('Product Name', 'Name', 'Title', 'Garment Name');
-          const sku = getField('SKU', 'Product Code', 'Code', 'Item Code') || `PA-${Math.floor(10000 + Math.random() * 90000)}`;
-          const categoryRaw = getField('Category', 'Department', 'Type');
-          const priceRaw = getField('Price ($)', 'Price', 'Unit Price', 'Retail Price');
-          const origPriceRaw = getField('Original Price ($)', 'Original Price', 'MSRP', 'Strikethrough Price');
-          const collection = getField('Collection', 'Line', 'Season') || 'Park Avenue Heritage';
-          const fabric = getField('Fabric', 'Material', 'Composition') || 'Sartorial Grade Natural Fiber';
-          const fit = getField('Fit', 'Silhouette') || 'Tailored Fit';
-          const description = getField('Description', 'Details', 'Notes') || `${name} — Crafted to Park Avenue standards.`;
-          const alterationEligibleRaw = getField('Bespoke Alteration Eligible', 'Alteration Eligible', 'Alteration');
-          const imageUrl = getField('Image URL', 'Image', 'Photo');
-          const sizeStockStr = getField('Sizes & Stock (Size:Qty)', 'Sizes & Stock', 'Sizes', 'Stock');
-          const totalStockRaw = getField('Total Stock', 'Stock Qty', 'Quantity');
-
-          if (!name) {
-            errors.push(`Row ${rowNum}: Skipped — Missing Product Name.`);
-            return;
-          }
-
-          const price = parseFloat(priceRaw.replace(/[^0-9.]/g, ''));
-          if (isNaN(price) || price <= 0) {
-            errors.push(`Row ${rowNum} (${name}): Skipped — Invalid price "${priceRaw}".`);
-            return;
-          }
-
-          const origPrice = origPriceRaw ? parseFloat(origPriceRaw.replace(/[^0-9.]/g, '')) : undefined;
-
-          // Normalize category to official categories
-          let category: ProductCategory = 'Suits';
-          const catNorm = categoryRaw.toLowerCase();
-          if (catNorm.includes('shirt')) {
-            category = catNorm.includes('polo') ? 'Polo shirts' : 'Dress shirts';
-          } else if (catNorm.includes('tie')) {
-            category = 'Ties';
-          } else if (catNorm.includes('boot')) {
-            category = 'Boots';
-          } else if (catNorm.includes('loof') || catNorm.includes('loafer')) {
-            category = 'Loofers';
-          } else if (catNorm.includes('pant') || catNorm.includes('trouser')) {
-            category = 'Pants';
-          } else if (catNorm.includes('jean') || catNorm.includes('denim')) {
-            category = 'Jeans';
-          } else if (catNorm.includes('leather')) {
-            category = 'Leather jackets';
-          } else if (catNorm.includes('sweater') || catNorm.includes('knit')) {
-            category = 'Sweaters';
-          } else if (catNorm.includes('coat') || catNorm.includes('overcoat')) {
-            category = 'Coats';
-          } else if (catNorm.includes('short')) {
-            category = 'Shorts';
-          } else if (catNorm.includes('shoe') || catNorm.includes('oxford')) {
-            category = 'Shoe';
-          }
-
-          // Parse variants from "38R:4, 40R:6" or generate sensible defaults
-          const variants = [];
-          if (sizeStockStr && sizeStockStr.includes(':')) {
-            const pairs = sizeStockStr.split(',');
-            for (const pair of pairs) {
-              const [sz, qty] = pair.split(':');
-              if (sz && qty) {
-                const stockNum = parseInt(qty.trim(), 10) || 0;
-                variants.push({
-                  id: `var-${Math.random().toString(36).substring(2, 7)}`,
-                  size: sz.trim(),
-                  color: 'Classic Atelier',
-                  colorHex: '#1F2937',
-                  stock: stockNum,
-                  sku: `${sku}-${sz.trim()}`
-                });
-              }
-            }
-          }
-
-          // Fallback variants if none parsed
-          if (variants.length === 0) {
-            const fallbackQty = parseInt(totalStockRaw, 10) || 10;
-            const defaultSizes = category === 'Suits' 
-              ? ['38R', '40R', '42R', '44R'] 
-              : category === 'Shoe' || category === 'Boots' || category === 'Loofers'
-              ? ['9', '10', '11']
-              : ['S', 'M', 'L', 'XL'];
-
-            const perSize = Math.max(1, Math.floor(fallbackQty / defaultSizes.length));
-            defaultSizes.forEach(s => {
-              variants.push({
-                id: `var-${Math.random().toString(36).substring(2, 7)}`,
-                size: s,
-                color: 'Classic Navy / Charcoal',
-                colorHex: '#1F2937',
-                stock: perSize,
-                sku: `${sku}-${s}`
-              });
-            });
-          }
-
-          const calculatedStock = variants.reduce((sum, v) => sum + v.stock, 0);
-
-          const product: Product = {
-            id: `prod-excel-${Date.now()}-${index}`,
-            name,
-            subtitle: `${fabric} · ${fit}`,
-            category,
-            price,
-            originalPrice: origPrice && !isNaN(origPrice) ? origPrice : undefined,
-            sku,
-            collection,
-            description,
-            details: [
-              `Crafted from ${fabric}`,
-              `Tailoring silhouette: ${fit}`,
-              'Hand-inspected before commission dispatch'
-            ],
-            fabric,
-            fit,
-            care: ['Specialist dry clean only', 'Store on contoured cedar hanger'],
-            images: imageUrl ? [imageUrl] : ['https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80'],
-            variants,
-            totalStock: calculatedStock,
-            alterationEligible: alterationEligibleRaw.toLowerCase() === 'yes' || alterationEligibleRaw.toLowerCase() === 'true' || category === 'Suits' || category === 'Pants'
-          };
-
-          products.push(product);
-        });
-
-        resolve({
-          success: products.length > 0,
-          products,
-          errors,
-          totalRows: rawRows.length
-        });
-      } catch (err) {
-        resolve({
-          success: false,
-          products: [],
-          errors: [`Failed to parse spreadsheet file: ${(err as Error).message}`],
-          totalRows: 0
-        });
-      }
-    };
-
-    reader.onerror = () => {
-      resolve({ success: false, products: [], errors: ['Error occurred reading file binary.'], totalRows: 0 });
-    };
-
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-// ==========================================
-// 3. CUSTOMER DATA EXCEL EXPORT
-// ==========================================
-
-export function exportCustomersToExcel(customers: Customer[], orders: Order[]) {
-  const customerRows = customers.map(c => {
-    // Calculate customer metrics from orders list
-    const clientOrders = orders.filter(o => 
-      (o.customerEmail && o.customerEmail.toLowerCase() === c.email.toLowerCase()) ||
-      (c.phone && o.customerPhone && o.customerPhone.replace(/\D/g, '') === c.phone.replace(/\D/g, ''))
+    // Match or normalize category
+    let category: ProductCategory = 'Suits';
+    const foundCat = OFFICIAL_CATEGORIES.find(
+      c => c.name.toLowerCase() === rawCategory.toLowerCase() || c.queryValue.toLowerCase() === rawCategory.toLowerCase()
     );
+    if (foundCat) {
+      category = foundCat.queryValue;
+    } else {
+      category = 'Suits';
+      if (rawCategory) {
+        errors.push(`Row ${rowNum}: Category "${rawCategory}" normalized to "Suits".`);
+      }
+    }
 
-    const totalSpent = clientOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const lastOrder = clientOrders.sort((a, b) => new Date(b.date || '').getTime() - new Date(a.date || '').getTime())[0];
+    // Parse sizes & stock: e.g. "38R:4, 40R:6, 42R:2"
+    const variants: ProductVariant[] = [];
+    const sizeTokens = rawSizes.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
 
-    return {
-      'Client ID': c.id || '',
-      'Client Name': c.name || '',
-      'Email Address': c.email || '',
-      'Phone Number': c.phone || 'On File',
-      'Atelier Role': (c.role || 'customer').toUpperCase(),
-      'Total Orders': clientOrders.length,
-      'Lifetime Spend ($)': totalSpent,
-      'Last Commission Date': lastOrder ? lastOrder.date : 'None',
-      'Atelier Status': c.role === 'admin' ? 'Executive Staff' : totalSpent > 5000 ? 'VIP Patron' : 'Active Patron'
-    };
+    if (sizeTokens.length > 0) {
+      sizeTokens.forEach((tok, sIdx) => {
+        const parts = tok.split(':');
+        const sizeStr = parts[0]?.trim() || `SZ-${sIdx + 1}`;
+        const stockStr = parts[1]?.trim() || '5';
+        const stockNum = parseInt(stockStr, 10) || 5;
+        variants.push({
+          id: `var-${sIdx + 1}`,
+          size: sizeStr,
+          stock: stockNum,
+          color: 'Default',
+          colorHex: '#111827',
+          sku: `${sku}-${sizeStr}`
+        });
+      });
+    } else {
+      variants.push(
+        { id: 'var-1', size: '38R', stock: 4, color: 'Default', colorHex: '#111827', sku: `${sku}-38R` },
+        { id: 'var-2', size: '40R', stock: 6, color: 'Default', colorHex: '#111827', sku: `${sku}-40R` },
+        { id: 'var-3', size: '42R', stock: 3, color: 'Default', colorHex: '#111827', sku: `${sku}-42R` }
+      );
+    }
+
+    products.push({
+      sku,
+      name,
+      subtitle: 'Sartorial Collection',
+      category,
+      price: priceNum > 0 ? priceNum : 450,
+      collection: 'Park Avenue Sartorial',
+      description: description || `Bespoke sartorial garment handcrafted with traditional craftsmanship.`,
+      details: ['Hand-finished tailoring', 'Classic drape', 'Bespoke fit'],
+      care: ['Professional Dry Clean Only'],
+      fabric: fabric || 'Pure Wool / Silk Blend',
+      fit: fit || 'Contemporary Tailored',
+      images: [imageUrl],
+      variants
+    });
   });
 
-  const worksheet = XLSX.utils.json_to_sheet(customerRows);
-  worksheet['!cols'] = [
-    { wch: 18 }, // ID
-    { wch: 26 }, // Name
-    { wch: 32 }, // Email
-    { wch: 18 }, // Phone
-    { wch: 16 }, // Role
-    { wch: 14 }, // Total Orders
-    { wch: 18 }, // Lifetime Spend
-    { wch: 22 }, // Last Order
-    { wch: 20 }  // Status
-  ];
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Patron Ledger');
-
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  triggerDownload(blob, `Park_Avenue_Customers_Ledger_${getFormattedDate()}.xlsx`);
+  return { products, errors };
 }
 
-// ==========================================
-// 4. ORDERS DATA EXCEL EXPORT
-// ==========================================
-
-export function exportOrdersToExcel(orders: Order[]) {
-  // Sheet 1: Orders Summary
-  const summaryRows = orders.map(o => ({
-    'Order ID': o.id,
-    'Date': o.date || (o.createdAt ? new Date(o.createdAt).toLocaleDateString() : ''),
-    'Customer Name': o.customerName || '',
-    'Email Address': o.customerEmail || '',
-    'Phone': o.customerPhone || '',
-    'Order Status': o.orderStatus || o.status || 'Order Confirmed',
-    'Payment Status': o.paymentStatus || 'Paid',
-    'Payment Method': o.paymentMethod || 'Online / Card',
-    'Garment Subtotal ($)': o.subtotal || 0,
-    'Tax ($)': o.tax || 0,
-    'Shipping Fee ($)': o.shippingFee || 0,
-    'Grand Total ($)': o.total || 0,
-    'Items Count': o.items?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0,
-    'Tracking Number': o.trackingNumber || 'Pending Dispatch',
-    'Bespoke Alteration': o.alterationRequested ? 'Requested' : 'Standard Delivery'
+/**
+ * Exports products list to Excel (.xlsx)
+ */
+export function exportProductsToExcel(products: Product[]) {
+  const exportRows = products.map(p => ({
+    'SKU': p.sku,
+    'Garment Name': p.name,
+    'Category': p.category,
+    'Price ($)': p.price,
+    'Total Stock': p.totalStock ?? p.variants?.reduce((sum, v) => sum + v.stock, 0) ?? 0,
+    'Fabric Composition': p.fabric || 'N/A',
+    'Fit Profile': p.fit || 'N/A',
+    'Variants Breakdown': p.variants?.map(v => `${v.size}: ${v.stock}`).join(' | ') || 'N/A',
+    'Description': p.description || '',
+    'Primary Image': p.images?.[0] || ''
   }));
 
-  // Sheet 2: Items Detail
-  const itemRows: Record<string, unknown>[] = [];
+  const ws = XLSX.utils.json_to_sheet(exportRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Products_Catalogue');
+
+  ws['!cols'] = [
+    { wch: 18 }, // SKU
+    { wch: 38 }, // Garment Name
+    { wch: 16 }, // Category
+    { wch: 12 }, // Price
+    { wch: 14 }, // Total Stock
+    { wch: 30 }, // Fabric
+    { wch: 22 }, // Fit
+    { wch: 35 }, // Variants
+    { wch: 45 }, // Description
+    { wch: 30 }  // Primary Image
+  ];
+
+  XLSX.writeFile(wb, `park_avenue_products_catalogue_${Date.now().toString().slice(-6)}.xlsx`);
+}
+
+/**
+ * Exports Customers lifetime spend & records to Excel (.xlsx)
+ */
+export function exportCustomersToExcel(customers: Customer[], orders: Order[]) {
+  const exportRows = customers.map(c => {
+    const custOrders = orders.filter(o => 
+      o.customerEmail?.toLowerCase() === c.email?.toLowerCase() ||
+      o.customerPhone === c.phone ||
+      o.customerName?.toLowerCase() === c.name?.toLowerCase()
+    );
+    const lifetimeSpend = custOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const lastOrderDate = custOrders.length > 0 ? custOrders[0].date : 'None';
+
+    return {
+      'Client ID': c.id,
+      'Patron Name': c.name,
+      'Email': c.email,
+      'Phone': c.phone || 'Private',
+      'Clearance Role': (c.role || 'Patron').toUpperCase(),
+      'Total Consignments': custOrders.length,
+      'Lifetime Spend ($)': lifetimeSpend,
+      'Last Commission Date': lastOrderDate,
+      'VIP Classification': lifetimeSpend > 5000 ? 'Platinum Atelier' : lifetimeSpend > 2000 ? 'Gold Salon' : 'Privileged Patron'
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Patron_Ledger');
+
+  ws['!cols'] = [
+    { wch: 16 }, // ID
+    { wch: 28 }, // Name
+    { wch: 30 }, // Email
+    { wch: 18 }, // Phone
+    { wch: 16 }, // Role
+    { wch: 20 }, // Orders
+    { wch: 18 }, // Spend
+    { wch: 22 }, // Last Order
+    { wch: 22 }  // VIP Class
+  ];
+
+  XLSX.writeFile(wb, `park_avenue_patrons_ledger_${Date.now().toString().slice(-6)}.xlsx`);
+}
+
+/**
+ * Exports Orders to Excel (.xlsx) with Orders Overview + Line Items sheet
+ */
+export function exportOrdersToExcel(orders: Order[]) {
+  // Sheet 1: Orders Header
+  const orderHeaders = orders.map(o => ({
+    'Consignment ID': o.id,
+    'Order Date': o.date,
+    'Patron Name': o.customerName,
+    'Client Email': o.customerEmail,
+    'Client Phone': o.customerPhone,
+    'Garment Count': o.items?.reduce((sum, it) => sum + it.quantity, 0) || 0,
+    'Subtotal ($)': o.subtotal,
+    'Tax ($)': o.tax,
+    'Shipping Fee ($)': o.shippingFee ?? 0,
+    'Total Consignment ($)': o.total,
+    'Fulfillment Status': o.orderStatus,
+    'Payment Status': o.paymentStatus,
+    'Payment Method': o.paymentMethod || 'Credit Card',
+    'Courier / Dispatch': o.shippingMethod || 'Standard White-Glove',
+    'Alterations Requested': o.alterationRequested ? 'YES' : 'NO',
+    'Alteration Notes': o.alterationNotes || ''
+  }));
+
+  // Sheet 2: Line Items Detail
+  const lineItems: any[] = [];
   orders.forEach(o => {
-    (o.items || []).forEach(item => {
-      itemRows.push({
-        'Order ID': o.id,
-        'Date': o.date,
-        'SKU': item.sku || 'PA-GARMENT',
-        'Product Name': item.productName || 'Park Avenue Garment',
-        'Category': item.category || 'Suits',
-        'Size': item.size || 'Custom',
-        'Color': item.color || 'Standard',
-        'Quantity': item.quantity || 1,
-        'Unit Price ($)': item.price || 0,
-        'Line Total ($)': (item.price || 0) * (item.quantity || 1),
-        'Customer Name': o.customerName
+    (o.items || []).forEach(it => {
+      lineItems.push({
+        'Consignment ID': o.id,
+        'Order Date': o.date,
+        'Patron Name': o.customerName,
+        'Garment Title': it.productName,
+        'Size': it.size,
+        'Quantity': it.quantity,
+        'Unit Price ($)': it.price,
+        'Line Total ($)': it.price * it.quantity
       });
     });
   });
 
-  const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
-  summarySheet['!cols'] = [
-    { wch: 14 },
-    { wch: 14 },
-    { wch: 24 },
-    { wch: 30 },
-    { wch: 18 },
-    { wch: 18 },
-    { wch: 16 },
-    { wch: 18 },
-    { wch: 18 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 16 },
-    { wch: 14 },
-    { wch: 22 },
-    { wch: 20 }
-  ];
+  const wb = XLSX.utils.book_new();
 
-  const itemsSheet = XLSX.utils.json_to_sheet(itemRows);
-  itemsSheet['!cols'] = [
-    { wch: 14 },
-    { wch: 14 },
-    { wch: 16 },
-    { wch: 32 },
-    { wch: 16 },
-    { wch: 12 },
-    { wch: 16 },
-    { wch: 10 },
-    { wch: 14 },
-    { wch: 16 },
-    { wch: 24 }
-  ];
+  const wsOrders = XLSX.utils.json_to_sheet(orderHeaders);
+  XLSX.utils.book_append_sheet(wb, wsOrders, 'Orders_Ledger');
 
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, summarySheet, 'Orders Ledger');
-  XLSX.utils.book_append_sheet(workbook, itemsSheet, 'Order Line Items');
+  const wsItems = XLSX.utils.json_to_sheet(lineItems);
+  XLSX.utils.book_append_sheet(wb, wsItems, 'Order_Line_Items');
 
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  triggerDownload(blob, `Park_Avenue_Orders_Ledger_${getFormattedDate()}.xlsx`);
+  XLSX.writeFile(wb, `park_avenue_consignments_ledger_${Date.now().toString().slice(-6)}.xlsx`);
 }
 
-// ==========================================
-// 5. TALLY ERP (XML & EXCEL DAYBOOK)
-// ==========================================
-
 /**
- * Generates official Tally ERP 9 / Tally Prime XML import format.
- * Can be directly imported via: Gateway of Tally -> Import -> Vouchers
+ * Generates official Tally Prime / Tally.ERP 9 XML Voucher file
  */
 export function exportTallyXml(orders: Order[]) {
-  const sanitizeXml = (str: string) => {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
-  };
-
-  const voucherXmlList = orders.map(o => {
-    const rawDate = o.date ? new Date(o.date) : new Date();
-    const tallyDate = !isNaN(rawDate.getTime())
-      ? `${rawDate.getFullYear()}${String(rawDate.getMonth() + 1).padStart(2, '0')}${String(rawDate.getDate()).padStart(2, '0')}`
-      : getFormattedDate().replace(/-/g, '');
-
-    const customerName = sanitizeXml(o.customerName || 'Cash Sales Customer');
-    const orderId = sanitizeXml(o.id);
-    const totalAmount = Number(o.total || 0).toFixed(2);
-    const subtotal = Number(o.subtotal || 0).toFixed(2);
-    const tax = Number(o.tax || 0).toFixed(2);
-    const shipping = Number(o.shippingFee || 0).toFixed(2);
-
-    return `
-      <TALLYMESSAGE xmlns:UDF="TallyUDF">
-        <VOUCHER VCHTYPE="Sales" ACTION="Create" OBJVIEW="Accounting Voucher View">
-          <DATE>${tallyDate}</DATE>
-          <GUID>${orderId}-${Date.now()}</GUID>
-          <NARRATION>Park Avenue Menswear Consignment ${orderId} for ${customerName}. Courier: ${sanitizeXml(o.carrier || 'DHL')}</NARRATION>
-          <VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
-          <VOUCHERNUMBER>${orderId}</VOUCHERNUMBER>
-          <REFERENCE>${orderId}</REFERENCE>
-          <PARTYLEDGERNAME>${customerName}</PARTYLEDGERNAME>
-          <CSTFORMISSUETYPE/>
-          <CSTFORMRECVTYPE/>
-          <FBTPAYMENTTYPE>Default</FBTPAYMENTTYPE>
-          <PERSISTEDVIEW>Accounting Voucher View</PERSISTEDVIEW>
-          <BASICBUYERNAME>${customerName}</BASICBUYERNAME>
-          <BASICDATETIMEOFINVOICE>${tallyDate}</BASICDATETIMEOFINVOICE>
-          
-          <!-- Debiting Customer / Sundry Debtors -->
-          <ALLLEDGERENTRIES.LIST>
-            <LEDGERNAME>${customerName}</LEDGERNAME>
-            <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
-            <LEDGERFROMITEM>No</LEDGERFROMITEM>
-            <REMOVEZEROENTRIES>No</REMOVEZEROENTRIES>
-            <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
-            <AMOUNT>-${totalAmount}</AMOUNT>
-          </ALLLEDGERENTRIES.LIST>
-
-          <!-- Crediting Sales Account -->
-          <ALLLEDGERENTRIES.LIST>
-            <LEDGERNAME>Sales Account - Luxury Menswear</LEDGERNAME>
-            <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-            <LEDGERFROMITEM>No</LEDGERFROMITEM>
-            <REMOVEZEROENTRIES>No</REMOVEZEROENTRIES>
-            <ISPARTYLEDGER>No</ISPARTYLEDGER>
-            <AMOUNT>${subtotal}</AMOUNT>
-          </ALLLEDGERENTRIES.LIST>
-
-          ${Number(tax) > 0 ? `
-          <!-- Crediting Output GST / Sales Tax -->
-          <ALLLEDGERENTRIES.LIST>
-            <LEDGERNAME>Output Luxury Sales Tax</LEDGERNAME>
-            <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-            <LEDGERFROMITEM>No</LEDGERFROMITEM>
-            <REMOVEZEROENTRIES>No</REMOVEZEROENTRIES>
-            <ISPARTYLEDGER>No</ISPARTYLEDGER>
-            <AMOUNT>${tax}</AMOUNT>
-          </ALLLEDGERENTRIES.LIST>
-          ` : ''}
-
-          ${Number(shipping) > 0 ? `
-          <!-- Crediting Courier Freight Recoveries -->
-          <ALLLEDGERENTRIES.LIST>
-            <LEDGERNAME>Express Courier Freight Recovery</LEDGERNAME>
-            <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-            <LEDGERFROMITEM>No</LEDGERFROMITEM>
-            <REMOVEZEROENTRIES>No</REMOVEZEROENTRIES>
-            <ISPARTYLEDGER>No</ISPARTYLEDGER>
-            <AMOUNT>${shipping}</AMOUNT>
-          </ALLLEDGERENTRIES.LIST>
-          ` : ''}
-
-        </VOUCHER>
-      </TALLYMESSAGE>`;
-  }).join('\n');
-
-  const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <ENVELOPE>
   <HEADER>
     <TALLYREQUEST>Import Data</TALLYREQUEST>
@@ -615,154 +317,192 @@ export function exportTallyXml(orders: Order[]) {
       <REQUESTDESC>
         <REPORTNAME>Vouchers</REPORTNAME>
         <STATICVARIABLES>
-          <SVCURRENTCOMPANY>Park Avenue Menswear</SVCURRENTCOMPANY>
+          <SVCURRENTCOMPANY>Park Avenue Menswear Atelier</SVCURRENTCOMPANY>
         </STATICVARIABLES>
       </REQUESTDESC>
       <REQUESTDATA>
-        ${voucherXmlList}
-      </REQUESTDATA>
+`;
+
+  orders.forEach(order => {
+    const rawDate = order.date.replace(/-/g, ''); // YYYYMMDD
+    const tallyDate = rawDate.length === 8 ? rawDate : '20260924';
+
+    xml += `        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHER VCHTYPE="Sales" ACTION="Create" OBJVIEW="Accounting Voucher View">
+            <DATE>${tallyDate}</DATE>
+            <VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
+            <VOUCHERNUMBER>${order.id}</VOUCHERNUMBER>
+            <REFERENCE>${order.id}</REFERENCE>
+            <PARTYLEDGERNAME>${escapeXml(order.customerName || 'Park Avenue Patron')}</PARTYLEDGERNAME>
+            <PERSISTEDVIEW>Accounting Voucher View</PERSISTEDVIEW>
+            <BASICBUYERNAME>${escapeXml(order.customerName || 'Park Avenue Patron')}</BASICBUYERNAME>
+            <NARRATION>Park Avenue Consignment Order ${order.id}. Payment: ${order.paymentStatus} (${order.paymentMethod || 'Private Ledger'}).</NARRATION>
+
+            <!-- Debit Party (Customer Sundry Debtors) -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>${escapeXml(order.customerName || 'Park Avenue Patron')}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${order.total.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>
+
+            <!-- Credit Sales Account (Net Garments) -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>Luxury Garments Sales Account</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${order.subtotal.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>
+
+            <!-- Credit Luxury Sales Tax Account -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>Luxury Sales Tax Payable (8.875%)</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${order.tax.toFixed(2)}</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>
+          </VOUCHER>
+        </TALLYMESSAGE>
+`;
+  });
+
+  xml += `      </REQUESTDATA>
     </IMPORTDATA>
   </BODY>
 </ENVELOPE>`;
 
-  const blob = new Blob([xmlContent], { type: 'application/xml;charset=utf-8;' });
-  triggerDownload(blob, `Park_Avenue_Tally_Sales_Vouchers_${getFormattedDate()}.xml`);
+  const blob = new Blob([xml], { type: 'application/xml;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `tally_sales_vouchers_${Date.now().toString().slice(-6)}.xml`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 /**
- * Tally ERP Compatible Excel Daybook / Sales Voucher format
+ * Exports Tally-compliant Daybook Excel sheet
  */
 export function exportTallyExcel(orders: Order[]) {
-  const tallyRows = orders.map((o, idx) => ({
-    'Sl. No': idx + 1,
-    'Date (DD-MM-YYYY)': o.date || getFormattedDate(),
+  const tallyRows = orders.map(order => ({
+    'Voucher Date': order.date,
+    'Voucher Number': order.id,
     'Voucher Type': 'Sales',
-    'Voucher No': o.id,
-    'Party Ledger (Debtor)': o.customerName || 'Cash Customer',
-    'Sales Ledger (Credit)': 'Sales Account - Luxury Menswear',
-    'Tax Ledger (Credit)': o.tax > 0 ? 'Output Luxury Sales Tax' : 'N/A',
-    'Net Sales ($)': o.subtotal || 0,
-    'Tax Amount ($)': o.tax || 0,
-    'Shipping Amount ($)': o.shippingFee || 0,
-    'Gross Voucher Amount ($)': o.total || 0,
-    'Cost Centre': 'Park Avenue Atelier Storefront',
-    'Narration': `Invoice ${o.id} paid via ${o.paymentMethod || 'Online Payment'}`
+    'Party Ledger Name (Dr)': order.customerName,
+    'Sales Account (Cr)': 'Luxury Garments Sales Account',
+    'Tax Account (Cr)': 'Luxury Sales Tax Payable',
+    'Net Sales Amount ($)': order.subtotal,
+    'Tax Amount ($)': order.tax,
+    'Gross Voucher Amount ($)': order.total,
+    'Payment Mode': order.paymentMethod || 'Direct Ledger',
+    'Settlement Status': order.paymentStatus,
+    'Narration': `Atelier sale consignment ${order.id} for ${order.customerName}`
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(tallyRows);
-  worksheet['!cols'] = [
-    { wch: 8 },
-    { wch: 18 },
-    { wch: 14 },
-    { wch: 14 },
-    { wch: 28 },
-    { wch: 32 },
-    { wch: 24 },
-    { wch: 14 },
+  const ws = XLSX.utils.json_to_sheet(tallyRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Tally_Daybook');
+
+  ws['!cols'] = [
     { wch: 14 },
     { wch: 18 },
+    { wch: 14 },
+    { wch: 25 },
+    { wch: 30 },
+    { wch: 25 },
+    { wch: 20 },
+    { wch: 15 },
     { wch: 22 },
-    { wch: 28 },
-    { wch: 40 }
+    { wch: 20 },
+    { wch: 18 },
+    { wch: 45 }
   ];
 
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Tally Sales Daybook');
-
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  triggerDownload(blob, `Park_Avenue_Tally_Daybook_${getFormattedDate()}.xlsx`);
+  XLSX.writeFile(wb, `tally_daybook_ledger_${Date.now().toString().slice(-6)}.xlsx`);
 }
 
-// ==========================================
-// 6. SALES REPORT & ERP FINANCIAL ANALYTICS
-// ==========================================
-
+/**
+ * Generates an Executive Sales & Margin Analysis Workbook (.xlsx)
+ */
 export function exportSalesReportToExcel(orders: Order[], products: Product[]) {
-  const totalGross = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-  const totalNet = orders.reduce((sum, o) => sum + (o.subtotal || 0), 0);
+  // Sheet 1: Executive KPI Metrics
+  const grossRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const netSales = orders.reduce((sum, o) => sum + (o.subtotal || 0), 0);
   const totalTax = orders.reduce((sum, o) => sum + (o.tax || 0), 0);
-  const totalShipping = orders.reduce((sum, o) => sum + (o.shippingFee || 0), 0);
-  const totalUnitsSold = orders.reduce((sum, o) => 
-    sum + (o.items?.reduce((iSum, item) => iSum + (item.quantity || 1), 0) || 0), 0
-  );
-  const aov = orders.length > 0 ? totalGross / orders.length : 0;
+  const totalOrders = orders.length;
+  const avgOrderValue = totalOrders > 0 ? grossRevenue / totalOrders : 0;
+  const totalItemsSold = orders.reduce((sum, o) => sum + (o.items?.reduce((s, it) => s + it.quantity, 0) || 0), 0);
 
-  // Sheet 1: Executive KPI Summary
-  const kpiData = [
-    { 'Metric': 'Gross Revenue ($)', 'Value': `$${totalGross.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-    { 'Metric': 'Net Garment Sales ($)', 'Value': `$${totalNet.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-    { 'Metric': 'Total Luxury Tax Collected ($)', 'Value': `$${totalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-    { 'Metric': 'Express Shipping Recovered ($)', 'Value': `$${totalShipping.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-    { 'Metric': 'Total Orders / Invoices Count', 'Value': orders.length },
-    { 'Metric': 'Total Garment Units Dispatched', 'Value': totalUnitsSold },
-    { 'Metric': 'Average Order Value (AOV)', 'Value': `$${aov.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-    { 'Metric': 'Total Inventory SKUs Active', 'Value': products.length },
-    { 'Metric': 'Report Generated On', 'Value': new Date().toLocaleString() }
+  const kpiRows = [
+    { 'Financial Metric': 'Gross Commissions Revenue', 'Value': `$${grossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+    { 'Financial Metric': 'Net Garments Sales', 'Value': `$${netSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+    { 'Financial Metric': 'Luxury Output Tax Collected (8.875%)', 'Value': `$${totalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+    { 'Financial Metric': 'Total Consignments Processed', 'Value': totalOrders },
+    { 'Financial Metric': 'Average Commission Value (AOV)', 'Value': `$${avgOrderValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+    { 'Financial Metric': 'Total Garments Handcrafted & Dispatched', 'Value': totalItemsSold },
+    { 'Financial Metric': 'Report Generation Timestamp', 'Value': new Date().toISOString() }
   ];
 
   // Sheet 2: Category Breakdown
-  const categoryStats: Record<string, { units: number; revenue: number }> = {};
+  const categoryMap: Record<string, { revenue: number; units: number }> = {};
   orders.forEach(o => {
-    (o.items || []).forEach(item => {
-      const cat = item.category || 'Suits';
-      if (!categoryStats[cat]) {
-        categoryStats[cat] = { units: 0, revenue: 0 };
+    (o.items || []).forEach(it => {
+      // Find matching product for category
+      const prod = products.find(p => p.id === it.productId || p.name === it.productName);
+      const cat = prod?.category || 'Suits';
+      if (!categoryMap[cat]) {
+        categoryMap[cat] = { revenue: 0, units: 0 };
       }
-      categoryStats[cat].units += (item.quantity || 1);
-      categoryStats[cat].revenue += (item.price || 0) * (item.quantity || 1);
+      categoryMap[cat].revenue += (it.price * it.quantity);
+      categoryMap[cat].units += it.quantity;
     });
   });
 
-  const categoryRows = Object.entries(categoryStats).map(([cat, stat]) => ({
-    'Atelier Department': cat,
-    'Units Sold': stat.units,
-    'Gross Revenue ($)': stat.revenue,
-    'Revenue Share (%)': totalNet > 0 ? `${((stat.revenue / totalNet) * 100).toFixed(1)}%` : '0%'
+  const categoryRows = Object.keys(categoryMap).map(cat => ({
+    'Category Department': cat,
+    'Units Sold': categoryMap[cat].units,
+    'Revenue Generated ($)': categoryMap[cat].revenue,
+    'Share of Total Sales (%)': netSales > 0 ? ((categoryMap[cat].revenue / netSales) * 100).toFixed(2) + '%' : '0.00%'
   }));
 
-  // Sheet 3: Product Performance Breakdown
-  const productStats: Record<string, { name: string; category: string; units: number; revenue: number }> = {};
+  // Sheet 3: Product Sales Velocity
+  const productVelocityMap: Record<string, { name: string; units: number; revenue: number }> = {};
   orders.forEach(o => {
-    (o.items || []).forEach(item => {
-      const id = item.productId || item.productName;
-      if (!productStats[id]) {
-        productStats[id] = {
-          name: item.productName || 'Garment',
-          category: item.category || 'Suits',
-          units: 0,
-          revenue: 0
-        };
+    (o.items || []).forEach(it => {
+      const key = it.productName;
+      if (!productVelocityMap[key]) {
+        productVelocityMap[key] = { name: it.productName, units: 0, revenue: 0 };
       }
-      productStats[id].units += (item.quantity || 1);
-      productStats[id].revenue += (item.price || 0) * (item.quantity || 1);
+      productVelocityMap[key].units += it.quantity;
+      productVelocityMap[key].revenue += (it.price * it.quantity);
     });
   });
 
-  const productRows = Object.values(productStats)
-    .sort((a, b) => b.revenue - a.revenue)
-    .map(p => ({
-      'Product Name': p.name,
-      'Department': p.category,
-      'Units Sold': p.units,
-      'Gross Sales ($)': p.revenue
-    }));
+  const velocityRows = Object.values(productVelocityMap).sort((a, b) => b.revenue - a.revenue).map(p => ({
+    'Garment Title': p.name,
+    'Units Sold': p.units,
+    'Total Revenue ($)': p.revenue,
+    'Average Realized Price ($)': p.units > 0 ? (p.revenue / p.units).toFixed(2) : '0.00'
+  }));
 
-  const kpiSheet = XLSX.utils.json_to_sheet(kpiData);
-  kpiSheet['!cols'] = [{ wch: 32 }, { wch: 30 }];
+  const wb = XLSX.utils.book_new();
 
-  const catSheet = XLSX.utils.json_to_sheet(categoryRows);
-  catSheet['!cols'] = [{ wch: 24 }, { wch: 14 }, { wch: 20 }, { wch: 18 }];
+  const wsKpi = XLSX.utils.json_to_sheet(kpiRows);
+  XLSX.utils.book_append_sheet(wb, wsKpi, 'Executive_Financial_KPIs');
 
-  const prodSheet = XLSX.utils.json_to_sheet(productRows);
-  prodSheet['!cols'] = [{ wch: 36 }, { wch: 20 }, { wch: 14 }, { wch: 20 }];
+  const wsCat = XLSX.utils.json_to_sheet(categoryRows);
+  XLSX.utils.book_append_sheet(wb, wsCat, 'Department_Revenue_Share');
 
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, kpiSheet, 'Executive Financial KPI');
-  XLSX.utils.book_append_sheet(workbook, catSheet, 'Category Performance');
-  XLSX.utils.book_append_sheet(workbook, prodSheet, 'Product Sales Velocity');
+  const wsVel = XLSX.utils.json_to_sheet(velocityRows);
+  XLSX.utils.book_append_sheet(wb, wsVel, 'Garment_Sales_Velocity');
 
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  triggerDownload(blob, `Park_Avenue_Sales_Report_ERP_${getFormattedDate()}.xlsx`);
+  XLSX.writeFile(wb, `park_avenue_executive_sales_report_${Date.now().toString().slice(-6)}.xlsx`);
+}
+
+function escapeXml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
