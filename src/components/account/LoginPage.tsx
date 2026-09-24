@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Lock, 
   Mail, 
@@ -19,7 +19,7 @@ import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 type AuthViewMode = 'login' | 'create-account';
 
 export const LoginPage: React.FC = () => {
-  const { login, register, setActiveView, showToast } = useShop();
+  const { login, register, setActiveView, showToast, currentCustomer } = useShop();
 
   const [viewMode, setViewMode] = useState<AuthViewMode>('login');
   
@@ -42,6 +42,20 @@ export const LoginPage: React.FC = () => {
   const [emailId, setEmailId] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [reEnterPassword, setReEnterPassword] = useState('');
+
+  // Reset the login form whenever a session is signed out.
+  // This prevents the previous user's credentials/error message from remaining
+  // visible when logout returns the user to the login screen.
+  useEffect(() => {
+    if (!currentCustomer) {
+      setViewMode('login');
+      setLoginUsername('');
+      setLoginPassword('');
+      setErrorMessage(null);
+      setIsLoading(false);
+      setShowLoginPassword(false);
+    }
+  }, [currentCustomer]);
 
   // Password Validation Logic:
   // "Password logic should be: One caps and one caracter and number"
