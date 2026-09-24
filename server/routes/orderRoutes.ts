@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { orderController } from '../controllers/orderController.js';
 import { orderLookupLimiter } from '../middleware/rateLimiter.js';
-import { requireAdminOrStaff } from '../middleware/authMiddleware.js';
+import { authenticateJWT, requireAdminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
 // Storefront & Client routes
-router.get('/', ...requireAdminOrStaff, orderController.getOrders);
+router.get('/', authenticateJWT, orderController.getOrders);
 router.post('/', orderController.createOrder);
 router.post('/lookup', orderLookupLimiter, orderController.customerLookup);
 
