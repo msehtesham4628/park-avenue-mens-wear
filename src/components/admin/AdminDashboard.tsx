@@ -1199,17 +1199,28 @@ export const AdminDashboard: React.FC = () => {
                           {alt.status.replace(/_/g, ' ')}
                         </td>
                         <td className="p-4 text-right space-x-1.5">
-                          {['received', 'chalking_and_pinning', 'cutting_and_stitching', 'ready_for_pickup', 'completed'].map(st => (
+                          {[
+                            'Alteration Received',
+                            'Measurement/Review',
+                            'Alteration In Progress',
+                            'Quality Check',
+                            'Ready for Pickup',
+                            'Completed'
+                          ].map(st => (
                             <button
                               key={st}
                               onClick={async () => {
-                                await AlterationService.updateStatus(alt.id, st as any);
-                                showToast(`Alteration ${alt.id} status updated`, 'success');
-                                await loadAllData();
+                                try {
+                                  await AlterationService.updateStatus(alt.id, st as any);
+                                  showToast(`Alteration ${alt.id} status updated`, 'success');
+                                  await loadAllData();
+                                } catch {
+                                  showToast(`Could not update alteration ${alt.id}`, 'error');
+                                }
                               }}
                               className="px-2 py-1 text-[9px] border border-gray-200 hover:border-[#936B34] text-gray-500 hover:text-[#111827] uppercase cursor-pointer bg-[#F9F9F8] transition-colors"
                             >
-                              {st.split('_')[0]}
+                              {st}
                             </button>
                           ))}
                         </td>
