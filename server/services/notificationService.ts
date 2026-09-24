@@ -84,10 +84,7 @@ export class EmailProviderAdapter implements IEmailProvider {
       }
     }
 
-    // Default built-in secure concierge delivery logger
-    const messageId = `EMAIL-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    console.info(`[NotificationService:Email] Dispatched via ${this.name} to ${to}: "${subject}"`);
-    return { success: true, provider: this.name, providerMessageId: messageId };
+    return { success: false, provider: 'not-configured', error: 'Email provider is not configured. Set EMAIL_API_KEY and EMAIL_FROM in Vercel.' };
   }
 }
 
@@ -105,9 +102,7 @@ export class SmsProviderAdapter implements ISmsProvider {
       }
     }
 
-    const messageId = `SMS-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    console.info(`[NotificationService:SMS] Dispatched via ${this.name} to ${to}: "${message}"`);
-    return { success: true, provider: this.name, providerMessageId: messageId };
+    return { success: false, provider: 'not-configured', error: 'SMS provider is not configured. Set SMS_API_KEY and SMS_FROM in Vercel.' };
   }
 }
 
@@ -124,9 +119,7 @@ export class WhatsAppProviderAdapter implements IWhatsAppProvider {
       }
     }
 
-    const messageId = `WA-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    console.info(`[NotificationService:WhatsApp] Dispatched via ${this.name} to ${to}: "${message}"`);
-    return { success: true, provider: this.name, providerMessageId: messageId };
+    return { success: false, provider: 'not-configured', error: 'WhatsApp provider is not configured. Set WHATSAPP_API_KEY and WHATSAPP_PHONE_ID in Vercel.' };
   }
 }
 
@@ -221,7 +214,7 @@ export class NotificationService {
       channel: 'email',
       provider: result.provider,
       providerMessageId: result.providerMessageId,
-      status: result.success ? 'sent' : 'failed',
+      status: result.success ? 'sent' : (result.provider === 'not-configured' ? 'pending' : 'failed'),
       errorMessage: result.error
     });
 
