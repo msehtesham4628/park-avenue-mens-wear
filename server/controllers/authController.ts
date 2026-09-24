@@ -122,8 +122,8 @@ export const authController = {
 
   async login(req: AuthenticatedRequest, res: Response) {
     try {
-      const { username, email, password } = req.body;
-      const identifier = (username || email || '').trim();
+      const { identifier: bodyIdentifier, username, email, password } = req.body;
+      const identifier = (bodyIdentifier || username || email || '').trim();
 
       if (!identifier || !password) {
         return res.status(400).json({
