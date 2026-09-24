@@ -8,6 +8,7 @@ export interface IProductVariant {
   sku: string;
   barcode?: string;
   priceModifier?: number;
+  colorHex?: string;
 }
 
 export interface IProduct extends Document {
@@ -47,6 +48,7 @@ export interface IProduct extends Document {
   price: number;
   salePrice?: number;
   images: string[];
+  colorImages?: Record<string, string[]>;
   sizes: string[];
   colors: string[];
   variants: IProductVariant[];
@@ -69,7 +71,8 @@ const ProductVariantSchema = new Schema<IProductVariant>({
   stock: { type: Number, required: true, default: 0, min: 0 },
   sku: { type: String, required: true },
   barcode: { type: String },
-  priceModifier: { type: Number, default: 0 }
+  priceModifier: { type: Number, default: 0 },
+  colorHex: { type: String }
 }, { _id: false });
 
 const ProductSchema = new Schema<IProduct>({
@@ -115,6 +118,7 @@ const ProductSchema = new Schema<IProduct>({
   price: { type: Number, required: true, min: 0 },
   salePrice: { type: Number, min: 0 },
   images: [{ type: String }],
+  colorImages: { type: Map, of: [String], default: {} },
   sizes: [{ type: String }],
   colors: [{ type: String }],
   variants: [ProductVariantSchema],
