@@ -1,4 +1,52 @@
-export type ProductCategory = 'Suits' | 'Dress Shirts' | 'Dress Pants' | 'Ties' | 'New Arrivals';
+export type ProductCategory =
+  | 'Suits'
+  | 'Dress shirts'
+  | 'Dress Shirts'
+  | 'Ties'
+  | 'Shoe'
+  | 'Shoes'
+  | 'Boots'
+  | 'Loofers'
+  | 'Loafers'
+  | 'Pants'
+  | 'Dress Pants'
+  | 'Jeans'
+  | 'Leather jackets'
+  | 'Leather Jackets'
+  | 'Sweaters'
+  | 'Coats'
+  | 'Polo shirts'
+  | 'Polo Shirts'
+  | 'Shorts'
+  | 'New Arrivals'
+  | 'All';
+
+export interface CategoryItem {
+  id: string;
+  name: string;
+  queryValue: ProductCategory;
+  description: string;
+  iconName?: string;
+  tagline?: string;
+}
+
+export const OFFICIAL_CATEGORIES: CategoryItem[] = [
+  { id: 'all', name: 'All Collections', queryValue: 'All', description: 'Explore the complete Park Avenue Sartorial vault' },
+  { id: 'suits', name: 'Suits', queryValue: 'Suits', description: 'Double-breasted and two-piece suits hand-cut from Super 150s-180s wool' },
+  { id: 'dress-shirts', name: 'Dress Shirts', queryValue: 'Dress shirts', description: 'Tailored from Egyptian Giza 87 and Sea Island cotton' },
+  { id: 'ties', name: 'Ties', queryValue: 'Ties', description: 'Handcrafted Grenadine and 7-fold silk neckwear from Como' },
+  { id: 'shoe', name: 'Shoe', queryValue: 'Shoe', description: 'Goodyear-welted Oxford and Derby leather dress shoes' },
+  { id: 'boots', name: 'Boots', queryValue: 'Boots', description: 'Balmoral dress boots and sculpted Chelsea boots' },
+  { id: 'loofers', name: 'Loofers', queryValue: 'Loofers', description: 'Hand-sewn Belgian tasselled loofers and French calf penny loofers' },
+  { id: 'pants', name: 'Pants', queryValue: 'Pants', description: 'High-rise pleated trousers with side adjusters and unfinished hems' },
+  { id: 'jeans', name: 'Jeans', queryValue: 'Jeans', description: 'Japanese selvedge denim tailored to sartorial trouser proportions' },
+  { id: 'leather-jackets', name: 'Leather Jackets', queryValue: 'Leather jackets', description: 'Supple full-grain lambskin and burnished suede flight jackets' },
+  { id: 'sweaters', name: 'Sweaters', queryValue: 'Sweaters', description: '4-ply Scottish cashmere and extra-fine Merino knitwear' },
+  { id: 'coats', name: 'Coats', queryValue: 'Coats', description: 'Double-breasted overcoats in pure cashmere and camel hair' },
+  { id: 'polo-shirts', name: 'Polo Shirts', queryValue: 'Polo shirts', description: 'Long and short-sleeve knit polos in Sea Island silk-cotton' },
+  { id: 'shorts', name: 'Shorts', queryValue: 'Shorts', description: 'Pleated linen-cotton and tropical wool tailored walk shorts' },
+  { id: 'new-arrivals', name: 'New Arrivals', queryValue: 'New Arrivals', description: 'The latest seasonal cuts from the New York atelier' }
+];
 
 export interface ProductVariant {
   id: string;

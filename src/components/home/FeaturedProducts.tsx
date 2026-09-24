@@ -14,7 +14,8 @@ export const FeaturedProducts: React.FC = () => {
     { label: 'ALL COLLECTIONS', value: 'All' },
     { label: 'SUITS', value: 'Suits' },
     { label: 'DRESS SHIRTS', value: 'Dress Shirts' },
-    { label: 'DRESS PANTS', value: 'Dress Pants' },
+    { label: 'SHOES & LOOFERS', value: 'Shoe' },
+    { label: 'COATS & JACKETS', value: 'Coats' },
     { label: 'TIES', value: 'Ties' },
     { label: 'NEW ARRIVALS', value: 'New Arrivals' }
   ];
@@ -22,8 +23,16 @@ export const FeaturedProducts: React.FC = () => {
   const displayedProducts = products.filter(p => {
     if (activeTab === 'All') return p.isFeatured || p.isNewArrival || true;
     if (activeTab === 'New Arrivals') return p.isNewArrival;
-    return p.category === activeTab;
-  }).slice(0, 6);
+    const tabNorm = activeTab.toLowerCase();
+    const catNorm = (p.category || '').toLowerCase();
+    if (tabNorm === 'shoe') {
+      return catNorm.includes('shoe') || catNorm.includes('loof') || catNorm.includes('boot');
+    }
+    if (tabNorm === 'coats') {
+      return catNorm.includes('coat') || catNorm.includes('jacket');
+    }
+    return catNorm === tabNorm || catNorm.replace(/\s+/g, '') === tabNorm.replace(/\s+/g, '');
+  }).slice(0, 8);
 
   const handleExploreMore = () => {
     setSelectedCategory(activeTab);
@@ -100,15 +109,14 @@ export const FeaturedProducts: React.FC = () => {
             </h3>
 
             <p className="text-xs text-gray-600 max-w-md uppercase tracking-widest font-mono leading-relaxed mb-8">
-              The product architecture and service layers are connected. Once catalog inventory is published via the backend API or Admin Management portal, garments will render here automatically.
+              Handcrafted Italian canvassed suits, bespoke Egyptian cotton shirts, worsted wool trousers, and seven-fold silk neckwear curated by the atelier.
             </p>
 
             <button
-              onClick={() => setActiveView('admin')}
+              onClick={() => setActiveView('shop')}
               className="px-6 py-3 border border-[#111827] bg-[#111827] text-white hover:bg-[#936B34] hover:border-[#936B34] transition-colors text-xs font-mono font-medium tracking-widest uppercase flex items-center gap-2 cursor-pointer shadow-sm"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>OPEN ADMIN PRODUCT PORTAL</span>
+              <span>DISCOVER SARTORIAL COLLECTION</span>
             </button>
           </div>
         )}

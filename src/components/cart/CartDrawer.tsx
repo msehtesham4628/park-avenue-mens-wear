@@ -215,10 +215,20 @@ export const CartDrawer: React.FC = () => {
 
               <button
                 onClick={handleCheckoutClick}
-                className="w-full py-4 bg-[#936B34] hover:bg-[#7A5726] text-white text-xs font-semibold uppercase tracking-[0.25em] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                className="w-full py-3.5 bg-[#936B34] hover:bg-[#7A5726] text-white text-xs font-semibold uppercase tracking-[0.25em] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
               >
                 <span>PROCEED TO CHECKOUT</span>
                 <ArrowRight className="w-4 h-4 text-white" />
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsCartOpen(false);
+                  setActiveView('cart');
+                }}
+                className="w-full py-2.5 bg-white border border-gray-300 hover:border-black text-gray-700 hover:text-black text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer text-center block"
+              >
+                VIEW DETAILED BAG (/cart)
               </button>
             </div>
           )}

@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%" fill="currentColor">
+  <!-- Gentleman Silhouette walking forward (back view) -->
+  <g id="gentleman-silhouette">
+    <!-- Head and Hair -->
+    <path d="M400,210 C406,210 411,215 411,222 C411,228 409,235 412,240 C410,242 407,243 400,243 C393,243 390,242 388,240 C391,235 389,228 389,222 C389,215 394,210 400,210 Z" />
+    
+    <!-- Neck and Collar -->
+    <path d="M394,242 L406,242 L409,252 L391,252 Z" />
+    <path d="M397,245 L403,245 L401,250 L399,250 Z" fill="#FFFFFF" opacity="0.8" />
+
+    <!-- Tailored Suit Jacket (Shoulders, Torso, Vents) -->
+    <path d="M391,252 L368,266 C362,270 357,280 355,296 L352,352 C351,357 354,360 359,360 C364,360 367,356 368,350 L372,306 L376,346 C377,358 380,366 384,368 L416,368 C420,366 423,358 424,346 L428,306 L432,350 C433,356 436,360 441,360 C446,360 449,357 448,352 L445,296 C443,280 438,270 432,266 L409,252 Z" />
+    
+    <!-- Jacket lapel & seam contour highlights -->
+    <path d="M399,253 L397,310 L400,367 L401,367 L403,310 L401,253 Z" opacity="0.3" fill="#FFFFFF" />
+
+    <!-- Tailored Trousers and Striding Legs -->
+    <!-- Left Leg (Leading / planted stride) -->
+    <path d="M383,368 L386,450 C386,462 385,475 384,484 L396,484 C397,472 399,455 399,430 L399,368 Z" />
+    <!-- Right Leg (Trailing stride) -->
+    <path d="M401,368 L401,424 C402,446 405,466 407,480 L418,478 C415,462 413,440 412,410 L417,368 Z" />
+
+    <!-- Dress Shoes -->
+    <path d="M382,484 L397,484 L395,492 L381,491 Z" />
+    <path d="M407,478 L419,477 L420,486 L406,486 Z" />
+  </g>
+
+  <!-- Ground Contact & Perspective Cast Shadow -->
+  <!-- Shadow flares out diagonally, then converges down into a razor-sharp tailor's needle -->
+  <g id="cast-shadow-needle">
+    <defs>
+      <linearGradient id="shadowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="currentColor" stop-opacity="0.95" />
+        <stop offset="40%" stop-color="currentColor" stop-opacity="0.8" />
+        <stop offset="75%" stop-color="currentColor" stop-opacity="0.65" />
+        <stop offset="100%" stop-color="currentColor" stop-opacity="0.9" />
+      </linearGradient>
+    </defs>
+
+    <!-- Triangular Perspective Shadow tapering toward Needle -->
+    <polygon points="385,492 417,486 480,560 460,630 445,550" fill="url(#shadowGrad)" />
+    
+    <!-- Tailor's Sewing Needle (Sharp point at bottom, eye at top) -->
+    <!-- Needle Shank -->
+    <path d="M458,520 L463,522 L442,670 C441,675 439,675 439,670 L454,520 Z" />
+    <!-- Needle Eye Hole -->
+    <ellipse cx="457" cy="542" rx="2" ry="7" fill="#FFFFFF" transform="rotate(-7 457 542)" />
+    
+    <!-- Flowing Thread looping gracefully from needle eye -->
+    <path d="M457,542 C475,548 505,555 510,575 C516,598 495,615 488,628 C480,642 492,658 518,662 C538,665 558,664 572,668" 
+          fill="none" 
+          stroke="currentColor" 
+          stroke-width="2.2" 
+          stroke-linecap="round" />
+  </g>
+
+  <!-- Typography: PARK AVENUE -->
+  <g id="brand-typography">
+    <!-- "PARK AVENUE" in bold, high-fashion Didone serif capitals -->
+    <text x="400" y="420" 
+          text-anchor="middle" 
+          font-family="'Playfair Display', 'Baskerville', 'Georgia', serif" 
+          font-size="62" 
+          font-weight="700" 
+          letter-spacing="14" 
+          fill="currentColor">
+      PARK AVENUE
+    </text>
+
+    <!-- Subtitle: MEN'S WEAR flanked with hairline rules -->
+    <g id="subtitle-bar">
+      <!-- Left hairline divider rule -->
+      <line x1="85" y1="452" x2="315" y2="452" stroke="currentColor" stroke-width="1.6" />
+      
+      <!-- Center text: MEN'S WEAR -->
+      <text x="400" y="457" 
+            text-anchor="middle" 
+            font-family="'Playfair Display', 'Baskerville', 'Cinzel', serif" 
+            font-size="16" 
+            font-weight="500" 
+            letter-spacing="12" 
+            fill="currentColor">
+        MEN'S WEAR
+      </text>
+      
+      <!-- Right hairline divider rule -->
+      <line x1="485" y1="452" x2="715" y2="452" stroke="currentColor" stroke-width="1.6" />
+    </g>
+  </g>
+</svg>

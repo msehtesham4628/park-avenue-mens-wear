@@ -68,13 +68,13 @@ export const ProductDetailPage: React.FC = () => {
               onClick={() => setActiveView('shop')}
               className="flex-1 px-6 py-3.5 bg-[#111827] text-white text-xs font-semibold uppercase tracking-[0.2em] hover:bg-[#7A5726] transition-colors cursor-pointer shadow-md"
             >
-              EXPLORE CATALOGUE
+              EXPLORE READY-TO-WEAR
             </button>
             <button
-              onClick={() => setActiveView('admin')}
-              className="flex-1 px-6 py-3.5 border border-gray-300 text-slate-200 text-xs font-mono tracking-widest uppercase hover:border-[#936B34] hover:text-[#936B34] transition-colors cursor-pointer"
+              onClick={() => setActiveView('home')}
+              className="flex-1 px-6 py-3.5 border border-gray-300 text-gray-700 text-xs font-mono tracking-widest uppercase hover:border-[#936B34] hover:text-[#936B34] transition-colors cursor-pointer"
             >
-              ADMIN PORTAL
+              RETURN TO SALON
             </button>
           </div>
         </div>

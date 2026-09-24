@@ -5,12 +5,16 @@ import {
   RotateCcw, 
   Search, 
   Check, 
-  ChevronDown
+  ChevronDown,
+  ChevronRight,
+  Layers,
+  Grid
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { ProductCard } from './ProductCard';
 import { ProductDetailModal } from './ProductDetailModal';
-import { Product } from '../../types';
+import { Product, OFFICIAL_CATEGORIES } from '../../types';
+import { CATEGORY_TO_SLUG, navigateTo } from '../../utils/router';
 
 export const ShopPage: React.FC = () => {
   const { 
@@ -19,7 +23,9 @@ export const ShopPage: React.FC = () => {
     setSelectedCategory,
     searchFilter,
     setSearchFilter,
-    setActiveView
+    setActiveView,
+    isProductsSubpage,
+    setIsProductsSubpage
   } = useShop();
 
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
@@ -28,11 +34,27 @@ export const ShopPage: React.FC = () => {
   // Filters State
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [maxPrice, setMaxPrice] = useState<number>(2200);
+  const [maxPrice, setMaxPrice] = useState<number>(3500);
   const [availability, setAvailability] = useState<'all' | 'in_stock' | 'low_stock'>('all');
   const [sortBy, setSortBy] = useState<'featured' | 'price-low' | 'price-high' | 'newest'>('featured');
 
-  const categories = ['All', 'Suits', 'Dress Shirts', 'Dress Pants', 'Ties', 'New Arrivals'];
+  const categories = [
+    'All',
+    'Suits',
+    'Dress Shirts',
+    'Ties',
+    'Shoe',
+    'Boots',
+    'Loofers',
+    'Pants',
+    'Jeans',
+    'Leather Jackets',
+    'Sweaters',
+    'Coats',
+    'Polo Shirts',
+    'Shorts',
+    'New Arrivals'
+  ];
 
   const availableSizes = [
     '38R', '40R', '42R', '44R',
@@ -67,7 +89,7 @@ export const ShopPage: React.FC = () => {
     setSelectedCategory('All');
     setSelectedSizes([]);
     setSelectedColors([]);
-    setMaxPrice(2200);
+    setMaxPrice(3500);
     setAvailability('all');
     setSearchFilter('');
     setSortBy('featured');
@@ -77,7 +99,7 @@ export const ShopPage: React.FC = () => {
     selectedCategory !== 'All' ||
     selectedSizes.length > 0 ||
     selectedColors.length > 0 ||
-    maxPrice < 2200 ||
+    maxPrice < 3500 ||
     availability !== 'all' ||
     searchFilter.trim() !== '';
 
@@ -89,8 +111,18 @@ export const ShopPage: React.FC = () => {
         if (selectedCategory !== 'All') {
           if (selectedCategory === 'New Arrivals') {
             if (!product.isNewArrival) return false;
-          } else if (product.category !== selectedCategory) {
-            return false;
+          } else {
+            const selNorm = selectedCategory.trim().toLowerCase();
+            const prodCatNorm = (product.category || '').trim().toLowerCase();
+
+            let isCategoryMatch = prodCatNorm === selNorm;
+            if (!isCategoryMatch) {
+              if ((selNorm === 'shoe' || selNorm === 'shoes') && prodCatNorm.startsWith('shoe')) isCategoryMatch = true;
+              else if ((selNorm === 'loofers' || selNorm === 'loafers') && (prodCatNorm.includes('loof') || prodCatNorm.includes('loaf'))) isCategoryMatch = true;
+              else if (selNorm === 'pants' && prodCatNorm.includes('pants')) isCategoryMatch = true;
+              else if (selNorm.replace(/\s+/g, '') === prodCatNorm.replace(/\s+/g, '')) isCategoryMatch = true;
+            }
+            if (!isCategoryMatch) return false;
           }
         }
 
@@ -142,26 +174,111 @@ export const ShopPage: React.FC = () => {
       });
   }, [products, selectedCategory, searchFilter, maxPrice, selectedSizes, selectedColors, availability, sortBy]);
 
+  const currentCategoryMeta = useMemo(() => {
+    if (selectedCategory === 'All') return null;
+    return OFFICIAL_CATEGORIES.find(
+      c => c.queryValue.toLowerCase() === selectedCategory.toLowerCase() ||
+           c.name.toLowerCase() === selectedCategory.toLowerCase()
+    );
+  }, [selectedCategory]);
+
   return (
     <div className="min-h-screen bg-white text-[#111827] pt-6 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Page Breadcrumb & Header */}
         <div className="py-8 border-b border-gray-200">
-          <div className="flex items-center gap-2 text-xs tracking-[0.25em] uppercase text-[#936B34] mb-2 font-mono">
-            <span>Park Avenue Menswear</span>
-            <span>/</span>
-            <span>Ready-To-Wear &amp; Bespoke</span>
-          </div>
+          <nav className="flex items-center gap-2 text-xs tracking-[0.2em] uppercase text-[#936B34] mb-3 font-mono">
+            <button 
+              onClick={() => setActiveView('home')} 
+              className="hover:text-black transition-colors cursor-pointer"
+            >
+              HOME
+            </button>
+            <ChevronRight className="w-3 h-3 text-gray-400" />
+            <button 
+              onClick={() => {
+                setSelectedCategory('All');
+                setIsProductsSubpage(false);
+              }} 
+              className="hover:text-black transition-colors cursor-pointer"
+            >
+              COLLECTIONS
+            </button>
+            {selectedCategory !== 'All' && (
+              <>
+                <ChevronRight className="w-3 h-3 text-gray-400" />
+                <button
+                  onClick={() => {
+                    setIsProductsSubpage(false);
+                    const slug = CATEGORY_TO_SLUG[selectedCategory] || selectedCategory.toLowerCase();
+                    navigateTo(`/${slug}`);
+                  }}
+                  className={`hover:text-black transition-colors cursor-pointer ${!isProductsSubpage ? 'font-semibold text-black' : ''}`}
+                >
+                  {currentCategoryMeta?.name || selectedCategory}
+                </button>
+              </>
+            )}
+            {isProductsSubpage && (
+              <>
+                <ChevronRight className="w-3 h-3 text-gray-400" />
+                <span className="font-semibold text-black">PRODUCTS</span>
+              </>
+            )}
+          </nav>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="font-serif text-3xl sm:text-5xl text-[#111827] font-light">
-                {selectedCategory === 'All' ? 'Complete Collection' : selectedCategory}
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1 max-w-xl">
-                Super 150s virgin wool suits, Egyptian cotton dress shirts, worsted wool trousers, and seven-fold silk ties.
+              <div className="flex items-center gap-3">
+                <h1 className="font-serif text-3xl sm:text-5xl text-[#111827] font-light">
+                  {currentCategoryMeta ? currentCategoryMeta.name : (selectedCategory === 'All' ? 'Complete Collection' : selectedCategory)}
+                </h1>
+                {selectedCategory !== 'All' && (
+                  <span className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest bg-[#F9F9F8] border border-gray-200 text-[#936B34]">
+                    {isProductsSubpage ? 'PRODUCTS' : 'DEPARTMENT'}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs sm:text-sm text-gray-600 mt-2 max-w-2xl leading-relaxed">
+                {currentCategoryMeta 
+                  ? currentCategoryMeta.description 
+                  : 'Super 150s virgin wool suits, Egyptian cotton dress shirts, worsted wool trousers, handcrafted shoes, and seven-fold silk ties.'}
               </p>
+
+              {/* Subroute Switcher: Overview vs Products */}
+              {selectedCategory !== 'All' && (
+                <div className="mt-4 flex items-center gap-2 text-xs font-mono">
+                  <button
+                    onClick={() => {
+                      setIsProductsSubpage(false);
+                      const slug = CATEGORY_TO_SLUG[selectedCategory] || selectedCategory.toLowerCase();
+                      navigateTo(`/${slug}`);
+                    }}
+                    className={`px-3 py-1.5 border transition-all cursor-pointer ${
+                      !isProductsSubpage
+                        ? 'bg-[#111827] text-white border-[#111827] font-semibold'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-black hover:text-black'
+                    }`}
+                  >
+                    OVERVIEW
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsProductsSubpage(true);
+                      const slug = CATEGORY_TO_SLUG[selectedCategory] || selectedCategory.toLowerCase();
+                      navigateTo(`/${slug}/products`);
+                    }}
+                    className={`px-3 py-1.5 border transition-all cursor-pointer ${
+                      isProductsSubpage
+                        ? 'bg-[#111827] text-white border-[#111827] font-semibold'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-black hover:text-black'
+                    }`}
+                  >
+                    ALL PRODUCTS ({filteredProducts.length})
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="text-xs text-gray-500 font-mono tabular-nums">
@@ -274,16 +391,49 @@ export const ShopPage: React.FC = () => {
               </div>
               <input
                 type="range"
-                min="180"
-                max="2200"
-                step="25"
+                min="150"
+                max="3500"
+                step="50"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="w-full accent-[#936B34] bg-gray-200 h-1.5 cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-gray-400 mt-1 tabular-nums font-mono">
-                <span>$180</span>
-                <span>$2,200</span>
+                <span>$150</span>
+                <span>$3,500</span>
+              </div>
+            </div>
+
+            {/* Department / Category Filter */}
+            <div>
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-xs uppercase tracking-wider text-[#936B34] font-mono">
+                  Atelier Department
+                </span>
+                {selectedCategory !== 'All' && (
+                  <button
+                    onClick={() => setSelectedCategory('All')}
+                    className="text-[10px] text-gray-500 hover:text-black underline font-mono"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-left transition-colors cursor-pointer rounded-xs ${
+                      selectedCategory === cat
+                        ? 'bg-[#111827] text-white font-medium'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-[#111827]'
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    {selectedCategory === cat && <span className="text-[10px] text-[#936B34]">●</span>}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -385,23 +535,14 @@ export const ShopPage: React.FC = () => {
                 <p className="text-xs text-gray-500 max-w-md uppercase tracking-widest font-mono leading-relaxed mb-8">
                   {hasActiveFilters 
                     ? 'No garments match the active filter criteria. Clear filters or adjust your sartorial preferences.'
-                    : 'The storefront architecture is ready. When products are published from the backend API or added through the admin console, they will dynamically populate here.'}
+                    : 'The atelier collection is currently being tailored. Reset your filters or discover our other signature departments.'}
                 </p>
-                {hasActiveFilters ? (
-                  <button
-                    onClick={resetAllFilters}
-                    className="px-8 py-3.5 bg-[#111827] text-white text-xs font-semibold uppercase tracking-[0.2em] hover:bg-[#7A5726] transition-colors cursor-pointer shadow-md"
-                  >
-                    RESET ALL FILTERS
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setActiveView('admin')}
-                    className="px-6 py-3 border border-[#936B34] text-[#936B34] hover:bg-[#936B34] hover:text-white transition-colors text-xs font-mono tracking-widest uppercase cursor-pointer"
-                  >
-                    OPEN ADMIN INVENTORY
-                  </button>
-                )}
+                <button
+                  onClick={resetAllFilters}
+                  className="px-8 py-3.5 bg-[#111827] text-white text-xs font-semibold uppercase tracking-[0.2em] hover:bg-[#7A5726] transition-colors cursor-pointer shadow-md"
+                >
+                  RESET ALL FILTERS
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">

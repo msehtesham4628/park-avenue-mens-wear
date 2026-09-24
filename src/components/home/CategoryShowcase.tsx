@@ -1,22 +1,27 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
-import { ProductCategory } from '../../types';
+import { OFFICIAL_CATEGORIES, ProductCategory } from '../../types';
 
-interface CategoryCardItem {
+interface FeaturedCategoryCard {
   title: ProductCategory;
   displayName: string;
+  tagline: string;
 }
 
 export const CategoryShowcase: React.FC = () => {
   const { setSelectedCategory, setActiveView } = useShop();
 
-  const categories: CategoryCardItem[] = [
-    { title: 'Suits', displayName: 'SUITS' },
-    { title: 'Dress Shirts', displayName: 'DRESS SHIRTS' },
-    { title: 'Dress Pants', displayName: 'DRESS PANTS' },
-    { title: 'Ties', displayName: 'TIES' }
+  const featuredCards: FeaturedCategoryCard[] = [
+    { title: 'Suits', displayName: 'SUITS', tagline: 'Bespoke Half & Full Canvas' },
+    { title: 'Dress Shirts', displayName: 'DRESS SHIRTS', tagline: '120s 2-Ply Egyptian Cotton' },
+    { title: 'Leather Jackets', displayName: 'LEATHER JACKETS', tagline: 'French Plonge Lambskin' },
+    { title: 'Coats', displayName: 'COATS', tagline: 'Pure Italian 650g Cashmere' },
+    { title: 'Loofers', displayName: 'LOOFERS', tagline: 'Belgian Glove-Soft Suede' },
+    { title: 'Shoe', displayName: 'SHOES', tagline: 'Goodyear Welted French Calf' },
+    { title: 'Ties', displayName: 'TIES', tagline: 'Handcrafted Como Grenadine Silk' },
+    { title: 'Sweaters', displayName: 'SWEATERS', tagline: '4-Ply Scottish Cashmere' }
   ];
 
   const handleSelect = (category: string) => {
@@ -30,7 +35,7 @@ export const CategoryShowcase: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-14 pb-6 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 pb-6 border-b border-gray-200">
           <div>
             <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] block mb-2 font-semibold">
               PARK AVENUE MENSWEAR
@@ -48,9 +53,30 @@ export const CategoryShowcase: React.FC = () => {
           </button>
         </div>
 
-        {/* 4 Category Cards Grid */}
+        {/* 13 Categories Quick Navigation Pills */}
+        <div className="mb-12 pb-6 border-b border-gray-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
+            <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-gray-500 font-semibold">
+              EXPLORE ALL 13 ATELIER DEPARTMENTS
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {OFFICIAL_CATEGORIES.filter(c => c.id !== 'all' && c.id !== 'new-arrivals').map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleSelect(cat.queryValue)}
+                className="px-3.5 py-1.5 bg-[#F9F9F8] border border-gray-200 text-xs font-mono uppercase tracking-wider text-gray-700 hover:border-[#936B34] hover:text-[#111827] hover:bg-white transition-all cursor-pointer rounded-xs"
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Featured Category Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-          {categories.map((cat) => (
+          {featuredCards.map((cat) => (
             <div
               key={cat.title}
               onClick={() => handleSelect(cat.title)}
@@ -67,9 +93,9 @@ export const CategoryShowcase: React.FC = () => {
               </div>
 
               {/* Card Content */}
-              <div className="space-y-2 mt-auto pt-2">
-                <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-gray-500">
-                  PARK AVENUE MENSWEAR
+              <div className="space-y-1.5 mt-auto pt-2">
+                <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#936B34]">
+                  {cat.tagline}
                 </div>
 
                 <h3 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide group-hover:text-[#936B34] transition-colors">

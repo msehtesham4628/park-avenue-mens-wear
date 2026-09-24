@@ -1,5 +1,7 @@
 import React from 'react';
 import { useShop } from '../../context/ShopContext';
+import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
+import { OFFICIAL_CATEGORIES } from '../../types';
 
 export const Footer: React.FC = () => {
   const { setActiveView, setSelectedCategory } = useShop();
@@ -17,16 +19,11 @@ export const Footer: React.FC = () => {
         {/* Brand Header */}
         <div className="pb-12 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <span className="w-8 h-8 border border-[#936B34] flex items-center justify-center font-serif text-sm text-[#111827] tracking-widest bg-white shadow-xs">
-              PA
-            </span>
-            <span className="font-serif text-2xl tracking-[0.25em] text-[#111827] font-light uppercase">
-              PARK AVENUE MENSWEAR
-            </span>
+            <ParkAvenueLogo variant="horizontal" size="md" className="text-[#111827]" />
           </div>
 
           <div className="text-xs font-mono uppercase tracking-widest text-[#936B34] font-medium">
-            FLAGSHIP ATELIER · BESPOKE SUITING
+            FLAGSHIP ATELIER · 725 PARK AVENUE, NYC
           </div>
         </div>
 
@@ -37,53 +34,22 @@ export const Footer: React.FC = () => {
         */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 py-12 border-b border-gray-200">
           
-          {/* Column 1: SHOP */}
+          {/* Column 1: SHOP (All 13 Categories) */}
           <div className="space-y-4">
             <h3 className="font-mono text-xs uppercase tracking-[0.25em] text-[#111827] font-semibold">
-              SHOP
+              ATELIER COLLECTIONS
             </h3>
-            <ul className="space-y-3 text-xs font-mono uppercase tracking-wider text-gray-600">
-              <li>
-                <button 
-                  onClick={() => handleNavCategory('New Arrivals')} 
-                  className="hover:text-[#936B34] transition-colors cursor-pointer"
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-mono uppercase tracking-wider text-gray-600">
+              {OFFICIAL_CATEGORIES.filter(c => c.id !== 'all').map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleNavCategory(cat.queryValue)}
+                  className="text-left hover:text-[#936B34] transition-colors cursor-pointer truncate"
                 >
-                  NEW ARRIVALS
+                  {cat.name}
                 </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => handleNavCategory('Suits')} 
-                  className="hover:text-[#936B34] transition-colors cursor-pointer"
-                >
-                  SUITS
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => handleNavCategory('Dress Shirts')} 
-                  className="hover:text-[#936B34] transition-colors cursor-pointer"
-                >
-                  DRESS SHIRTS
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => handleNavCategory('Dress Pants')} 
-                  className="hover:text-[#936B34] transition-colors cursor-pointer"
-                >
-                  DRESS PANTS
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => handleNavCategory('Ties')} 
-                  className="hover:text-[#936B34] transition-colors cursor-pointer"
-                >
-                  TIES
-                </button>
-              </li>
-            </ul>
+              ))}
+            </div>
           </div>
 
           {/* Column 2: SERVICES */}
@@ -169,26 +135,9 @@ export const Footer: React.FC = () => {
             © PARK AVENUE MENSWEAR. ALL RIGHTS RESERVED.
           </div>
           <div className="flex items-center gap-6 text-[11px]">
-            <button 
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('pa_replay_welcome'));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="text-gray-500 hover:text-[#936B34] cursor-pointer transition-colors"
-            >
-              WELCOME EXPERIENCE
-            </button>
-            <button 
-              onClick={() => {
-                setActiveView('admin');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="text-[#936B34] hover:underline cursor-pointer font-medium"
-            >
-              ADMIN PORTAL
-            </button>
-            <span>PRIVACY</span>
-            <span>TERMS OF COMMISSION</span>
+            <span className="hover:text-[#936B34] transition-colors cursor-pointer">PRIVACY</span>
+            <span className="hover:text-[#936B34] transition-colors cursor-pointer">TERMS OF COMMISSION</span>
+            <span className="text-[#936B34]">FLAGSHIP ATELIER NYC</span>
           </div>
         </div>
 

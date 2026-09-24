@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   ShoppingBag, 
@@ -6,10 +6,16 @@ import {
   User, 
   Menu, 
   Scissors,
-  Truck
+  Truck,
+  ChevronDown,
+  Sparkles,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MobileMenu } from './MobileMenu';
+import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
+import { OFFICIAL_CATEGORIES } from '../../types';
 
 export const Navbar: React.FC = () => {
   const {
@@ -19,11 +25,15 @@ export const Navbar: React.FC = () => {
     setIsSearchOpen,
     setIsCartOpen,
     cartCount,
-    wishlist
+    wishlist,
+    currentCustomer,
+    logout
   } = useShop();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,9 +43,20 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsCategoriesOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleNavCategory = (category: string) => {
     setSelectedCategory(category);
     setActiveView('shop');
+    setIsCategoriesOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -109,17 +130,19 @@ export const Navbar: React.FC = () => {
                   setActiveView('home');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="text-left flex items-baseline gap-2 focus-visible:outline-none group cursor-pointer"
+                className="text-left focus-visible:outline-none group cursor-pointer"
                 aria-label="PARK AVENUE MENSWEAR Home"
               >
-                <span className="font-serif text-lg sm:text-2xl font-light tracking-[0.22em] text-[#111827] group-hover:text-[#936B34] transition-colors whitespace-nowrap">
-                  PARK AVENUE MENSWEAR
-                </span>
+                <ParkAvenueLogo 
+                  variant="horizontal" 
+                  size={isScrolled ? 'sm' : 'md'} 
+                  className="text-[#111827] group-hover:text-[#936B34] transition-colors" 
+                />
               </button>
             </div>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-[11px] tracking-[0.2em] uppercase font-sans font-medium text-gray-700">
+            <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-[11px] tracking-[0.2em] uppercase font-sans font-medium text-gray-700">
               <button 
                 onClick={() => handleNavCategory('New Arrivals')} 
                 className={`hover:text-black transition-colors relative py-1 cursor-pointer ${activeView === 'shop' ? 'text-[#936B34] font-semibold' : ''}`}
@@ -133,28 +156,85 @@ export const Navbar: React.FC = () => {
                 SUITS
               </button>
               <button 
-                onClick={() => handleNavCategory('Dress Shirts')} 
+                onClick={() => handleNavCategory('Dress shirts')} 
                 className="hover:text-black transition-colors relative py-1 cursor-pointer"
               >
                 DRESS SHIRTS
               </button>
               <button 
-                onClick={() => handleNavCategory('Dress Pants')} 
+                onClick={() => handleNavCategory('Shoe')} 
                 className="hover:text-black transition-colors relative py-1 cursor-pointer"
               >
-                DRESS PANTS
+                SHOES
               </button>
               <button 
-                onClick={() => handleNavCategory('Ties')} 
+                onClick={() => handleNavCategory('Coats')} 
                 className="hover:text-black transition-colors relative py-1 cursor-pointer"
               >
-                TIES
+                COATS
               </button>
+
+              {/* All Categories Dropdown Mega Menu */}
+              <div 
+                ref={dropdownRef}
+                className="relative"
+                onMouseEnter={() => setIsCategoriesOpen(true)}
+                onMouseLeave={() => setIsCategoriesOpen(false)}
+              >
+                <button
+                  onClick={() => setIsCategoriesOpen(prev => !prev)}
+                  className={`flex items-center gap-1.5 hover:text-black transition-colors py-1 cursor-pointer ${
+                    isCategoriesOpen ? 'text-[#936B34]' : ''
+                  }`}
+                  aria-expanded={isCategoriesOpen}
+                >
+                  <span>CATEGORIES</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180 text-[#936B34]' : ''}`} />
+                </button>
+
+                {isCategoriesOpen && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[540px] bg-white border border-gray-200 shadow-2xl p-6 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
+                        <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#936B34] font-semibold">
+                          ATELIER DEPARTMENTS
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => handleNavCategory('All')} 
+                        className="text-[10px] text-gray-500 hover:text-black underline uppercase tracking-widest"
+                      >
+                        VIEW ALL (13 DEPARTMENTS)
+                      </button>
+                    </div>
+
+                    {/* 13 Categories Grid */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {OFFICIAL_CATEGORIES.filter(c => c.id !== 'all' && c.id !== 'new-arrivals').map(cat => (
+                        <button
+                          key={cat.id}
+                          onClick={() => handleNavCategory(cat.queryValue)}
+                          className="flex flex-col text-left p-2.5 hover:bg-[#F9F9F8] transition-colors rounded-xs group cursor-pointer"
+                        >
+                          <span className="text-[11px] font-sans uppercase font-medium tracking-wider text-[#111827] group-hover:text-[#936B34]">
+                            {cat.name}
+                          </span>
+                          <span className="text-[9px] text-gray-600 line-clamp-1 font-sans normal-case mt-0.5 tracking-normal">
+                            {cat.description}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button 
                 onClick={() => handleNavCategory('All')} 
                 className="hover:text-black transition-colors relative py-1 cursor-pointer"
               >
-                COLLECTIONS
+                ALL COLLECTIONS
               </button>
             </nav>
 
@@ -169,17 +249,48 @@ export const Navbar: React.FC = () => {
                 <span>SEARCH</span>
               </button>
 
-              <button
-                onClick={() => {
-                  setActiveView('account');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="flex items-center gap-1.5 hover:text-[#936B34] transition-colors uppercase text-[11px] cursor-pointer"
-                aria-label="Customer Account"
-              >
-                <User className="w-3.5 h-3.5 text-[#936B34]" />
-                <span>ACCOUNT</span>
-              </button>
+              {/* Customer Account / Sign In */}
+              {currentCustomer ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setActiveView('account');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`flex items-center gap-1.5 hover:text-[#936B34] transition-colors uppercase text-[11px] cursor-pointer ${
+                      activeView === 'account' ? 'text-[#936B34] font-semibold' : ''
+                    }`}
+                    aria-label="Customer Account"
+                  >
+                    <User className="w-3.5 h-3.5 text-[#936B34]" />
+                    <span>{currentCustomer.name?.split(' ')[0] || 'PATRON'}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveView('login');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="text-[9px] text-gray-400 hover:text-[#936B34] font-mono cursor-pointer"
+                    title="Switch or manage credentials"
+                  >
+                    (SWITCH)
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setActiveView('login');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`flex items-center gap-1.5 hover:text-[#936B34] transition-colors uppercase text-[11px] cursor-pointer font-semibold ${
+                    activeView === 'login' ? 'text-[#936B34]' : 'text-[#111827]'
+                  }`}
+                  aria-label="Sign In"
+                >
+                  <User className="w-3.5 h-3.5 text-[#936B34]" />
+                  <span>SIGN IN</span>
+                </button>
+              )}
 
               <button
                 onClick={() => {
@@ -204,23 +315,6 @@ export const Navbar: React.FC = () => {
                 <ShoppingBag className="w-3.5 h-3.5 text-[#936B34]" />
                 <span>CART</span>
                 <span className="ml-1 text-[9px] text-[#936B34] font-mono font-semibold">({cartCount})</span>
-              </button>
-
-              <span className="text-gray-300">|</span>
-
-              {/* Quick Admin Toggle */}
-              <button
-                onClick={() => {
-                  setActiveView('admin');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className={`px-2.5 py-1 text-[10px] uppercase tracking-widest border transition-colors cursor-pointer ${
-                  activeView === 'admin'
-                    ? 'border-[#111827] bg-[#111827] text-white font-semibold'
-                    : 'border-gray-300 text-gray-700 hover:text-black hover:border-black'
-                }`}
-              >
-                ADMIN
               </button>
             </div>
 

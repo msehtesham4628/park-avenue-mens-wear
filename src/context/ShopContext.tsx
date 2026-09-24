@@ -13,8 +13,16 @@ import {
   OrderService,
   AlterationService,
   CustomerService,
-  NotificationService
+  NotificationService,
+  AuthService
 } from '../services/api';
+import { 
+  parseRoute, 
+  buildUrl, 
+  navigateTo, 
+  CATEGORY_TO_SLUG, 
+  CATEGORY_SLUG_MAP 
+} from '../utils/router';
 
 export type AppView = 
   | 'home'
@@ -25,6 +33,7 @@ export type AppView =
   | 'track-order'
   | 'track-alteration'
   | 'account'
+  | 'login'
   | 'admin';
 
 interface ToastMessage {
@@ -38,9 +47,12 @@ interface ShopContextType {
   activeView: AppView;
   setActiveView: (view: AppView) => void;
   selectedProductId: string | null;
-  navigateToProduct: (productId: string) => void;
+  navigateToProduct: (productId: string, category?: string) => void;
   selectedCategory: string;
   setSelectedCategory: (cat: string) => void;
+  isProductsSubpage: boolean;
+  setIsProductsSubpage: (val: boolean) => void;
+  navigateToUrl: (url: string) => void;
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
   isCartOpen: boolean;
@@ -84,11 +96,25 @@ interface ShopContextType {
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
 
-  // User & Admin
+  // User & Admin & Auth
   currentCustomer: Customer | null;
   isAdminLoggedIn: boolean;
   setIsAdminLoggedIn: (val: boolean) => void;
   toggleAdminMode: () => void;
+  login: (usernameOrEmail: string, password: string) => Promise<{ success: boolean; message?: string; role?: string }>;
+  register: (data: { 
+    fName?: string; 
+    lName?: string; 
+    firstName?: string; 
+    lastName?: string; 
+    username: string; 
+    email?: string; 
+    emailId?: string; 
+    password: string; 
+    reEnterPassword?: string; 
+    phone?: string; 
+  }) => Promise<{ success: boolean; message?: string }>;
+  logout: () => Promise<void>;
 
   // Feedback Toasts
   toasts: ToastMessage[];
@@ -99,9 +125,15 @@ interface ShopContextType {
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [activeView, setActiveView] = useState<AppView>('home');
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const initialRoute = useMemo(() => {
+    return parseRoute(typeof window !== 'undefined' ? window.location.pathname : '/');
+  }, []);
+
+  const [activeView, setActiveViewState] = useState<AppView>(initialRoute.view);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(initialRoute.productId || null);
+  const [selectedCategory, setSelectedCategoryState] = useState<string>(initialRoute.category || 'All');
+  const [isProductsSubpage, setIsProductsSubpage] = useState<boolean>(initialRoute.isProductsSubpage || false);
+
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -197,15 +229,124 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     refreshProducts();
     refreshNotifications();
-    CustomerService.getAll().then(custs => {
-      if (custs.length > 0) setCurrentCustomer(custs[0]);
-    });
+    
+    // Check existing stored authentication session
+    const storedUser = AuthService.getCurrentUser();
+    if (storedUser) {
+      setCurrentCustomer(storedUser);
+      if (storedUser.role === 'admin' || storedUser.role === 'staff') {
+        setIsAdminLoggedIn(true);
+      }
+    }
   }, []);
 
-  const navigateToProduct = (productId: string) => {
+  // Listen to browser Back/Forward navigation and route events
+  useEffect(() => {
+    const handlePopOrCustom = () => {
+      const match = parseRoute(window.location.pathname);
+      setActiveViewState(match.view);
+      if (match.category) {
+        setSelectedCategoryState(match.category);
+      }
+      if (match.productId) {
+        setSelectedProductId(match.productId);
+      }
+      setIsProductsSubpage(!!match.isProductsSubpage);
+    };
+
+    window.addEventListener('popstate', handlePopOrCustom);
+    window.addEventListener('parkavenue:routechange', handlePopOrCustom);
+    return () => {
+      window.removeEventListener('popstate', handlePopOrCustom);
+      window.removeEventListener('parkavenue:routechange', handlePopOrCustom);
+    };
+  }, []);
+
+  const setActiveView = (view: AppView) => {
+    setActiveViewState(view);
+    const url = buildUrl({
+      view,
+      category: selectedCategory,
+      productId: selectedProductId || undefined,
+      isProductsSubpage
+    });
+    navigateTo(url);
+  };
+
+  const setSelectedCategory = (cat: string) => {
+    setSelectedCategoryState(cat);
+    const url = buildUrl({
+      view: 'shop',
+      category: cat,
+      isProductsSubpage
+    });
+    setActiveViewState('shop');
+    navigateTo(url);
+  };
+
+  const navigateToProduct = (productId: string, category?: string) => {
     setSelectedProductId(productId);
-    setActiveView('pdp');
+    if (category) {
+      setSelectedCategoryState(category);
+    }
+    setActiveViewState('pdp');
+    const url = buildUrl({
+      view: 'pdp',
+      category: category || selectedCategory,
+      productId
+    });
+    navigateTo(url);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const navigateToUrl = (url: string) => {
+    navigateTo(url);
+  };
+
+  const login = async (usernameOrEmail: string, password: string) => {
+    const result = await AuthService.login(usernameOrEmail, password);
+    if (result.success && result.customer) {
+      setCurrentCustomer(result.customer);
+      if (result.customer.role === 'admin' || result.customer.role === 'staff') {
+        setIsAdminLoggedIn(true);
+      }
+      showToast(result.message || `Welcome to Park Avenue Mens Wear, ${result.customer.name || 'Patron'}!`, 'success');
+      return { success: true, role: result.customer.role };
+    } else {
+      showToast(result.message || 'Authentication failed. Please verify credentials.', 'error');
+      return { success: false, message: result.message };
+    }
+  };
+
+  const register = async (data: { 
+    fName?: string; 
+    lName?: string; 
+    firstName?: string; 
+    lastName?: string; 
+    username: string; 
+    email?: string; 
+    emailId?: string; 
+    password: string; 
+    reEnterPassword?: string; 
+    phone?: string; 
+  }) => {
+    const result = await AuthService.register(data);
+    if (result.success && result.customer) {
+      setCurrentCustomer(result.customer);
+      showToast('Account created successfully. Welcome to Park Avenue Mens Wear!', 'success');
+      return { success: true };
+    } else {
+      showToast(result.message || 'Registration failed.', 'error');
+      return { success: false, message: result.message };
+    }
+  };
+
+  const logout = async () => {
+    await AuthService.logout();
+    setCurrentCustomer(null);
+    setIsAdminLoggedIn(false);
+    showToast('Signed out of Park Avenue session.', 'info');
+    setActiveView('login');
   };
 
   const toggleWishlist = (productId: string) => {
@@ -361,6 +502,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         navigateToProduct,
         selectedCategory,
         setSelectedCategory,
+        isProductsSubpage,
+        setIsProductsSubpage,
+        navigateToUrl,
         isSearchOpen,
         setIsSearchOpen,
         isCartOpen,
@@ -397,6 +541,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAdminLoggedIn,
         setIsAdminLoggedIn,
         toggleAdminMode,
+        login,
+        register,
+        logout,
         toasts,
         showToast,
         dismissToast

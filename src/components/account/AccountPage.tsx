@@ -4,7 +4,9 @@ import {
   Truck, 
   Ruler, 
   ArrowRight,
-  Trash2
+  Trash2,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { OrderService, AlterationService } from '../../services/api';
@@ -14,6 +16,7 @@ import { MediaPlaceholder } from '../common/MediaPlaceholder';
 export const AccountPage: React.FC = () => {
   const { 
     currentCustomer, 
+    logout,
     wishlist, 
     products, 
     toggleWishlist, 
@@ -71,21 +74,44 @@ export const AccountPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => setActiveView('track-order')}
-              className="px-4 py-2.5 bg-[#F9F9F8] border border-gray-200 text-xs font-mono text-[#111827] hover:border-[#936B34] hover:text-[#936B34] flex items-center gap-2 cursor-pointer transition-colors"
+              className="px-3.5 py-2 bg-[#F9F9F8] border border-gray-200 text-xs font-mono text-[#111827] hover:border-[#936B34] hover:text-[#936B34] flex items-center gap-2 cursor-pointer transition-colors"
             >
               <Truck className="w-3.5 h-3.5 text-[#936B34]" />
-              <span>TRACK ORDERS</span>
+              <span>ORDERS</span>
             </button>
+
             <button
               onClick={() => setActiveView('track-alteration')}
-              className="px-4 py-2.5 bg-[#F9F9F8] border border-gray-200 text-xs font-mono text-[#111827] hover:border-[#936B34] hover:text-[#936B34] flex items-center gap-2 cursor-pointer transition-colors"
+              className="px-3.5 py-2 bg-[#F9F9F8] border border-gray-200 text-xs font-mono text-[#111827] hover:border-[#936B34] hover:text-[#936B34] flex items-center gap-2 cursor-pointer transition-colors"
             >
               <Scissors className="w-3.5 h-3.5 text-[#936B34]" />
-              <span>TRACK ALTERATIONS</span>
+              <span>ALTERATIONS</span>
             </button>
+
+            {currentCustomer ? (
+              <button
+                onClick={() => logout()}
+                className="px-3.5 py-2 bg-white border border-gray-200 text-xs font-mono text-gray-600 hover:text-red-700 hover:border-red-300 flex items-center gap-1.5 cursor-pointer transition-colors"
+                title="Sign out of current account"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>SIGN OUT</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setActiveView('login');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="px-3.5 py-2 bg-[#936B34] text-white text-xs font-mono hover:bg-[#111827] flex items-center gap-1.5 cursor-pointer transition-colors font-semibold"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>SIGN IN</span>
+              </button>
+            )}
           </div>
         </div>
 

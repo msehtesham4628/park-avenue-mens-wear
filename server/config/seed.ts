@@ -1,0 +1,484 @@
+import { ProductModel } from '../models/Product.js';
+import { CustomerModel } from '../models/Customer.js';
+import { OrderModel } from '../models/Order.js';
+import { AlterationModel } from '../models/Alteration.js';
+import { authService } from '../services/authService.js';
+
+export async function seedInitialData() {
+  try {
+    // 1. Seed Admin & Staff accounts if not existing
+    const existingAdmin = await CustomerModel.findOne({ email: 'admin@parkavenuemenswear.com' });
+    if (!existingAdmin) {
+      const passwordHash = await authService.hashPassword('ParkAvenue2026!');
+      await CustomerModel.create({
+        customerId: 'CUST-ADMIN-001',
+        firstName: 'Master',
+        lastName: 'Director',
+        name: 'Master Director',
+        email: 'admin@parkavenuemenswear.com',
+        phone: '+1 (800) 555-7275',
+        passwordHash,
+        role: 'admin',
+        status: 'active',
+        addresses: [{
+          id: 'addr-admin-1',
+          street: '725 Park Avenue',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10021',
+          country: 'United States',
+          isDefault: true
+        }]
+      });
+      console.info('[Park Avenue DB Seed] Created default administrator: admin@parkavenuemenswear.com (Password: ParkAvenue2026!)');
+    }
+
+    const existingStaff = await CustomerModel.findOne({ email: 'tailor@parkavenuemenswear.com' });
+    if (!existingStaff) {
+      const passwordHash = await authService.hashPassword('ParkAvenue2026!');
+      await CustomerModel.create({
+        customerId: 'CUST-STAFF-001',
+        firstName: 'Giovanni',
+        lastName: 'Rossi',
+        name: 'Giovanni Rossi',
+        email: 'tailor@parkavenuemenswear.com',
+        phone: '+1 (800) 555-7276',
+        passwordHash,
+        role: 'staff',
+        status: 'active',
+        addresses: []
+      });
+      console.info('[Park Avenue DB Seed] Created default staff tailor: tailor@parkavenuemenswear.com (Password: ParkAvenue2026!)');
+    }
+
+    // 2. Seed Luxury Products if empty
+    const productCount = await ProductModel.countDocuments();
+    if (productCount === 0) {
+      const initialGarments = [
+        {
+          productId: 'PROD-SUIT-001',
+          sku: 'PA-ST-NAVY-150',
+          name: 'The Park Avenue Navy Double-Breasted Suit',
+          slug: 'park-avenue-navy-double-breasted-suit',
+          description: 'Constructed from Super 150s Italian virgin wool with hand-finished pick stitching, full floating horsehair canvas, and horn buttons.',
+          category: 'Suits',
+          subcategory: 'Double-Breasted',
+          price: 1850,
+          images: [],
+          sizes: ['38R', '40R', '42R', '44R'],
+          colors: ['Navy', 'Midnight Blue'],
+          variants: [
+            { id: 'var-suit-001-1', size: '38R', color: 'Navy', stock: 4, sku: 'PA-ST-NAVY-150-38R' },
+            { id: 'var-suit-001-2', size: '40R', color: 'Navy', stock: 8, sku: 'PA-ST-NAVY-150-40R' },
+            { id: 'var-suit-001-3', size: '42R', color: 'Navy', stock: 0, sku: 'PA-ST-NAVY-150-42R' },
+            { id: 'var-suit-001-4', size: '44R', color: 'Navy', stock: 3, sku: 'PA-ST-NAVY-150-44R' },
+            { id: 'var-suit-001-5', size: '40R', color: 'Midnight Blue', stock: 5, sku: 'PA-ST-MID-150-40R' }
+          ],
+          stockQuantity: 20,
+          lowStockThreshold: 4,
+          isFeatured: true,
+          isNewArrival: true,
+          fabric: '100% Super 150s Italian Virgin Wool',
+          fit: 'Tailored English Silhouette',
+          careInstructions: ['Specialist dry clean only', 'Store on cedar hanger']
+        },
+        {
+          productId: 'PROD-SUIT-002',
+          sku: 'PA-ST-CHARCOAL-180',
+          name: 'Super 180s Charcoal Worsted Two-Piece Suit',
+          slug: 'super-180s-charcoal-worsted-two-piece-suit',
+          description: 'A timeless staple cut from rare Super 180s fine micron wool. Featherlight, resilient drape, and silk-lined interior.',
+          category: 'Suits',
+          subcategory: 'Two-Piece',
+          price: 2150,
+          images: [],
+          sizes: ['38R', '40R', '42R', '44R'],
+          colors: ['Charcoal Grey', 'Deep Slate'],
+          variants: [
+            { id: 'var-suit-002-1', size: '38R', color: 'Charcoal Grey', stock: 2, sku: 'PA-ST-CH-180-38R' },
+            { id: 'var-suit-002-2', size: '40R', color: 'Charcoal Grey', stock: 5, sku: 'PA-ST-CH-180-40R' },
+            { id: 'var-suit-002-3', size: '42R', color: 'Charcoal Grey', stock: 4, sku: 'PA-ST-CH-180-42R' }
+          ],
+          stockQuantity: 11,
+          lowStockThreshold: 3,
+          isFeatured: true,
+          isNewArrival: false,
+          fabric: '100% Super 180s Worsted Wool (Biella, Italy)',
+          fit: 'Contemporary Sartorial Cut',
+          careInstructions: ['Dry clean by luxury specialist only']
+        },
+        {
+          productId: 'PROD-SHIRT-001',
+          sku: 'PA-SH-EGYPT-WHT',
+          name: 'Egyptian Giza 87 Twill Formal Dress Shirt',
+          slug: 'egyptian-giza-87-twill-formal-dress-shirt',
+          description: 'Woven from extra-long staple Egyptian Giza 87 cotton with Mother of Pearl buttons and a semi-spread collar.',
+          category: 'Dress Shirts',
+          subcategory: 'Formal Dress Shirts',
+          price: 285,
+          images: [],
+          sizes: ['15.5', '16.0', '16.5', '17.0'],
+          colors: ['Crisp White'],
+          variants: [
+            { id: 'var-sh-001-1', size: '15.5', color: 'Crisp White', stock: 12, sku: 'PA-SH-EGYPT-WHT-155' },
+            { id: 'var-sh-001-2', size: '16.0', color: 'Crisp White', stock: 15, sku: 'PA-SH-EGYPT-WHT-160' },
+            { id: 'var-sh-001-3', size: '16.5', color: 'Crisp White', stock: 8, sku: 'PA-SH-EGYPT-WHT-165' }
+          ],
+          stockQuantity: 35,
+          lowStockThreshold: 5,
+          isFeatured: true,
+          isNewArrival: true,
+          fabric: '100% Egyptian Giza 87 Long-Staple Cotton',
+          fit: 'Clean Slim Tailored'
+        },
+        {
+          productId: 'PROD-PANTS-001',
+          sku: 'PA-TR-HIGH-SLATE',
+          name: 'High-Rise Single Pleat Flannel Trousers',
+          slug: 'high-rise-single-pleat-flannel-trousers',
+          description: 'Featuring side adjusters, extended waistband closure, and an unfinished hem ready for atelier hemming break.',
+          category: 'Dress Pants',
+          subcategory: 'Pleated Trousers',
+          price: 495,
+          images: [],
+          sizes: ['32', '34', '36', '38'],
+          colors: ['Slate Grey', 'Olive Muted'],
+          variants: [
+            { id: 'var-tr-001-1', size: '32', color: 'Slate Grey', stock: 6, sku: 'PA-TR-SLATE-32' },
+            { id: 'var-tr-001-2', size: '34', color: 'Slate Grey', stock: 7, sku: 'PA-TR-SLATE-34' },
+            { id: 'var-tr-001-3', size: '36', color: 'Slate Grey', stock: 1, sku: 'PA-TR-SLATE-36' }
+          ],
+          stockQuantity: 14,
+          lowStockThreshold: 3,
+          isFeatured: false,
+          isNewArrival: false,
+          fabric: '100% Wool Flannel',
+          fit: 'Classic High-Rise'
+        },
+        {
+          productId: 'PROD-TIE-001',
+          sku: 'PA-TI-GRENADINE-BUR',
+          name: 'Handcrafted Grenadine Silk Garza Fina Tie',
+          slug: 'handcrafted-grenadine-silk-garza-fina-tie',
+          description: 'Woven on historic wooden looms in Como, Italy with 3-fold untipped hand-rolled edges.',
+          category: 'Ties',
+          subcategory: 'Grenadine Ties',
+          price: 195,
+          images: [],
+          sizes: ['8cm Classic Width'],
+          colors: ['Burgundy Wine', 'Midnight Navy'],
+          variants: [
+            { id: 'var-ti-001-1', size: '8cm Classic Width', color: 'Burgundy Wine', stock: 10, sku: 'PA-TI-BUR-STD' },
+            { id: 'var-ti-001-2', size: '8cm Classic Width', color: 'Midnight Navy', stock: 12, sku: 'PA-TI-NAV-STD' }
+          ],
+          stockQuantity: 22,
+          lowStockThreshold: 4,
+          isFeatured: true,
+          isNewArrival: false,
+          fabric: '100% Como Silk Grenadine'
+        },
+        {
+          productId: 'PROD-SHOE-001',
+          sku: 'PA-SH-WHOLECUT-OXF',
+          name: 'Goodyear-Welted Wholecut Oxford Shoe',
+          slug: 'goodyear-welted-wholecut-oxford-shoe',
+          description: 'Carved from a singular cut of hand-selected French box calf leather, closed-channel Goodyear welted sole, and bevelled waist.',
+          category: 'Shoe',
+          subcategory: 'Oxfords',
+          price: 785,
+          images: [],
+          sizes: ['8.5 US', '9.0 US', '9.5 US', '10.0 US', '10.5 US', '11.0 US'],
+          colors: ['Espresso Burnished', 'Obsidian Black'],
+          variants: [
+            { id: 'var-shoe-1', size: '9.0 US', color: 'Espresso Burnished', stock: 5, sku: 'PA-SH-OXF-ESP-090' },
+            { id: 'var-shoe-2', size: '9.5 US', color: 'Espresso Burnished', stock: 8, sku: 'PA-SH-OXF-ESP-095' },
+            { id: 'var-shoe-3', size: '10.0 US', color: 'Espresso Burnished', stock: 6, sku: 'PA-SH-OXF-ESP-100' },
+            { id: 'var-shoe-4', size: '9.5 US', color: 'Obsidian Black', stock: 7, sku: 'PA-SH-OXF-BLK-095' }
+          ],
+          stockQuantity: 26,
+          lowStockThreshold: 5,
+          isFeatured: true,
+          isNewArrival: true,
+          fabric: 'French Box Calf Full-Grain Leather',
+          fit: 'Standard D-Width Chiseled Last'
+        },
+        {
+          productId: 'PROD-BOOT-001',
+          sku: 'PA-BT-BALMORAL-BRN',
+          name: 'Hand-Burnished Balmoral Dress Boots',
+          slug: 'hand-burnished-balmoral-dress-boots',
+          description: 'Sartorial two-tone Balmoral boots marrying supple French calf leather vamp with English suede upper and Dainite studded rubber soles.',
+          category: 'Boots',
+          subcategory: 'Balmoral Boots',
+          price: 920,
+          images: [],
+          sizes: ['9.0 US', '9.5 US', '10.0 US', '10.5 US', '11.0 US'],
+          colors: ['Deep Cognac & Snuff Suede'],
+          variants: [
+            { id: 'var-boot-1', size: '9.5 US', color: 'Deep Cognac & Snuff Suede', stock: 4, sku: 'PA-BT-BAL-095' },
+            { id: 'var-boot-2', size: '10.0 US', color: 'Deep Cognac & Snuff Suede', stock: 5, sku: 'PA-BT-BAL-100' },
+            { id: 'var-boot-3', size: '10.5 US', color: 'Deep Cognac & Snuff Suede', stock: 3, sku: 'PA-BT-BAL-105' }
+          ],
+          stockQuantity: 12,
+          lowStockThreshold: 3,
+          isFeatured: true,
+          isNewArrival: false,
+          fabric: 'French Calfskin & English Repello Suede'
+        },
+        {
+          productId: 'PROD-LOOF-001',
+          sku: 'PA-LF-BELGIAN-NAVY',
+          name: 'Belgravian Tasselled Belgian Loofers',
+          slug: 'belgravian-tasselled-belgian-loofers',
+          description: 'Ultra-flexible unlined Belgian loofers with hand-braided calf tassels and glove-soft Italian suede upper for effortless elegance.',
+          category: 'Loofers',
+          subcategory: 'Belgian Loofers',
+          price: 645,
+          images: [],
+          sizes: ['8.5 US', '9.0 US', '9.5 US', '10.0 US', '10.5 US', '11.0 US'],
+          colors: ['Midnight Navy Suede', 'Tobacco Suede'],
+          variants: [
+            { id: 'var-loof-1', size: '9.5 US', color: 'Midnight Navy Suede', stock: 6, sku: 'PA-LF-BEL-NAV-095' },
+            { id: 'var-loof-2', size: '10.0 US', color: 'Midnight Navy Suede', stock: 7, sku: 'PA-LF-BEL-NAV-100' },
+            { id: 'var-loof-3', size: '9.5 US', color: 'Tobacco Suede', stock: 5, sku: 'PA-LF-BEL-TOB-095' }
+          ],
+          stockQuantity: 18,
+          lowStockThreshold: 4,
+          isFeatured: true,
+          isNewArrival: true,
+          fabric: 'Unlined Reversed Italian Suede'
+        },
+        {
+          productId: 'PROD-JEAN-001',
+          sku: 'PA-JN-KURABO-IND',
+          name: 'Kurabo Mills Japanese Selvedge Jeans',
+          slug: 'kurabo-mills-japanese-selvedge-jeans',
+          description: '14.5oz shuttle-loomed Japanese selvedge denim tailored with clean dress trouser lines, medium-high rise, and copper hardware.',
+          category: 'Jeans',
+          subcategory: 'Selvedge Denim',
+          price: 385,
+          images: [],
+          sizes: ['31', '32', '33', '34', '36'],
+          colors: ['Deep Indigo Raw'],
+          variants: [
+            { id: 'var-jean-1', size: '32', color: 'Deep Indigo Raw', stock: 8, sku: 'PA-JN-SEL-32' },
+            { id: 'var-jean-2', size: '34', color: 'Deep Indigo Raw', stock: 10, sku: 'PA-JN-SEL-34' },
+            { id: 'var-jean-3', size: '36', color: 'Deep Indigo Raw', stock: 4, sku: 'PA-JN-SEL-36' }
+          ],
+          stockQuantity: 22,
+          lowStockThreshold: 5,
+          isFeatured: false,
+          isNewArrival: true,
+          fabric: '14.5oz Kurabo Shuttle-Loomed Denim',
+          fit: 'Sartorial Tapered Cut'
+        },
+        {
+          productId: 'PROD-LJ-001',
+          sku: 'PA-LJ-PLONGE-BLK',
+          name: 'French Plonge Lambskin Sartorial Biker Jacket',
+          slug: 'french-plonge-lambskin-sartorial-biker-jacket',
+          description: 'Hand-tailored from whisper-soft French plonge lambskin with asymmetric RiRi Swiss nickel zippers and pure silk cupro lining.',
+          category: 'Leather jackets',
+          subcategory: 'Biker & Flight Jackets',
+          price: 2450,
+          images: [],
+          sizes: ['38', '40', '42', '44'],
+          colors: ['Obsidian Black'],
+          variants: [
+            { id: 'var-lj-1', size: '38', color: 'Obsidian Black', stock: 2, sku: 'PA-LJ-BLK-38' },
+            { id: 'var-lj-2', size: '40', color: 'Obsidian Black', stock: 4, sku: 'PA-LJ-BLK-40' },
+            { id: 'var-lj-3', size: '42', color: 'Obsidian Black', stock: 3, sku: 'PA-LJ-BLK-42' }
+          ],
+          stockQuantity: 9,
+          lowStockThreshold: 2,
+          isFeatured: true,
+          isNewArrival: true,
+          fabric: '100% French Plonge Lambskin Leather',
+          fit: 'Tailored European Cut'
+        },
+        {
+          productId: 'PROD-SWEAT-001',
+          sku: 'PA-SW-CASHMERE-OAT',
+          name: 'Todd & Duncan 4-Ply Scottish Cashmere Crewneck',
+          slug: 'todd-and-duncan-4-ply-scottish-cashmere-crewneck',
+          description: 'Knitted on 12-gauge frames in Hawick, Scotland from pure 4-ply Todd & Duncan cashmere. Supreme loft, thermal insulation, and pill resistance.',
+          category: 'Sweaters',
+          subcategory: 'Cashmere Knitwear',
+          price: 595,
+          images: [],
+          sizes: ['S', 'M', 'L', 'XL'],
+          colors: ['Oatmeal Melange', 'Navy Heather'],
+          variants: [
+            { id: 'var-sw-1', size: 'M', color: 'Oatmeal Melange', stock: 6, sku: 'PA-SW-OAT-M' },
+            { id: 'var-sw-2', size: 'L', color: 'Oatmeal Melange', stock: 7, sku: 'PA-SW-OAT-L' },
+            { id: 'var-sw-3', size: 'M', color: 'Navy Heather', stock: 5, sku: 'PA-SW-NAV-M' }
+          ],
+          stockQuantity: 18,
+          lowStockThreshold: 4,
+          isFeatured: true,
+          isNewArrival: false,
+          fabric: '100% 4-Ply Scottish Cashmere (Todd & Duncan)'
+        },
+        {
+          productId: 'PROD-COAT-001',
+          sku: 'PA-CT-CAMEL-DB',
+          name: 'Sovereign Double-Breasted Cashmere Overcoat',
+          slug: 'sovereign-double-breasted-cashmere-overcoat',
+          description: 'An architectural 6x2 double-breasted overcoat tailored from heavy 650g pure Italian cashmere with peak lapels and horn buttons.',
+          category: 'Coats',
+          subcategory: 'Overcoats',
+          price: 2850,
+          images: [],
+          sizes: ['38R', '40R', '42R', '44R'],
+          colors: ['Classic Camel', 'Midnight Charcoal'],
+          variants: [
+            { id: 'var-ct-1', size: '40R', color: 'Classic Camel', stock: 3, sku: 'PA-CT-CAM-40R' },
+            { id: 'var-ct-2', size: '42R', color: 'Classic Camel', stock: 4, sku: 'PA-CT-CAM-42R' },
+            { id: 'var-ct-3', size: '40R', color: 'Midnight Charcoal', stock: 2, sku: 'PA-CT-CHR-40R' }
+          ],
+          stockQuantity: 9,
+          lowStockThreshold: 2,
+          isFeatured: true,
+          isNewArrival: true,
+          fabric: '100% 650g Italian Cashmere (Piacenza)',
+          fit: 'Sartorial Overcoat Drape'
+        },
+        {
+          productId: 'PROD-POLO-001',
+          sku: 'PA-PO-SEAISLAND-NVY',
+          name: 'Sea Island Knit Silk-Cotton Sartorial Polo',
+          slug: 'sea-island-knit-silk-cotton-sartorial-polo',
+          description: 'Knitted with a structured shirt-style collar from West Indian Sea Island cotton blended with mulberry silk. Three iridescent shell buttons.',
+          category: 'Polo shirts',
+          subcategory: 'Knit Polos',
+          price: 325,
+          images: [],
+          sizes: ['S', 'M', 'L', 'XL'],
+          colors: ['Deep Navy', 'Ivory Pearl'],
+          variants: [
+            { id: 'var-po-1', size: 'M', color: 'Deep Navy', stock: 9, sku: 'PA-PO-NVY-M' },
+            { id: 'var-po-2', size: 'L', color: 'Deep Navy', stock: 11, sku: 'PA-PO-NVY-L' },
+            { id: 'var-po-3', size: 'M', color: 'Ivory Pearl', stock: 6, sku: 'PA-PO-IVR-M' }
+          ],
+          stockQuantity: 26,
+          lowStockThreshold: 5,
+          isFeatured: false,
+          isNewArrival: true,
+          fabric: '70% Sea Island Cotton, 30% Mulberry Silk'
+        },
+        {
+          productId: 'PROD-SHRT-001',
+          sku: 'PA-SH-LINEN-SAND',
+          name: 'Pleated Irish Linen Tailored Walk Shorts',
+          slug: 'pleated-irish-linen-tailored-walk-shorts',
+          description: 'Cut with double forward pleats, side buckle adjusters, and a generous hem width from crisp Baird McNutt Irish linen.',
+          category: 'Shorts',
+          subcategory: 'Tailored Shorts',
+          price: 295,
+          images: [],
+          sizes: ['30', '32', '34', '36'],
+          colors: ['Sand Dune', 'Olive Drab'],
+          variants: [
+            { id: 'var-shrt-1', size: '32', color: 'Sand Dune', stock: 5, sku: 'PA-SH-SND-32' },
+            { id: 'var-shrt-2', size: '34', color: 'Sand Dune', stock: 7, sku: 'PA-SH-SND-34' },
+            { id: 'var-shrt-3', size: '32', color: 'Olive Drab', stock: 4, sku: 'PA-SH-OLV-32' }
+          ],
+          stockQuantity: 16,
+          lowStockThreshold: 3,
+          isFeatured: false,
+          isNewArrival: false,
+          fabric: '100% Baird McNutt Irish Linen',
+          fit: 'Sartorial Relaxed Rise'
+        }
+      ];
+
+      for (const item of initialGarments) {
+        await ProductModel.create(item);
+      }
+      console.info(`[Park Avenue DB Seed] Seeded ${initialGarments.length} bespoke garments with live variant stock.`);
+    }
+
+    // 3. Seed Sample Orders and Alterations if empty
+    const orderCount = await OrderModel.countDocuments();
+    if (orderCount === 0) {
+      await OrderModel.create({
+        orderId: 'PA-2026-000001',
+        customerName: 'Edward Sterling',
+        customerEmail: 'edward.sterling@example.com',
+        customerPhone: '+1 (555) 234-5678',
+        items: [{
+          productId: 'PROD-SUIT-001',
+          variantId: 'var-suit-001-2',
+          sku: 'PA-ST-NAVY-150-40R',
+          name: 'The Park Avenue Navy Double-Breasted Suit',
+          size: '40R',
+          color: 'Navy',
+          quantity: 1,
+          priceAtPurchase: 1850,
+          subtotal: 1850,
+          alterationRequested: true
+        }],
+        subtotal: 1850,
+        shipping: 0,
+        tax: 152.63,
+        total: 2002.63,
+        paymentStatus: 'Paid',
+        orderStatus: 'Confirmed',
+        shippingInfo: {
+          recipientName: 'Edward Sterling',
+          email: 'edward.sterling@example.com',
+          phone: '+1 (555) 234-5678',
+          street: '450 Lexington Avenue',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10017',
+          country: 'United States',
+          carrier: 'White Glove Courier Express',
+          shippingMethod: 'Complimentary Express'
+        },
+        trackingNumber: 'PA-TRK-98231',
+        statusHistory: [{
+          previousStatus: 'None',
+          newStatus: 'Confirmed',
+          changedBy: { id: 'SYSTEM', name: 'Park Avenue Concierge', role: 'system' },
+          note: 'Initial order placement and payment authorization',
+          timestamp: new Date()
+        }]
+      });
+
+      console.info('[Park Avenue DB Seed] Seeded initial order: PA-2026-000001');
+    }
+
+    const alterationCount = await AlterationModel.countDocuments();
+    if (alterationCount === 0) {
+      await AlterationModel.create({
+        alterationId: 'ALT-2026-000001',
+        customerName: 'Edward Sterling',
+        customerEmail: 'edward.sterling@example.com',
+        customerPhone: '+1 (555) 234-5678',
+        orderId: 'PA-2026-000001',
+        productName: 'The Park Avenue Navy Double-Breasted Suit',
+        alterationType: 'Hemming & Inseam Break Adjustment',
+        measurements: {
+          trouserHemType: 'Half Break',
+          trouserInseam: '31.5 inches',
+          jacketSleeveAdjustment: 'Shorten 0.5 inches with working buttonholes'
+        },
+        tailorAssigned: 'Giovanni Rossi (Master Tailor)',
+        currentStatus: 'In Progress',
+        expectedCompletionDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        statusHistory: [{
+          previousStatus: 'Received',
+          newStatus: 'In Progress',
+          changedBy: { id: 'TAILOR-01', name: 'Giovanni Rossi', role: 'staff' },
+          note: 'Master chalk marks verified; hand hemming in progress',
+          timestamp: new Date()
+        }],
+        pickupCode: 'PA-FIT-8821'
+      });
+      console.info('[Park Avenue DB Seed] Seeded initial alteration: ALT-2026-000001');
+    }
+  } catch (err: any) {
+    console.warn(`[Park Avenue DB Seed] Seed warning: ${err.message}`);
+  }
+}

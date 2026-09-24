@@ -8,7 +8,12 @@ import {
   RefreshCw, 
   Scissors, 
   X,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Eye,
+  EyeOff,
+  Lock,
+  ShieldCheck,
+  ArrowLeft
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { 
@@ -20,6 +25,8 @@ import {
   API_CONFIG
 } from '../../services/api';
 import { Product, Order, AlterationRecord, Customer, ProductCategory } from '../../types';
+import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
+import { navigateTo } from '../../utils/router';
 
 type AdminTab = 
   | 'dashboard' 
@@ -32,7 +39,20 @@ type AdminTab =
   | 'settings';
 
 export const AdminDashboard: React.FC = () => {
-  const { refreshProducts, showToast, setActiveView } = useShop();
+  const { 
+    refreshProducts, 
+    showToast, 
+    setActiveView, 
+    isAdminLoggedIn, 
+    login, 
+    logout 
+  } = useShop();
+
+  // Admin Authentication State for restricted access (/admin)
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [productsList, setProductsList] = useState<Product[]>([]);
@@ -312,6 +332,117 @@ export const AdminDashboard: React.FC = () => {
     ? alterationsList.filter(a => a.status !== 'completed').length.toString() 
     : '--';
 
+  if (!isAdminLoggedIn) {
+    const handleAdminSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!adminUsername || !adminPassword) {
+        showToast('Please provide executive username and password', 'error');
+        return;
+      }
+      setIsAuthenticating(true);
+      try {
+        const res = await login(adminUsername, adminPassword);
+        if (res.success && (res.role === 'admin' || res.role === 'staff')) {
+          showToast('Atelier Executive clearance confirmed', 'success');
+          await loadAllData();
+        } else {
+          showToast('Access restricted: Insufficient atelier clearance credentials', 'error');
+        }
+      } catch {
+        showToast('Authentication protocol failed', 'error');
+      } finally {
+        setIsAuthenticating(false);
+      }
+    };
+
+    return (
+      <div className="min-h-[85vh] bg-[#F9F9F8] flex items-center justify-center px-4 py-16">
+        <div className="w-full max-w-md bg-white border border-gray-200 shadow-2xl p-8 sm:p-10 relative">
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <ParkAvenueLogo variant="stacked" size="sm" />
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#111827] text-[#936B34] text-[10px] font-mono uppercase tracking-[0.25em] mb-3">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>EXECUTIVE ACCESS GATE</span>
+            </div>
+            <h1 className="font-serif text-2xl text-[#111827] uppercase tracking-wide">
+              ATELIER ADMINISTRATION
+            </h1>
+            <p className="text-xs text-gray-500 font-mono mt-2 leading-relaxed">
+              Restricted portal path (<code className="text-[#936B34]">/admin</code>). Enter executive or staff credentials to access inventory and client orders.
+            </p>
+          </div>
+
+          <form onSubmit={handleAdminSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[11px] font-mono uppercase tracking-widest text-gray-700 mb-1.5">
+                Executive Username / Email
+              </label>
+              <input
+                type="text"
+                value={adminUsername}
+                onChange={(e) => setAdminUsername(e.target.value)}
+                placeholder="admin"
+                className="w-full bg-[#F9F9F8] border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] focus:border-[#936B34] focus:bg-white focus:outline-none transition-colors"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-mono uppercase tracking-widest text-gray-700 mb-1.5">
+                Master Security Key
+              </label>
+              <div className="relative">
+                <input
+                  type={showAdminPassword ? 'text' : 'password'}
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full bg-[#F9F9F8] border border-gray-300 px-3.5 py-2.5 pr-10 text-xs text-[#111827] focus:border-[#936B34] focus:bg-white focus:outline-none transition-colors"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPassword(!showAdminPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black cursor-pointer"
+                  aria-label={showAdminPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isAuthenticating}
+              className="w-full py-3.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-semibold uppercase tracking-[0.2em] transition-colors cursor-pointer shadow-md disabled:opacity-50"
+            >
+              {isAuthenticating ? 'VERIFYING CREDENTIALS...' : 'AUTHENTICATE ATELIER ACCESS'}
+            </button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between text-xs font-mono">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView('home');
+                navigateTo('/');
+              }}
+              className="text-gray-500 hover:text-black flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>RETURN TO STOREFRONT</span>
+            </button>
+            <span className="text-[10px] text-gray-400 uppercase tracking-widest">
+              PARK AVENUE ATELIER
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-[#111827] pt-8 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -346,6 +477,17 @@ export const AdminDashboard: React.FC = () => {
               className="px-4 py-2 bg-[#111827] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm"
             >
               VIEW STOREFRONT
+            </button>
+
+            <button
+              onClick={async () => {
+                await logout();
+                setActiveView('home');
+                navigateTo('/');
+              }}
+              className="px-3.5 py-2 border border-gray-300 text-gray-600 hover:text-red-600 hover:border-red-300 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              SIGN OUT
             </button>
           </div>
         </div>
@@ -1049,10 +1191,20 @@ export const AdminDashboard: React.FC = () => {
                     className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34] cursor-pointer"
                   >
                     <option value="Suits">Suits</option>
-                    <option value="Dress Shirts">Dress Shirts</option>
-                    <option value="Dress Pants">Dress Pants</option>
+                    <option value="Dress shirts">Dress shirts</option>
                     <option value="Ties">Ties</option>
-                    <option value="New Arrivals">New Arrivals</option>
+                    <option value="Shoe">Shoe</option>
+                    <option value="Boots">Boots</option>
+                    <option value="Loofers">Loofers</option>
+                    <option value="Pants">Pants</option>
+                    <option value="Jeans">Jeans</option>
+                    <option value="Leather jackets">Leather jackets</option>
+                    <option value="Sweaters">Sweaters</option>
+                    <option value="Coats">Coats</option>
+                    <option value="Polo shirts">Polo shirts</option>
+                    <option value="Shorts">Shorts</option>
+                    <option value="Dress Shirts">Dress Shirts (Alternative)</option>
+                    <option value="Dress Pants">Dress Pants (Alternative)</option>
                   </select>
                 </div>
 

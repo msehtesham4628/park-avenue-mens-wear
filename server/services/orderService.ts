@@ -1,0 +1,357 @@
+import { OrderModel, IOrder, OrderStatus, PaymentStatus, IShippingInfo } from '../models/Order.js';
+import { ProductModel, IProductVariant } from '../models/Product.js';
+import { inventoryService } from './inventoryService.js';
+import { notificationService } from './notificationService.js';
+import { auditService } from './auditService.js';
+
+export interface CreateOrderInput {
+  customerId?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  items: Array<{
+    productId: string;
+    variantId?: string;
+    size: string;
+    color: string;
+    quantity: number;
+    alterationRequested?: boolean;
+  }>;
+  shippingInfo: IShippingInfo;
+  paymentMethod?: string;
+  paymentTransactionId?: string;
+  notes?: string;
+  preferredNotificationChannel?: 'email' | 'sms' | 'whatsapp';
+}
+
+export const orderService = {
+  /**
+   * Generate human-readable order ID in exact format: PA-YYYY-XXXXXX (e.g. PA-2026-000001)
+   */
+  async generateOrderId(): Promise<string> {
+    const year = new Date().getFullYear();
+    const count = await OrderModel.countDocuments();
+    const sequence = (count + 1).toString().padStart(6, '0');
+    let orderId = `PA-${year}-${sequence}`;
+
+    // Verify uniqueness
+    const exists = await OrderModel.findOne({ orderId });
+    if (exists) {
+      orderId = `PA-${year}-${(count + Math.floor(Math.random() * 1000) + 1).toString().padStart(6, '0')}`;
+    }
+    return orderId;
+  },
+
+  /**
+   * Create an order enforcing all business rules
+   */
+  async createOrder(input: CreateOrderInput): Promise<IOrder> {
+    if (!input.items || input.items.length === 0) {
+      throw new Error('An order must contain at least one garment.');
+    }
+
+    // STEP 1: Validate product availability and pricing server-side
+    const validatedItems = [];
+    let subtotal = 0;
+
+    for (const item of input.items) {
+      const product = await ProductModel.findOne({ productId: item.productId, isActive: true });
+      if (!product) {
+        throw new Error(`Garment ID "${item.productId}" is not available.`);
+      }
+
+      const variant = product.variants.find((v: IProductVariant) => 
+        (item.variantId && v.id === item.variantId) ||
+        (v.size.toLowerCase() === item.size.toLowerCase() && v.color.toLowerCase() === item.color.toLowerCase()) ||
+        (v.size.toLowerCase() === item.size.toLowerCase())
+      );
+
+      const availableStock = variant ? variant.stock : product.stockQuantity;
+      if (item.quantity > availableStock) {
+        throw new Error(
+          `Insufficient inventory: Only ${availableStock} units of "${product.name}" (${item.size}) in stock.`
+        );
+      }
+
+      const authoritativePrice = product.salePrice && product.salePrice > 0 ? product.salePrice : product.price;
+      const itemSubtotal = authoritativePrice * item.quantity;
+      subtotal += itemSubtotal;
+
+      validatedItems.push({
+        product,
+        variant,
+        productId: product.productId,
+        variantId: variant?.id || `var-${product.productId}-std`,
+        sku: variant?.sku || product.sku,
+        name: product.name,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        priceAtPurchase: authoritativePrice,
+        subtotal: itemSubtotal,
+        alterationRequested: Boolean(item.alterationRequested)
+      });
+    }
+
+    // STEP 2: Safely reserve/deduct inventory with transactional logging
+    for (const item of validatedItems) {
+      await inventoryService.adjustStock({
+        productId: item.productId,
+        variantId: item.variantId,
+        size: item.size,
+        color: item.color,
+        adjustmentType: 'remove',
+        quantity: item.quantity,
+        reason: 'purchase',
+        notes: `Reserved for online order purchase`,
+        adminUser: {
+          id: 'SYSTEM',
+          name: 'Park Avenue Order Engine',
+          email: 'system@parkavenuemenswear.com'
+        }
+      });
+    }
+
+    // STEP 3 & 4: Calculate shipping, tax, total and generate Order ID
+    const FREE_SHIPPING_THRESHOLD = 250;
+    const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 35;
+    const tax = Math.round(subtotal * 0.0825 * 100) / 100;
+    const total = subtotal + shipping + tax;
+
+    const orderId = await this.generateOrderId();
+
+    // STEP 5: Record initial status
+    const initialStatus: OrderStatus = 'Confirmed';
+    const statusHistory = [{
+      previousStatus: 'None',
+      newStatus: initialStatus,
+      changedBy: {
+        id: 'SYSTEM',
+        name: 'Park Avenue Concierge Engine',
+        role: 'system'
+      },
+      note: 'Order submitted and authorized successfully.',
+      timestamp: new Date()
+    }];
+
+    const order = new OrderModel({
+      orderId,
+      customerId: input.customerId,
+      customerName: input.customerName.trim(),
+      customerEmail: input.customerEmail.toLowerCase().trim(),
+      customerPhone: input.customerPhone.trim(),
+      items: validatedItems.map(vi => ({
+        productId: vi.productId,
+        variantId: vi.variantId,
+        sku: vi.sku,
+        name: vi.name,
+        size: vi.size,
+        color: vi.color,
+        quantity: vi.quantity,
+        priceAtPurchase: vi.priceAtPurchase,
+        subtotal: vi.subtotal,
+        alterationRequested: vi.alterationRequested
+      })),
+      subtotal,
+      shipping,
+      tax,
+      total,
+      paymentStatus: 'Paid' as PaymentStatus,
+      orderStatus: initialStatus,
+      paymentMethod: input.paymentMethod || 'Credit Card (Processed)',
+      paymentTransactionId: input.paymentTransactionId || `PAY-${Date.now()}`,
+      shippingInfo: input.shippingInfo,
+      statusHistory,
+      notes: input.notes
+    });
+
+    await order.save();
+
+    // STEP 6: Trigger the appropriate notification
+    const channel = input.preferredNotificationChannel || 'email';
+    const recipient = channel === 'email' ? order.customerEmail : order.customerPhone;
+
+    try {
+      await notificationService.dispatchEvent(
+        'ORDER_CONFIRMED',
+        channel,
+        recipient,
+        {
+          orderId: order.orderId,
+          customerId: order.customerId,
+          total: order.total
+        },
+        undefined,
+        order.customerName
+      );
+    } catch (notifErr: any) {
+      console.warn(`[OrderService] Notification dispatch notice: ${notifErr.message}`);
+    }
+
+    // Record audit log
+    await auditService.record({
+      adminUser: { id: input.customerId || 'CLIENT', name: input.customerName, email: input.customerEmail, role: 'customer' },
+      action: 'ORDER_CREATED',
+      entity: 'Order',
+      entityId: order.orderId,
+      newValue: { total: order.total, itemsCount: order.items.length }
+    });
+
+    // STEP 7: Return order information
+    return order;
+  },
+
+  /**
+   * Update order status with full history and notification dispatch
+   */
+  async updateOrderStatus(
+    orderId: string, 
+    newStatus: OrderStatus, 
+    adminUser: { id: string; name: string; email: string; role: string },
+    options: {
+      note?: string;
+      trackingNumber?: string;
+      customNotificationMessage?: string;
+      notificationChannel?: 'email' | 'sms' | 'whatsapp';
+    } = {}
+  ): Promise<IOrder> {
+    const order = await OrderModel.findOne({ orderId });
+    if (!order) {
+      throw new Error(`Order ${orderId} not found.`);
+    }
+
+    const previousStatus = order.orderStatus;
+    if (previousStatus === newStatus && !options.trackingNumber) {
+      return order;
+    }
+
+    order.orderStatus = newStatus;
+
+    if (options.trackingNumber) {
+      order.trackingNumber = options.trackingNumber;
+    }
+
+    order.statusHistory.push({
+      previousStatus,
+      newStatus,
+      changedBy: {
+        id: adminUser.id,
+        name: adminUser.name,
+        role: adminUser.role
+      },
+      note: options.note || `Status transitioned from ${previousStatus} to ${newStatus}`,
+      timestamp: new Date()
+    });
+
+    await order.save();
+
+    // Trigger Notification for the specific event
+    const eventTypeMap: Record<string, string> = {
+      'Confirmed': 'ORDER_CONFIRMED',
+      'Processing': 'ORDER_PROCESSING',
+      'Shipped': 'ORDER_SHIPPED',
+      'Out for Delivery': 'ORDER_OUT_FOR_DELIVERY',
+      'Delivered': 'ORDER_DELIVERED'
+    };
+
+    const eventType = eventTypeMap[newStatus];
+    if (eventType) {
+      const channel = options.notificationChannel || 'email';
+      const recipient = channel === 'email' ? order.customerEmail : order.customerPhone;
+
+      try {
+        await notificationService.dispatchEvent(
+          eventType,
+          channel,
+          recipient,
+          {
+            orderId: order.orderId,
+            customerId: order.customerId,
+            trackingNumber: order.trackingNumber || 'Available shortly in portal'
+          },
+          options.customNotificationMessage,
+          order.customerName
+        );
+      } catch (err: any) {
+        console.warn(`[OrderService] Status notification error: ${err.message}`);
+      }
+    }
+
+    await auditService.record({
+      adminUser,
+      action: 'ORDER_STATUS_CHANGED',
+      entity: 'Order',
+      entityId: order.orderId,
+      previousValue: { status: previousStatus },
+      newValue: { status: newStatus, trackingNumber: order.trackingNumber }
+    });
+
+    return order;
+  },
+
+  /**
+   * Secure customer lookup by Order ID + Email or Phone
+   */
+  async customerLookup(orderId: string, contact: string): Promise<IOrder | null> {
+    const cleanId = orderId.trim();
+    const cleanContact = contact.trim().toLowerCase();
+    const phoneDigits = cleanContact.replace(/\D/g, '');
+
+    const contactOr: any[] = [{ customerEmail: cleanContact }];
+    if (phoneDigits.length >= 7) {
+      contactOr.push({ customerPhone: { $regex: phoneDigits } });
+    }
+
+    const order = await OrderModel.findOne({
+      orderId: { $regex: new RegExp(`^${cleanId}$`, 'i') },
+      $or: contactOr
+    }).lean();
+
+    return order;
+  },
+
+  /**
+   * Admin order queries
+   */
+  async getOrders(options: {
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  } = {}) {
+    const page = Math.max(1, options.page || 1);
+    const limit = Math.min(100, Math.max(1, options.limit || 20));
+    const skip = (page - 1) * limit;
+
+    const query: any = {};
+    if (options.status && options.status !== 'All') {
+      query.orderStatus = options.status;
+    }
+
+    if (options.search) {
+      const s = options.search.trim();
+      query.$or = [
+        { orderId: { $regex: s, $options: 'i' } },
+        { customerName: { $regex: s, $options: 'i' } },
+        { customerEmail: { $regex: s, $options: 'i' } },
+        { customerPhone: { $regex: s, $options: 'i' } },
+        { trackingNumber: { $regex: s, $options: 'i' } }
+      ];
+    }
+
+    const [orders, total] = await Promise.all([
+      OrderModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      OrderModel.countDocuments(query)
+    ]);
+
+    return {
+      orders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+};

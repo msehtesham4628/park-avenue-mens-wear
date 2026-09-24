@@ -91,7 +91,7 @@ export const AlterationTrackingPage: React.FC = () => {
             <button
               type="submit"
               disabled={isSearching}
-              className="w-full py-4 bg-[#111111] hover:bg-[#8C6D3B] text-[#111827] font-semibold text-xs uppercase tracking-[0.25em] transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+              className="w-full py-4 bg-[#111111] hover:bg-[#8C6D3B] text-white font-semibold text-xs uppercase tracking-[0.25em] transition-all disabled:opacity-50 cursor-pointer shadow-md active:bg-[#7A5726] active:scale-[0.99] flex items-center justify-center gap-2"
             >
               {isSearching ? 'SEARCHING ATELIER ARCHIVE...' : 'TRACK ALTERATION'}
             </button>
@@ -182,11 +182,8 @@ export const AlterationTrackingPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          /* Exact Required Empty State:
-             PARK AVENUE MENSWEAR
-             NO ALTERATIONS FOUND */
-          <div className="border border-black/10 bg-[#FAF9F6] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xs">
-            <div className="w-12 h-12 mb-6 border border-[#8C6D3B]/40 flex items-center justify-center font-serif text-base text-[#8C6D3B] tracking-widest bg-white shadow-xs">
+          <div className="border border-black/10 bg-[#FAF9F6] py-16 px-6 text-center flex flex-col items-center justify-center shadow-xs">
+            <div className="w-12 h-12 mb-4 border border-[#8C6D3B]/40 flex items-center justify-center font-serif text-base text-[#8C6D3B] tracking-widest bg-white shadow-xs">
               PA
             </div>
 
@@ -194,8 +191,8 @@ export const AlterationTrackingPage: React.FC = () => {
               PARK AVENUE MENSWEAR
             </span>
 
-            <h3 className="font-serif text-2xl text-[#111111] uppercase tracking-wider mb-4 font-light">
-              NO ALTERATIONS FOUND
+            <h3 className="font-serif text-2xl text-[#111111] uppercase tracking-wider mb-3 font-light">
+              {hasSearched ? 'NO ALTERATIONS FOUND' : 'ATELIER ALTERATION STATUS'}
             </h3>
 
             <p className="text-xs text-[#666666] max-w-md uppercase tracking-widest font-mono leading-relaxed mb-6">
@@ -206,7 +203,7 @@ export const AlterationTrackingPage: React.FC = () => {
 
             <button
               onClick={() => setActiveView('shop')}
-              className="px-8 py-3.5 bg-white border border-black/20 hover:border-[#8C6D3B] text-xs uppercase tracking-[0.2em] text-[#111111] hover:text-[#8C6D3B] transition-colors cursor-pointer shadow-xs"
+              className="px-8 py-3.5 bg-white border border-black/20 hover:border-[#8C6D3B] text-xs uppercase tracking-[0.2em] text-[#111111] hover:text-[#8C6D3B] transition-colors cursor-pointer shadow-xs font-semibold"
             >
               EXPLORE MENSWEAR
             </button>
