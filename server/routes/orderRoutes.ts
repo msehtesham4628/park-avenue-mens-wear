@@ -14,6 +14,6 @@ router.post('/lookup', orderLookupLimiter, orderController.customerLookup);
 router.get('/admin/list', ...requireAdminOrStaff, orderController.getAdminOrders);
 router.put('/admin/:id/status', ...requireAdminOrStaff, orderController.updateOrderStatus);
 
-router.get('/:id', orderController.getOrderById);
+router.get('/:id', authenticateJWT, orderController.getOrderById);
 
 export default router;
