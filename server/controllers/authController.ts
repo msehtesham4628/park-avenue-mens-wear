@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { authService } from '../services/authService.js';
 import { CustomerModel } from '../models/Customer.js';
+import { customerService } from '../services/customerService.js';
 
 export const authController = {
   async register(req: AuthenticatedRequest, res: Response) {
@@ -167,17 +168,21 @@ export const authController = {
         return res.status(401).json({ success: false, message: 'Not authenticated.' });
       }
 
-      const customer = await CustomerModel.findOne({ customerId: req.user.customerId }).lean();
-      if (!customer) {
+      const profile = await customerService.getCustomerProfile(req.user.customerId);
+      if (!profile) {
         return res.status(404).json({ success: false, message: 'User profile not found.' });
       }
 
-      const copy: any = { ...customer };
+      const copy: any = { ...profile.customer };
       delete copy.passwordHash;
 
       return res.status(200).json({
         success: true,
-        data: copy,
+        data: {
+          customer: copy,
+          orders: profile.orders,
+          alterations: profile.alterations
+        },
         message: 'Profile retrieved successfully.'
       });
     } catch (err: any) {
