@@ -26,6 +26,7 @@ import {
 
 export type AppView = 
   | 'home'
+  | 'welcome'
   | 'shop'
   | 'pdp'
   | 'cart'
