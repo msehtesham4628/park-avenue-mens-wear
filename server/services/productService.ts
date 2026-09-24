@@ -1,6 +1,19 @@
 import { ProductModel, IProduct, IProductVariant } from '../models/Product.js';
 import { auditService } from './auditService.js';
 
+
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  'Suits': ['Suits'],
+  'Blazers & Jackets': ['Blazers & Jackets', 'Leather Jackets', 'Leather jackets'],
+  'Shirts': ['Shirts', 'Dress Shirts', 'Dress shirts', 'Polo Shirts', 'Polo shirts'],
+  'Pants': ['Pants', 'Dress Pants', 'Jeans'],
+  'Outerwear': ['Outerwear', 'Coats'],
+  'Sweaters & Knitwear': ['Sweaters & Knitwear', 'Sweaters'],
+  'Footwear': ['Footwear', 'Shoes', 'Shoe', 'Boots', 'Loafers', 'Loofers'],
+  'Accessories': ['Accessories', 'Ties'],
+  'Shorts': ['Shorts']
+};
+
 export interface ProductQueryFilters {
   category?: string;
   subcategory?: string;
@@ -47,14 +60,78 @@ export const productService = {
         query.isNewArrival = true;
       } else {
         const catNorm = filters.category.trim();
-        if (catNorm.toLowerCase() === 'shoe' || catNorm.toLowerCase() === 'shoes') {
+        const aliases = CATEGORY_ALIASES[catNorm];
+        if (aliases) {
+          query.category = { $in: aliases };
+        } else if (catNorm.toLowerCase() === 'shoe' || catNorm.toLowerCase() === 'shoes') {
           query.category = { $regex: /^shoe/i };
         } else if (catNorm.toLowerCase() === 'loofers' || catNorm.toLowerCase() === 'loafers') {
           query.category = { $regex: /^lo[oa]fer/i };
         } else if (catNorm.toLowerCase() === 'pants') {
           query.category = { $regex: /pants/i };
         } else {
-          query.category = { $regex: new RegExp(`^${catNorm}$`, 'i') };
+          query.category = { $regex: new RegExp(`^${catNorm}import { ProductModel, IProduct, IProductVariant } from '../models/Product.js';
+import { auditService } from './auditService.js';
+
+
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  'Suits': ['Suits'],
+  'Blazers & Jackets': ['Blazers & Jackets', 'Leather Jackets', 'Leather jackets'],
+  'Shirts': ['Shirts', 'Dress Shirts', 'Dress shirts', 'Polo Shirts', 'Polo shirts'],
+  'Pants': ['Pants', 'Dress Pants', 'Jeans'],
+  'Outerwear': ['Outerwear', 'Coats'],
+  'Sweaters & Knitwear': ['Sweaters & Knitwear', 'Sweaters'],
+  'Footwear': ['Footwear', 'Shoes', 'Shoe', 'Boots', 'Loafers', 'Loofers'],
+  'Accessories': ['Accessories', 'Ties'],
+  'Shorts': ['Shorts']
+};
+
+export interface ProductQueryFilters {
+  category?: string;
+  subcategory?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  size?: string;
+  color?: string;
+  isFeatured?: boolean;
+  isNewArrival?: boolean;
+  availability?: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
+  sortBy?: 'featured' | 'price_asc' | 'price_desc' | 'newest' | 'name_asc';
+  page?: number;
+  limit?: number;
+  includeInactive?: boolean;
+}
+
+export function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export const productService = {
+  /**
+   * Query products with robust filtering, sorting and pagination
+   */
+  async getProducts(filters: ProductQueryFilters = {}) {
+    const page = Math.max(1, filters.page || 1);
+    const limit = Math.min(100, Math.max(1, filters.limit || 20));
+    const skip = (page - 1) * limit;
+
+    const query: any = {};
+
+    if (!filters.includeInactive) {
+      query.isActive = true;
+    }
+
+    if (filters.category && filters.category !== 'All') {
+      if (filters.category === 'New Arrivals') {
+        query.isNewArrival = true;
+      } else {
+, 'i') };
         }
       }
     }
