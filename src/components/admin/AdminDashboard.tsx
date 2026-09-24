@@ -2062,7 +2062,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="p-4 bg-amber-50/70 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
               <div className="text-amber-900">
                 <span className="font-semibold uppercase block text-[11px] mb-0.5">Recommended Column Format:</span>
-                <span className="text-[11px] text-amber-800">SKU, Name, Category, Price, Sizes &amp; Stock (e.g. "38R:4, 40R:6"), Fabric, Fit, Description</span>
+                <span className="text-[11px] text-amber-800">SKU, Name, Category, Price, Size, Stock, Fabric, Fit, Description</span>
               </div>
               <button
                 onClick={downloadProductExcelTemplate}
