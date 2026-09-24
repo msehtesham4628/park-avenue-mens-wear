@@ -204,16 +204,30 @@ export const ProductService = {
   },
 
   async batchCreate(products: Omit<Product, 'id' | 'totalStock'>[]): Promise<Product[]> {
-    const createdList: Product[] = [];
-    for (const p of products) {
-      const totalStock = p.variants ? p.variants.reduce((acc, v) => acc + (v.stock || 0), 0) : 0;
-      const newProd: Product = {
-        ...p,
-        id: `prod-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
-        totalStock
-      };
-      createdList.push(newProd);
+    const remote = await fetchRemote<any[]>('/products/admin/batch', {
+      method: 'POST',
+      body: JSON.stringify({ products })
+    });
+
+    if (remote && Array.isArray(remote)) {
+      const mapped = remote.map(mapBackendProductToFrontend);
+      productsCache = [...mapped, ...productsCache];
+      saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
+      return mapped;
     }
+
+    // Do not silently write an Excel import only to localStorage when the live
+    // backend is configured. This prevents an admin from believing the catalog
+    // was saved to MongoDB when the API was unavailable.
+    if (API_CONFIG.isLiveBackend) {
+      throw new Error('MongoDB import failed: the live product API did not accept the import. Check the backend/Vercel deployment and MongoDB connection.');
+    }
+
+    const createdList: Product[] = products.map((p, index) => ({
+      ...p,
+      id: `prod-${Date.now().toString(36)}-${index}`,
+      totalStock: p.variants?.reduce((acc, v) => acc + (v.stock || 0), 0) || 0
+    }));
     productsCache = [...createdList, ...productsCache];
     saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
     return createdList;
