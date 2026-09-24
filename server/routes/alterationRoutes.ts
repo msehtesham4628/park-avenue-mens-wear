@@ -5,6 +5,7 @@ import { requireAdminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
+router.get('/', ...requireAdminOrStaff, alterationController.getAlterations);
 router.post('/', alterationController.createAlteration);
 router.post('/lookup', orderLookupLimiter, alterationController.customerLookup);
 
