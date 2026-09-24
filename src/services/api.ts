@@ -300,7 +300,7 @@ export const ProductService = {
 
 export const OrderService = {
   async getAll(): Promise<Order[]> {
-    const remote = await fetchRemote<Order[]>('/orders');
+    const remote = await fetchRemote<Order[]>('/orders/admin/list');
     if (remote && Array.isArray(remote)) {
       ordersCache = remote;
       saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
@@ -546,7 +546,7 @@ export const OrderService = {
 
 export const AlterationService = {
   async getAll(): Promise<AlterationRecord[]> {
-    const remote = await fetchRemote<AlterationRecord[]>('/alterations');
+    const remote = await fetchRemote<AlterationRecord[]>('/alterations/admin/list');
     if (remote && Array.isArray(remote)) {
       alterationsCache = remote;
       saveStorage(STORAGE_KEYS.ALTERATIONS, alterationsCache);
@@ -1050,6 +1050,16 @@ export const AuthService = {
     } catch {
       return null;
     }
+  },
+
+  async getMe(): Promise<{ customer: any; orders: Order[]; alterations: AlterationRecord[] } | null> {
+    const remote = await fetchRemote<any>('/auth/me');
+    if (!remote) return null;
+    return {
+      customer: remote.customer || remote,
+      orders: Array.isArray(remote.orders) ? remote.orders : [],
+      alterations: Array.isArray(remote.alterations) ? remote.alterations : []
+    };
   },
 
   getToken(): string | null {
