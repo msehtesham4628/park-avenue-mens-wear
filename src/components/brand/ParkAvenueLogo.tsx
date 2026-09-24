@@ -16,7 +16,7 @@ export const ParkAvenueLogo: React.FC<ParkAvenueLogoProps> = ({
   className = '',
   size = 'md'
 }) => {
-  const logoSource = '/20260925_004137_0000.png';
+  const logoSource = '/park-avenue-logo.svg';
 
   if (variant === 'mark') {
     const dim = size === 'sm' ? 36 : size === 'lg' ? 72 : size === 'xl' ? 96 : 52;
