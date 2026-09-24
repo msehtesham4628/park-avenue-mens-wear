@@ -21,15 +21,18 @@ import { AlterationTrackingPage } from './components/tracking/AlterationTracking
 import { AccountPage } from './components/account/AccountPage';
 import { LoginPage } from './components/account/LoginPage';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { WelcomePage } from './components/welcome/WelcomePage';
 
 const MainContent: React.FC = () => {
   const { activeView } = useShop();
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-[#111827] selection:bg-[#936B34] selection:text-white">
-      <Navbar />
+      {activeView !== 'welcome' && <Navbar />}
 
       <main className={`flex-1 ${activeView !== 'home' ? 'pt-24 sm:pt-28' : ''}`}>
+        {activeView === 'welcome' && <WelcomePage />}
+
         {activeView === 'home' && (
           <>
             <Hero />
@@ -51,7 +54,7 @@ const MainContent: React.FC = () => {
       </main>
 
       {/* Persistent global layout overlays */}
-      <Footer />
+      {activeView !== 'welcome' && <Footer />}
       <NotificationDrawer />
       <CartDrawer />
       <SearchModal />
