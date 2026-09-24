@@ -62,10 +62,10 @@ export const authController = {
         });
       }
 
-      if (password.length < 6) {
+      if (password.length < 5) {
         return res.status(400).json({
           success: false,
-          message: 'Password must be at least 6 characters long.'
+          message: 'Password must be at least 5 characters long.'
         });
       }
 
