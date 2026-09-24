@@ -28,17 +28,14 @@ export const WelcomePage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4 max-w-3xl mx-auto">
           <div className="border border-gray-200 px-5 py-7">
             <p className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-3">Total</p>
-            <p className="font-serif text-4xl sm:text-5xl">$500</p>
           </div>
 
           <div className="border border-gray-200 px-5 py-7">
             <p className="text-xs uppercase tracking-[0.25em] text-gray-500 mb-3">Paid</p>
-            <p className="font-serif text-4xl sm:text-5xl">$200</p>
           </div>
 
           <div className="border border-[#936B34]/50 bg-[#FAF3E8] px-5 py-7">
             <p className="text-xs uppercase tracking-[0.25em] text-[#936B34] mb-3">Remaining</p>
-            <p className="font-serif text-4xl sm:text-5xl">$300</p>
           </div>
         </div>
 
