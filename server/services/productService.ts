@@ -323,7 +323,7 @@ export const productService = {
 
     const fieldsToUpdate = [
       'description', 'category', 'subcategory', 'price', 'salePrice', 
-      'images', 'lowStockThreshold', 'isFeatured', 'isNewArrival', 
+      'images', 'colorImages', 'lowStockThreshold', 'isFeatured', 'isNewArrival', 
       'isActive', 'fabric', 'fit', 'careInstructions'
     ];
 
