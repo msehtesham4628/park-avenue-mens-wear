@@ -166,6 +166,7 @@ export const productController = {
           price: Number(item.price),
           salePrice: item.salePrice !== undefined ? Number(item.salePrice) : undefined,
           images: Array.isArray(item.images) ? item.images : [],
+          colorImages: item.colorImages && typeof item.colorImages === 'object' ? item.colorImages : {},
           variants: Array.isArray(item.variants) ? item.variants : [],
           lowStockThreshold: item.lowStockThreshold !== undefined ? Number(item.lowStockThreshold) : 3,
           isFeatured: Boolean(item.isFeatured),
