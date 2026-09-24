@@ -9,7 +9,7 @@ import {
   LogIn
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
-import { OrderService, AlterationService } from '../../services/api';
+import { AuthService } from '../../services/api';
 import { Order, AlterationRecord } from '../../types';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 
@@ -31,9 +31,21 @@ export const AccountPage: React.FC = () => {
   const [customerAlterations, setCustomerAlterations] = useState<AlterationRecord[]>([]);
 
   useEffect(() => {
-    OrderService.getAll().then(orders => setCustomerOrders(orders));
-    AlterationService.getAll().then(alts => setCustomerAlterations(alts));
-  }, []);
+    let cancelled = false;
+    if (!currentCustomer) {
+      setCustomerOrders([]);
+      setCustomerAlterations([]);
+      return;
+    }
+
+    AuthService.getMe().then(profile => {
+      if (cancelled || !profile) return;
+      setCustomerOrders(profile.orders);
+      setCustomerAlterations(profile.alterations);
+    });
+
+    return () => { cancelled = true; };
+  }, [currentCustomer]);
 
   const wishlistedProducts = products.filter(p => wishlist.includes(p.id));
 
