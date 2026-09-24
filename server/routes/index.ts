@@ -36,6 +36,8 @@ apiRouter.get('/docs', (_req: Request, res: Response) => {
 
 // Core API Modules
 apiRouter.use('/auth', authRoutes);
+// Compatibility aliases for deployments where nested /api/auth/* paths are rewritten differently.
+apiRouter.use('/register', authRoutes);
 apiRouter.use('/products', productRoutes);
 apiRouter.use('/categories', categoryRoutes);
 apiRouter.use('/cart', cartRoutes);
