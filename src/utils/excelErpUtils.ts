@@ -5,19 +5,20 @@ import { Product, Order, Customer, ProductCategory, OFFICIAL_CATEGORIES, Product
  * Downloads a standardized Excel template for bulk product upload
  */
 export function downloadProductExcelTemplate() {
-  // One row represents one color of a garment. Use the SAME Garment Name
-  // for all colors; the storefront groups those rows into one product card.
+  // One row represents one COLOR + SIZE variant.
+  // Keep the same Product Group / Garment Name for all colors and sizes.
   const templateRows = [
     {
       'Product Group': 'PA-SUIT-001',
-      'SKU': 'PA-SUIT-001-NAVY',
+      'SKU': 'PA-SUIT-001-NAVY-38R',
       'Garment Name': 'Park Avenue Modern Tailored Suit',
       'Category': 'Suits',
       'Subcategory': 'Suits',
       'Price ($)': 2850,
       'Color': 'Navy',
       'Color Hex': '#1E2A44',
-      'Sizes & Stock': '38R:3, 40R:5, 42R:4, 44R:2',
+      'Size': '38R',
+      'Stock': 3,
       'Image URL': 'https://example.com/images/park-avenue-suit-navy.jpg',
       'Fabric': 'Super 150s Tasmanian Wool',
       'Fit': 'Modern Tailored',
@@ -25,33 +26,35 @@ export function downloadProductExcelTemplate() {
     },
     {
       'Product Group': 'PA-SUIT-001',
-      'SKU': 'PA-SUIT-001-BLACK',
+      'SKU': 'PA-SUIT-001-NAVY-40R',
+      'Garment Name': 'Park Avenue Modern Tailored Suit',
+      'Category': 'Suits',
+      'Subcategory': 'Suits',
+      'Price ($)': 2850,
+      'Color': 'Navy',
+      'Color Hex': '#1E2A44',
+      'Size': '40R',
+      'Stock': 5,
+      'Image URL': 'https://example.com/images/park-avenue-suit-navy.jpg',
+      'Fabric': 'Super 150s Tasmanian Wool',
+      'Fit': 'Modern Tailored',
+      'Description': 'Handcrafted Park Avenue tailored suit.'
+    },
+    {
+      'Product Group': 'PA-SUIT-001',
+      'SKU': 'PA-SUIT-001-BLACK-38R',
       'Garment Name': 'Park Avenue Modern Tailored Suit',
       'Category': 'Suits',
       'Subcategory': 'Suits',
       'Price ($)': 2850,
       'Color': 'Black',
       'Color Hex': '#111111',
-      'Sizes & Stock': '38R:2, 40R:4, 42R:3, 44R:1',
+      'Size': '38R',
+      'Stock': 2,
       'Image URL': 'https://example.com/images/park-avenue-suit-black.jpg',
       'Fabric': 'Super 150s Tasmanian Wool',
       'Fit': 'Modern Tailored',
       'Description': 'Handcrafted Park Avenue tailored suit.'
-    },
-    {
-      'Product Group': 'PA-SHIRT-002',
-      'SKU': 'PA-SHIRT-002-WHITE',
-      'Garment Name': 'Park Avenue Premium Dress Shirt',
-      'Category': 'Shirts',
-      'Subcategory': 'Dress Shirts',
-      'Price ($)': 395,
-      'Color': 'White',
-      'Color Hex': '#F5F5F5',
-      'Sizes & Stock': 'S:8, M:10, L:6, XL:4',
-      'Image URL': 'https://example.com/images/park-avenue-shirt-white.jpg',
-      'Fabric': 'Sea Island Cotton',
-      'Fit': 'Slim Fit',
-      'Description': 'Premium Park Avenue dress shirt.'
     }
   ];
 
@@ -60,19 +63,9 @@ export function downloadProductExcelTemplate() {
   XLSX.utils.book_append_sheet(wb, ws, 'Product_Template');
 
   ws['!cols'] = [
-    { wch: 18 }, // Product Group
-    { wch: 24 }, // SKU
-    { wch: 38 }, // Garment Name
-    { wch: 22 }, // Category
-    { wch: 24 }, // Subcategory
-    { wch: 12 }, // Price
-    { wch: 16 }, // Color
-    { wch: 14 }, // Color Hex
-    { wch: 35 }, // Sizes & Stock
-    { wch: 55 }, // Image URL
-    { wch: 30 }, // Fabric
-    { wch: 20 }, // Fit
-    { wch: 55 }  // Description
+    { wch: 18 }, { wch: 28 }, { wch: 38 }, { wch: 22 }, { wch: 24 },
+    { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 10 },
+    { wch: 55 }, { wch: 30 }, { wch: 20 }, { wch: 55 }
   ];
 
   XLSX.writeFile(wb, 'park_avenue_products_upload_template.xlsx');
@@ -109,7 +102,8 @@ export async function parseProductsExcel(file: File): Promise<{
     const fabric = String(row['Fabric'] || row['fabric'] || '').trim();
     const fit = String(row['Fit'] || row['fit'] || '').trim();
     const description = String(row['Description'] || row['description'] || '').trim();
-    const rawSizes = String(row['Sizes & Stock'] || row['Sizes & Stock (e.g. 38R:3, 40R:5, 42R:2)' ] || row['sizes'] || '').trim();
+    const size = String(row['Size'] || row['size'] || '').trim();
+    const stock = Math.max(0, parseInt(String(row['Stock'] || row['stock'] || '0'), 10) || 0);
     const imageUrl = String(row['Image URL'] || row['Image'] || row['image'] || '').trim();
 
     if (!name) {
@@ -141,23 +135,17 @@ export async function parseProductsExcel(file: File): Promise<{
     // A row is one color. Example: 38R:3, 40R:5 creates size variants
     // under that color, allowing same-name rows to be grouped in the storefront.
     const variants: ProductVariant[] = [];
-    const sizeTokens = rawSizes.split(/[,;\\n]/).map(s => s.trim()).filter(Boolean);
-    if (sizeTokens.length > 0) {
-      sizeTokens.forEach((tok, sIdx) => {
-        const parts = tok.split(':');
-        const sizeStr = parts[0]?.trim() || `SZ-${sIdx + 1}`;
-        const stockNum = Math.max(0, parseInt(parts[1]?.trim() || '0', 10) || 0);
-        variants.push({
-          id: `${sku}-var-${sIdx + 1}`,
-          size: sizeStr,
-          stock: stockNum,
-          color,
-          colorHex,
-          sku: `${sku}-${sizeStr}`
-        });
+    if (size) {
+      variants.push({
+        id: `${sku}-var`,
+        size,
+        stock,
+        color,
+        colorHex,
+        sku
       });
     } else {
-      errors.push(`Row ${rowNum} (${name} / ${color}): Missing Sizes & Stock.`);
+      errors.push(`Row ${rowNum} (${name} / ${color}): Missing Size.`);
     }
 
     products.push({
