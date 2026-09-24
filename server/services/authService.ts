@@ -32,6 +32,10 @@ export const authService = {
    * Sign JWT Token
    */
   generateToken(customer: ICustomer): string {
+    if (!ENV.JWT_SECRET) {
+      throw new Error('Authentication is not configured on the server. Set JWT_SECRET in Vercel Production environment variables.');
+    }
+
     const payload: TokenPayload = {
       id: customer._id ? customer._id.toString() : customer.customerId,
       customerId: customer.customerId,
@@ -49,6 +53,7 @@ export const authService = {
    * Verify JWT Token
    */
   verifyToken(token: string): TokenPayload | null {
+    if (!ENV.JWT_SECRET) return null;
     try {
       return jwt.verify(token, ENV.JWT_SECRET) as TokenPayload;
     } catch {
@@ -130,14 +135,11 @@ export const authService = {
    */
   async login(identifier: string, password: string): Promise<{ customer: ICustomer; token: string }> {
     const clean = identifier.toLowerCase().trim();
-    
-    // 1. Look up by exact email or username
-    let customer = await CustomerModel.findOne({
-      $or: [
-        { email: clean },
-        { username: clean }
-      ]
-    });
+    if (!clean) throw new Error('Username or email is required.');
+
+    // Email identifiers query email; all other identifiers query username.
+    const lookup = clean.includes('@') ? { email: clean } : { username: clean };
+    const customer = await CustomerModel.findOne(lookup);
 
 
     if (!customer) {
