@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
+import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { SizeGuideModal } from './SizeGuideModal';
 
 export const ProductDetailPage: React.FC = () => {
@@ -47,9 +48,7 @@ export const ProductDetailPage: React.FC = () => {
     return (
       <div className="min-h-[75vh] flex items-center justify-center bg-white text-[#111827] px-4 py-20">
         <div className="max-w-md w-full border border-gray-200 bg-[#F9F9F8] p-8 sm:p-12 text-center flex flex-col items-center shadow-2xl">
-          <div className="w-12 h-12 mb-6 border border-[#936B34]/50 flex items-center justify-center font-serif text-base text-[#936B34] tracking-widest bg-white shadow-md">
-            PA
-          </div>
+          <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6 border border-[#936B34]/50 p-1 bg-white shadow-md" />
 
           <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-[#936B34] mb-3 block font-medium">
             PARK AVENUE MENSWEAR
@@ -200,9 +199,7 @@ export const ProductDetailPage: React.FC = () => {
             <div>
               <div className="flex items-center justify-between text-xs text-gray-500 mb-2 font-mono">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] font-bold text-[#936B34] border border-[#936B34]/50 px-1.5 py-0.5 bg-white">
-                    PA
-                  </span>
+                  <ParkAvenueLogo variant="mark" size="sm" className="w-7 h-7 border border-[#936B34]/50 p-0.5 bg-white" />
                   <span className="uppercase tracking-widest text-[#936B34] font-medium">{product.category}</span>
                 </div>
                 <span className="text-[10px] text-gray-400">SKU: {product.sku}</span>
