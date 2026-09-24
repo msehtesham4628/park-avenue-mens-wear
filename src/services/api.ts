@@ -1005,18 +1005,12 @@ export const AuthService = {
       const effEmail = (payload.emailId || payload.email || '').trim();
       const effUser = (payload.username || '').trim();
 
-      const newCustomer = {
-        id: `CUST-${Date.now().toString(36).toUpperCase()}`,
-        name: `${effFirst} ${effLast}`.trim(),
-        username: effUser,
-        email: effEmail,
-        phone: payload.phone || '',
-        role: 'customer'
+      // Do not create a fake browser-only account when the backend is unavailable.
+      // Customer accounts must be persisted in MongoDB so login continues to work after logout.
+      return {
+        success: false,
+        message: 'Account could not be saved to the server. Please try again.'
       };
-      const token = 'mock-jwt-' + Date.now();
-      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newCustomer));
-      return { success: true, customer: newCustomer, token, message: 'Welcome to Park Avenue Mens Wear!' };
     }
   },
 
