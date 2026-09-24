@@ -91,7 +91,7 @@ export const Hero: React.FC = () => {
           {/* Official supplied Park Avenue PNG logo */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <img
-              src="/20260925_004137_0000.png"
+              src="/park-avenue-logo.svg"
               alt="Park Avenue Menswear"
               className="w-40 sm:w-56 lg:w-64 max-h-[55%] object-contain drop-shadow-xl transform transition-transform duration-500 group-hover:scale-105"
             />
