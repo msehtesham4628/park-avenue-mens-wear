@@ -9,35 +9,37 @@ export async function seedInitialData() {
     // Bootstrap credentials are supplied only through server-side environment variables.
     // Never commit production passwords or expose them to the browser.
     const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
+    const seedAdminEmail = (process.env.SEED_ADMIN_EMAIL || 'admin@parkavenuemenswear.com').toLowerCase().trim();
+    const seedAdminUsername = (process.env.SEED_ADMIN_USERNAME || 'admin').toLowerCase().trim();
     const seedStaffPassword = process.env.SEED_STAFF_PASSWORD;
     const seedPatronPassword = process.env.SEED_PATRON_PASSWORD;
 
     // 1. Seed Admin & Staff accounts if not existing
-    const existingAdmin = await CustomerModel.findOne({ email: 'admin@parkavenuemenswear.com' });
+    const existingAdmin = await CustomerModel.findOne({ email: seedAdminEmail });
     if (!existingAdmin && seedAdminPassword) {
-      const passwordHash = await authService.hashPassword(seedAdminPassword!);
+      const passwordHash = await authService.hashPassword(seedAdminPassword);
       await CustomerModel.create({
         customerId: 'CUST-ADMIN-001',
-        firstName: 'Master',
-        lastName: 'Director',
-        name: 'Master Director',
-        username: 'admin',
-        email: 'admin@parkavenuemenswear.com',
-        phone: '+1 (800) 555-7275',
+        firstName: 'Park Avenue',
+        lastName: 'Administrator',
+        name: 'Park Avenue Administrator',
+        username: seedAdminUsername,
+        email: seedAdminEmail,
+        phone: '',
         passwordHash,
         role: 'admin',
         status: 'active',
-        addresses: [{
-          id: 'addr-admin-1',
-          street: '725 Park Avenue',
-          city: 'New York',
-          state: 'NY',
-          postalCode: '10021',
-          country: 'United States',
-          isDefault: true
-        }]
+        addresses: []
       });
-      console.info('[Park Avenue DB Seed] Created default administrator: admin@parkavenuemenswear.com');
+      console.info('[Park Avenue DB Seed] Created administrator:', seedAdminEmail);
+    } else if (existingAdmin && seedAdminPassword) {
+      const updates: Record<string, unknown> = {};
+      if (existingAdmin.role !== 'admin') updates.role = 'admin';
+      if (existingAdmin.status !== 'active') updates.status = 'active';
+      if (existingAdmin.username !== seedAdminUsername) updates.username = seedAdminUsername;
+      if (updates.role || updates.status || updates.username) {
+        await CustomerModel.updateOne({ _id: existingAdmin._id }, { $set: updates });
+      }
     }
 
     const existingParkmensAdmin = await CustomerModel.findOne({ email: 'parkmens@admin.com' });
