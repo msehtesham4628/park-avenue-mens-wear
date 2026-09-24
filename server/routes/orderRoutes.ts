@@ -8,10 +8,11 @@ const router = Router();
 // Storefront & Client routes
 router.post('/', orderController.createOrder);
 router.post('/lookup', orderLookupLimiter, orderController.customerLookup);
-router.get('/:id', orderController.getOrderById);
 
-// Admin order routes
+// Admin order routes must be declared before /:id so "admin" is not treated as an order ID.
 router.get('/admin/list', ...requireAdminOrStaff, orderController.getAdminOrders);
 router.put('/admin/:id/status', ...requireAdminOrStaff, orderController.updateOrderStatus);
+
+router.get('/:id', orderController.getOrderById);
 
 export default router;
