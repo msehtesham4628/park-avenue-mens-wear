@@ -11,18 +11,36 @@ interface FeaturedCategoryCard {
 }
 
 export const CategoryShowcase: React.FC = () => {
-  const { setSelectedCategory, setActiveView } = useShop();
+  const { setSelectedCategory, setActiveView, products } = useShop();
 
-  const featuredCards: FeaturedCategoryCard[] = [
-    { title: 'Suits', displayName: 'SUITS', tagline: 'Bespoke Half & Full Canvas' },
-    { title: 'Dress Shirts', displayName: 'DRESS SHIRTS', tagline: '120s 2-Ply Egyptian Cotton' },
-    { title: 'Leather Jackets', displayName: 'LEATHER JACKETS', tagline: 'French Plonge Lambskin' },
-    { title: 'Coats', displayName: 'COATS', tagline: 'Pure Italian 650g Cashmere' },
-    { title: 'Loofers', displayName: 'LOOFERS', tagline: 'Belgian Glove-Soft Suede' },
-    { title: 'Shoe', displayName: 'SHOES', tagline: 'Goodyear Welted French Calf' },
-    { title: 'Ties', displayName: 'TIES', tagline: 'Handcrafted Como Grenadine Silk' },
-    { title: 'Sweaters', displayName: 'SWEATERS', tagline: '4-Ply Scottish Cashmere' }
-  ];
+  const taglineByCategory: Record<string, string> = {
+    'Suits': 'Bespoke Half & Full Canvas',
+    'Blazers & Jackets': 'Tailored Layers & Jackets',
+    'Shirts': 'Premium Egyptian Cotton',
+    'Pants': 'Tailored Trousers & Denim',
+    'Outerwear': 'Italian Wool & Cashmere',
+    'Sweaters & Knitwear': 'Fine Scottish Knitwear',
+    'Footwear': 'Handcrafted Leather Shoes',
+    'Accessories': 'Hand-Finished Sartorial Details',
+    'Shorts': 'Refined Casual Tailoring'
+  };
+
+  const categoryCards = OFFICIAL_CATEGORIES
+    .filter(c => c.id !== 'all' && c.id !== 'new-arrivals')
+    .map(category => {
+      const categoryProducts = products.filter(product =>
+        product.category === category.queryValue ||
+        product.category === category.name ||
+        category.subcategories.some(sub => product.category === sub)
+      );
+      const image = categoryProducts.find(product => product.images?.[0])?.images?.[0];
+      return {
+        title: category.queryValue as ProductCategory,
+        displayName: category.name.toUpperCase(),
+        tagline: taglineByCategory[category.name] || 'Park Avenue Menswear',
+        image
+      };
+    });
 
   const handleSelect = (category: string) => {
     setSelectedCategory(category);
@@ -74,40 +92,47 @@ export const CategoryShowcase: React.FC = () => {
           </div>
         </div>
 
-        {/* Featured Category Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-          {featuredCards.map((cat) => (
-            <div
+        {/* Full-image category cards with content over the image */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {categoryCards.map((cat) => (
+            <button
               key={cat.title}
+              type="button"
               onClick={() => handleSelect(cat.title)}
-              className="group border border-gray-200 bg-white hover:bg-[#FBFBFA] hover:border-[#936B34] hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col p-4 sm:p-5"
+              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#F5F5F3] border border-gray-200 text-left cursor-pointer"
             >
-              {/* Media Placeholder */}
-              <div className="relative mb-5 overflow-hidden">
+              {cat.image ? (
+                <img
+                  src={cat.image}
+                  alt={cat.displayName}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  loading="lazy"
+                />
+              ) : (
                 <MediaPlaceholder
                   label="PARK AVENUE MENSWEAR"
                   category={cat.displayName}
                   aspectRatio="portrait"
-                  className="w-full"
+                  className="absolute inset-0 w-full h-full"
                 />
-              </div>
+              )}
 
-              {/* Card Content */}
-              <div className="space-y-1.5 mt-auto pt-2">
-                <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#936B34]">
+              {/* Luxury overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/5 group-hover:from-black/80 transition-all duration-500" />
+
+              {/* Category content inside image */}
+              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 text-white">
+                <div className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.28em] text-white/80 mb-2">
                   {cat.tagline}
                 </div>
-
-                <h3 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide group-hover:text-[#936B34] transition-colors">
+                <h3 className="font-serif text-2xl sm:text-3xl uppercase tracking-[0.12em] font-light mb-4">
                   {cat.displayName}
                 </h3>
-
-                <div className="pt-2 flex items-center gap-1.5 text-xs uppercase tracking-[0.2em] font-medium text-[#936B34] group-hover:text-black transition-colors">
-                  <span>SHOP NOW</span>
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
-                </div>
+                <span className="inline-flex items-center gap-2 border border-white/70 px-4 py-2.5 text-[10px] uppercase tracking-[0.22em] font-medium group-hover:bg-white group-hover:text-black transition-all duration-300">
+                  SHOP NOW <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                </span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
 
