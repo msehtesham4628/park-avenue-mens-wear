@@ -88,15 +88,13 @@ export const Hero: React.FC = () => {
             <circle cx="300" cy="150" r="130" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.4" />
           </svg>
 
-          {/* Central Architectural Monogram Seal (Geometric Emblem - No Text) */}
+          {/* Official supplied Park Avenue PNG logo */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 border border-[#936B34] bg-white shadow-xl flex items-center justify-center transform transition-transform duration-500 group-hover:scale-105">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 border border-[#936B34]/30 flex items-center justify-center">
-                <span className="font-serif text-2xl sm:text-3xl text-[#111827] tracking-widest font-normal">
-                  PA
-                </span>
-              </div>
-            </div>
+            <img
+              src="/20260925_004137_0000.png"
+              alt="Park Avenue Menswear"
+              className="w-40 sm:w-56 lg:w-64 max-h-[55%] object-contain drop-shadow-xl transform transition-transform duration-500 group-hover:scale-105"
+            />
           </div>
 
         </div>
