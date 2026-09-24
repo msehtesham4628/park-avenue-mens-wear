@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Heart, Eye, ShoppingBag } from 'lucide-react';
-import { Product } from '../../types';
+import { Product, ProductVariant } from '../../types';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 
