@@ -25,13 +25,6 @@ export const Hero: React.FC = () => {
             fetchPriority={index === 0 ? 'high' : 'auto'} loading={index === 0 ? 'eager' : 'lazy'} />
         ))}
       </div>
-      <button
-        type="button"
-        onClick={scrollToNext}
-        className="absolute left-[5%] bottom-[18%] sm:bottom-[17%] z-20 min-w-[190px] sm:min-w-[230px] lg:min-w-[290px] h-14 sm:h-16 px-8 bg-[#111111] text-white text-xs sm:text-sm font-medium uppercase tracking-[0.22em] hover:bg-[#936B34] transition-colors shadow-md cursor-pointer"
-      >
-        SHOP NOW <span className="ml-3">→</span>
-      </button>
       <div className="absolute bottom-16 z-10 flex items-center gap-2">
         {HERO_IMAGES.map((image, index) => (
           <button key={image} type="button" aria-label={`Show hero image ${index + 1}`} onClick={() => setActiveImage(index)}
