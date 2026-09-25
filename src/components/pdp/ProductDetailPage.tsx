@@ -20,7 +20,9 @@ export const ProductDetailPage: React.FC = () => {
     toggleWishlist, 
     isInWishlist,
     setActiveView,
-    setSelectedCategory
+    setSelectedCategory,
+    currentCustomer,
+    showToast
   } = useShop();
 
   const product = products.find(p => p.id === selectedProductId) || products[0];
@@ -103,6 +105,7 @@ export const ProductDetailPage: React.FC = () => {
   const handleBuyNow = () => {
     if (isOutOfStock) return;
     addToCart(product, currentSize, currentColor, quantity);
+    if (!currentCustomer) { sessionStorage.setItem('pa_checkout_return','1'); showToast('Please sign in or create an account to proceed to checkout.', 'info'); setActiveView('login'); return; }
     setActiveView('checkout');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
