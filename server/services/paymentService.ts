@@ -213,7 +213,7 @@ export const paymentService = {
     const orderId = eventData.metadata?.orderId || eventData.orderId || eventData.client_reference_id;
 
     let paymentStatus: PaymentStatus = 'Pending';
-    if (eventType === 'checkout.session.completed' || eventType === 'payment_intent.succeeded' || eventType === 'charge.succeeded') {
+    if ((eventType === 'checkout.session.completed' && eventData.payment_status === 'paid') || eventType === 'payment_intent.succeeded' || eventType === 'charge.succeeded') {
       paymentStatus = 'Paid';
     } else if (eventType === 'payment_intent.payment_failed' || eventType === 'charge.failed') {
       paymentStatus = 'Failed';
