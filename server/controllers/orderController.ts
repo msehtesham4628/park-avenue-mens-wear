@@ -127,11 +127,15 @@ export const orderController = {
         }
       }
 
-      return res.status(200).json({
-        success: true,
-        data: order,
-        message: 'Order retrieved successfully.'
-      });
+      const safeOrder = req.user.role === 'admin' || req.user.role === 'staff' ? order : {
+        ...order,
+        notes: undefined,
+        paymentTransactionId: undefined,
+        stripeSessionId: undefined,
+        stripePaymentIntentId: undefined,
+        shipment: order.shipment ? { ...order.shipment, notes: undefined } : undefined
+      };
+      return res.status(200).json({ success:true, data:safeOrder, message:'Order retrieved successfully.' });
     } catch (err: any) {
       return res.status(500).json({ success: false, message: err.message });
     }
