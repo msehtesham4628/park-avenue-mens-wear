@@ -162,15 +162,14 @@ export async function parseProductsExcel(file: File): Promise<{
       fit: fit || 'Contemporary Tailored',
       images: imageUrl ? [imageUrl] : [],
       colorImages: imageUrl ? { [color]: [imageUrl] } : {},
-      variants,
-      totalStock: variants.reduce((sum, v) => sum + v.stock, 0)
+      variants
     });
   });
 
   // Merge rows belonging to the same Product Group / Garment Name into one
   // MongoDB product document. Each Excel row remains a distinct color + size
   // variant, while color-specific images are retained.
-  const grouped = new Map<string, Product>();
+  const grouped = new Map<string, Omit<Product, 'id' | 'totalStock'>>();
   for (const product of products) {
     const groupKey = product.name.trim().toLowerCase();
     const existing = grouped.get(groupKey);
@@ -178,22 +177,22 @@ export async function parseProductsExcel(file: File): Promise<{
       grouped.set(groupKey, {
         ...product,
         sku: product.sku.split('-').slice(0, -1).join('-') || product.sku,
-        variants: [...product.variants],
-        images: [...new Set(product.images)],
-        colorImages: { ...(product as any).colorImages }
+        variants: [...(product.variants || [])],
+        images: [...new Set(product.images || [])],
+        colorImages: { ...(product.colorImages || {}) },
+        colors: Array.from(new Set((product.variants || []).map(v => v.color)))
       });
       continue;
     }
 
-    existing.variants = [...existing.variants, ...product.variants];
+    existing.variants = [...(existing.variants || []), ...(product.variants || [])];
     existing.images = [...new Set([...(existing.images || []), ...(product.images || [])])];
-    existing.totalStock = existing.variants.reduce((sum, v) => sum + v.stock, 0);
 
-    const existingColorImages = (existing as any).colorImages || {};
-    const incomingColorImages = (product as any).colorImages || {};
-    (existing as any).colorImages = { ...existingColorImages, ...incomingColorImages };
+    const existingColorImages = existing.colorImages || {};
+    const incomingColorImages = product.colorImages || {};
+    existing.colorImages = { ...existingColorImages, ...incomingColorImages };
 
-    existing.colors = Array.from(new Set(existing.variants.map(v => v.color)));
+    existing.colors = Array.from(new Set((existing.variants || []).map(v => v.color)));
   }
 
   const groupedProducts = Array.from(grouped.values());
@@ -355,7 +354,8 @@ export function exportTallyXml(orders: Order[]) {
 `;
 
   orders.forEach(order => {
-    const rawDate = order.date.replace(/-/g, ''); // YYYYMMDD
+    const orderDateStr = order.date || (order.createdAt ? new Date(order.createdAt).toISOString().split('T')[0] : '2026-09-24');
+    const rawDate = String(orderDateStr).replace(/-/g, ''); // YYYYMMDD
     const tallyDate = rawDate.length === 8 ? rawDate : '20260924';
 
     xml += `        <TALLYMESSAGE xmlns:UDF="TallyUDF">

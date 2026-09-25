@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Search, Heart, User, Compass, Scissors, Layers, LogIn, LogOut, ChevronDown } from 'lucide-react';
+import { X, Search, Heart, User, Compass, Scissors, Layers, LogIn, LogOut, ChevronDown, ShieldCheck } from 'lucide-react';
 import { useShop, AppView } from '../../context/ShopContext';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { OFFICIAL_CATEGORIES } from '../../types';
@@ -124,7 +124,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                         >
                           All {cat.name}
                         </button>
-                        {cat.subcategories.map(sub => (
+                        {(cat.subcategories || []).map(sub => (
                           <button
                             key={sub}
                             onClick={() => handleNav('shop', sub)}
@@ -204,6 +204,13 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
             >
               <User className="w-4 h-4 text-[#936B34]" />
               <span>Patron Dashboard &amp; Orders</span>
+            </button>
+            <button
+              onClick={() => handleNav('admin')}
+              className="flex items-center gap-2.5 text-xs text-[#936B34] hover:text-[#111827] transition-colors py-1.5 w-full text-left font-mono cursor-pointer font-medium"
+            >
+              <ShieldCheck className="w-4 h-4 text-[#936B34]" />
+              <span>Admin Atelier Dashboard</span>
             </button>
           </div>
         </div>

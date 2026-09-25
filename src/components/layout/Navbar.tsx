@@ -10,7 +10,8 @@ import {
   ChevronDown,
   Sparkles,
   LogIn,
-  LogOut
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MobileMenu } from './MobileMenu';
@@ -27,6 +28,7 @@ export const Navbar: React.FC = () => {
     cartCount,
     wishlist,
     currentCustomer,
+    isAdminLoggedIn,
     logout
   } = useShop();
 
@@ -111,6 +113,20 @@ export const Navbar: React.FC = () => {
                 <Scissors className="w-3 h-3 text-[#936B34]" />
                 <span>SERVICES</span>
               </button>
+              <span className="text-gray-300">|</span>
+              <button 
+                onClick={() => {
+                  setActiveView('admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  isAdminLoggedIn ? 'text-[#936B34] font-semibold' : ''
+                }`}
+                title="Atelier Administration Portal"
+              >
+                <ShieldCheck className="w-3 h-3 text-[#936B34]" />
+                <span>{isAdminLoggedIn ? 'ADMIN DASHBOARD' : 'ADMIN'}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -178,7 +194,7 @@ export const Navbar: React.FC = () => {
                         >
                           All {category.name}
                         </button>
-                        {category.subcategories.map(subcategory => (
+                        {(category.subcategories || []).map(subcategory => (
                           <button
                             key={subcategory}
                             onClick={() => handleNavCategory(subcategory)}
@@ -293,6 +309,18 @@ export const Navbar: React.FC = () => {
                   >
                     (SWITCH)
                   </button>
+                  {(isAdminLoggedIn || currentCustomer?.role === 'admin' || currentCustomer?.role === 'staff') && (
+                    <button
+                      onClick={() => {
+                        setActiveView('admin');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="ml-1 px-2 py-0.5 bg-[#936B34] text-white hover:bg-[#111827] text-[10px] font-mono tracking-wider uppercase transition-colors shadow-xs cursor-pointer font-medium"
+                      title="Atelier Admin Console"
+                    >
+                      DASHBOARD
+                    </button>
+                  )}
                 </div>
               ) : (
                 <button
@@ -334,6 +362,20 @@ export const Navbar: React.FC = () => {
                 <span>CART</span>
                 <span className="ml-1 text-[9px] text-[#936B34] font-mono font-semibold">({cartCount})</span>
               </button>
+
+              {isAdminLoggedIn && (
+                <button
+                  onClick={() => {
+                    setActiveView('admin');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="px-2.5 py-1 bg-[#111827] text-[#936B34] border border-[#936B34]/60 text-[10px] uppercase font-mono tracking-widest hover:bg-[#936B34] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs font-semibold"
+                  title="Open Atelier Admin Console"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>DASHBOARD</span>
+                </button>
+              )}
             </div>
 
             {/* Mobile Right Controls: SEARCH, ACCOUNT, CART, MENU */}

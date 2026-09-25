@@ -16,6 +16,9 @@ export const orderController = {
         customerPhone,
         items,
         shippingInfo,
+        shippingFee,
+        shippingMethod,
+        tax,
         paymentMethod,
         paymentTransactionId,
         notes,
@@ -36,6 +39,9 @@ export const orderController = {
         customerPhone,
         items,
         shippingInfo,
+        shippingFee,
+        shippingMethod,
+        tax,
         paymentMethod,
         paymentTransactionId,
         notes,
@@ -222,7 +228,7 @@ export const orderController = {
     try {
       const user = req.user || { id: 'ADMIN', name: 'Admin', email: 'admin@parkavenuemenswear.com', role: 'admin' };
       const { id } = req.params;
-      const { status, note, trackingNumber, customNotificationMessage, notificationChannel } = req.body;
+      const { status, note, trackingNumber, carrier, estimatedDelivery, customNotificationMessage, notificationChannel } = req.body;
 
       if (!status) {
         return res.status(400).json({ success: false, message: 'Status is required.' });
@@ -240,6 +246,8 @@ export const orderController = {
         {
           note,
           trackingNumber,
+          carrier,
+          estimatedDelivery,
           customNotificationMessage,
           notificationChannel
         }

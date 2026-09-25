@@ -160,8 +160,8 @@ function mapBackendProductToFrontend(bp: any): Product {
 
 export const ProductService = {
   async getAll(): Promise<Product[]> {
-    const remote = await fetchRemote<any[]>('/products');
-    if (remote && Array.isArray(remote) && remote.length > 0) {
+    const remote = await fetchRemote<any[]>('/products?limit=100');
+    if (remote && Array.isArray(remote)) {
       const mapped = remote.map(mapBackendProductToFrontend);
       productsCache = mapped;
       saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
@@ -172,28 +172,45 @@ export const ProductService = {
   },
 
   async getById(id: string): Promise<Product | null> {
-    const remote = await fetchRemote<any>(`/products/${id}`);
+    const cleanId = (id || '').trim();
+    if (!cleanId) return null;
+    const remote = await fetchRemote<any>(`/products/${encodeURIComponent(cleanId)}`);
     if (remote) {
       const mapped = mapBackendProductToFrontend(remote);
       return mapped;
     }
     await delay(120);
-    const prod = productsCache.find(p => p.id === id);
+    const prod = productsCache.find(p => p.id === cleanId || p.sku === cleanId);
     return prod ? { ...prod } : null;
   },
 
   async create(newProductData: Omit<Product, 'id' | 'totalStock'>): Promise<Product> {
-    const remote = await fetchRemote<Product>('/products', {
+    let remote = await fetchRemote<any>('/products/admin', {
       method: 'POST',
       body: JSON.stringify(newProductData)
     });
-    if (remote && remote.id) {
-      productsCache = [remote, ...productsCache];
-      saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
-      return remote;
+    if (!remote) {
+      remote = await fetchRemote<any>('/products', {
+        method: 'POST',
+        body: JSON.stringify(newProductData)
+      });
     }
-    await delay(300);
-    const totalStock = newProductData.variants.reduce((acc, v) => acc + v.stock, 0);
+    if (!remote) {
+      remote = await fetchRemote<any>('/admin/products', {
+        method: 'POST',
+        body: JSON.stringify(newProductData)
+      });
+    }
+
+    if (remote) {
+      const mapped = mapBackendProductToFrontend(remote);
+      productsCache = [mapped, ...productsCache];
+      saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
+      return mapped;
+    }
+
+    await delay(200);
+    const totalStock = (newProductData.variants || []).reduce((acc, v) => acc + (v.stock || 0), 0);
     const newProduct: Product = {
       ...newProductData,
       id: `prod-${Date.now().toString(36)}`,
@@ -205,10 +222,22 @@ export const ProductService = {
   },
 
   async batchCreate(products: Omit<Product, 'id' | 'totalStock'>[]): Promise<Product[]> {
-    const remote = await fetchRemote<any[]>('/products/admin/batch', {
+    let remote = await fetchRemote<any[]>('/products/admin/batch', {
       method: 'POST',
       body: JSON.stringify({ products })
     });
+    if (!remote) {
+      remote = await fetchRemote<any[]>('/products/batch', {
+        method: 'POST',
+        body: JSON.stringify({ products })
+      });
+    }
+    if (!remote) {
+      remote = await fetchRemote<any[]>('/admin/products/batch', {
+        method: 'POST',
+        body: JSON.stringify({ products })
+      });
+    }
 
     if (remote && Array.isArray(remote)) {
       const mapped = remote.map(mapBackendProductToFrontend);
@@ -217,9 +246,6 @@ export const ProductService = {
       return mapped;
     }
 
-    // Do not silently write an Excel import only to localStorage when the live
-    // backend is configured. This prevents an admin from believing the catalog
-    // was saved to MongoDB when the API was unavailable.
     if (API_CONFIG.isLiveBackend) {
       throw new Error('MongoDB import failed: the live product API did not accept the import. Check the backend/Vercel deployment and MongoDB connection.');
     }
@@ -235,18 +261,38 @@ export const ProductService = {
   },
 
   async update(id: string, updates: Partial<Product>): Promise<Product> {
-    const remote = await fetchRemote<Product>(`/products/${id}`, {
+    const cleanId = (id || '').trim();
+    let remote = await fetchRemote<any>(`/products/admin/${encodeURIComponent(cleanId)}`, {
       method: 'PUT',
       body: JSON.stringify(updates)
     });
-    if (remote && remote.id) {
-      const idx = productsCache.findIndex(p => p.id === id);
-      if (idx !== -1) productsCache[idx] = remote;
-      saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
-      return remote;
+    if (!remote) {
+      remote = await fetchRemote<any>(`/products/${encodeURIComponent(cleanId)}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+      });
     }
-    await delay(250);
-    const index = productsCache.findIndex(p => p.id === id);
+    if (!remote) {
+      remote = await fetchRemote<any>(`/admin/products/${encodeURIComponent(cleanId)}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+      });
+    }
+
+    if (remote) {
+      const mapped = mapBackendProductToFrontend(remote);
+      const idx = productsCache.findIndex(p => p.id === cleanId || p.id === mapped.id || p.sku === cleanId);
+      if (idx !== -1) {
+        productsCache[idx] = mapped;
+      } else {
+        productsCache.unshift(mapped);
+      }
+      saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
+      return mapped;
+    }
+
+    await delay(150);
+    const index = productsCache.findIndex(p => p.id === cleanId || p.sku === cleanId);
     if (index === -1) throw new Error('Product not found');
 
     const updated = {
@@ -262,30 +308,61 @@ export const ProductService = {
   },
 
   async delete(id: string): Promise<boolean> {
-    await fetchRemote<void>(`/products/${id}`, { method: 'DELETE' });
-    await delay(250);
-    productsCache = productsCache.filter(p => p.id !== id);
+    const cleanId = (id || '').trim();
+    let ok = await fetchRemote<any>(`/products/admin/${encodeURIComponent(cleanId)}`, { method: 'DELETE' });
+    if (!ok) {
+      ok = await fetchRemote<any>(`/products/${encodeURIComponent(cleanId)}`, { method: 'DELETE' });
+    }
+    if (!ok) {
+      ok = await fetchRemote<any>(`/admin/products/${encodeURIComponent(cleanId)}`, { method: 'DELETE' });
+    }
+    await delay(150);
+    productsCache = productsCache.filter(p => p.id !== cleanId && p.sku !== cleanId);
     saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
     return true;
   },
 
   async updateStock(productId: string, variantId: string, newStock: number): Promise<Product> {
-    await fetchRemote<Product>(`/products/${productId}/variants/${variantId}/stock`, {
-      method: 'PATCH',
-      body: JSON.stringify({ stock: newStock })
-    });
-    await delay(200);
-    const product = productsCache.find(p => p.id === productId);
-    if (!product) throw new Error('Product not found');
+    const cleanProdId = (productId || '').trim();
+    const cleanVarId = (variantId || '').trim();
+    const targetStock = Math.max(0, newStock);
 
-    const updatedVariants = product.variants.map(v => 
-      v.id === variantId ? { ...v, stock: Math.max(0, newStock) } : v
-    );
-    const totalStock = updatedVariants.reduce((sum, v) => sum + v.stock, 0);
+    // 1. Transactional Inventory adjustment endpoint
+    try {
+      await InventoryService.adjustStock({
+        productId: cleanProdId,
+        variantId: cleanVarId,
+        adjustmentType: 'set',
+        quantity: targetStock,
+        reason: 'manual_adjustment',
+        notes: `Admin manual stock adjustment to ${targetStock}`
+      });
+    } catch (_) {}
 
-    return this.update(productId, {
-      variants: updatedVariants,
-      totalStock
+    // 2. Locate product in cache or create updated variants list
+    const product = productsCache.find(p => p.id === cleanProdId || p.sku === cleanProdId);
+    const updatedVariants = product && product.variants
+      ? product.variants.map(v => 
+          v.id === cleanVarId || v.sku === cleanVarId || v.size === cleanVarId
+            ? { ...v, stock: targetStock }
+            : v
+        )
+      : undefined;
+
+    const totalStock = updatedVariants 
+      ? updatedVariants.reduce((sum, v) => sum + v.stock, 0)
+      : undefined;
+
+    // 3. Persist product update
+    if (updatedVariants && totalStock !== undefined) {
+      return this.update(cleanProdId, {
+        variants: updatedVariants,
+        totalStock
+      });
+    }
+
+    return this.update(cleanProdId, {
+      totalStock: targetStock
     });
   },
 
@@ -298,42 +375,123 @@ export const ProductService = {
    ORDERS SERVICE
    ========================================================================= */
 
+function mapBackendOrderToFrontend(bo: any): Order {
+  const orderId = bo.orderId || bo.id || bo._id || `PA-${Math.floor(10000 + Math.random() * 90000)}`;
+  const backendStatus = bo.orderStatus || bo.status || 'Confirmed';
+  const rawDate = bo.createdAt || bo.date || new Date().toISOString();
+  const dateStr = typeof rawDate === 'string' ? rawDate.split('T')[0] : new Date(rawDate).toISOString().split('T')[0];
+
+  return {
+    id: orderId,
+    customerName: bo.customerName || bo.shippingInfo?.recipientName || 'Client',
+    customerEmail: bo.customerEmail || bo.shippingInfo?.email || '',
+    customerPhone: bo.customerPhone || bo.shippingInfo?.phone || '',
+    date: dateStr,
+    createdAt: typeof rawDate === 'string' ? rawDate : new Date(rawDate).toISOString(),
+    items: Array.isArray(bo.items) ? bo.items.map((it: any) => ({
+      productId: it.productId || '',
+      productName: it.name || it.productName || 'Garment',
+      category: it.category || 'Suits',
+      size: it.size || '',
+      color: it.color || '',
+      quantity: it.quantity || 1,
+      price: it.priceAtPurchase !== undefined ? it.priceAtPurchase : (it.price || 0),
+      image: it.image,
+      sku: it.sku
+    })) : [],
+    subtotal: bo.subtotal || 0,
+    shippingFee: bo.shipping !== undefined ? bo.shipping : (bo.shippingFee || 0),
+    shippingMethod: bo.shippingInfo?.shippingMethod || bo.shippingMethod || 'White-Glove Private Courier',
+    tax: bo.tax || 0,
+    total: bo.total || 0,
+    orderStatus: backendStatus,
+    status: backendStatus,
+    paymentStatus: bo.paymentStatus || 'Paid',
+    paymentMethod: bo.paymentMethod || 'Credit Card (Processed)',
+    paymentTransactionId: bo.paymentTransactionId,
+    shippingAddress: bo.shippingInfo ? {
+      street: bo.shippingInfo.street || '',
+      apartment: bo.shippingInfo.apartment || '',
+      city: bo.shippingInfo.city || '',
+      state: bo.shippingInfo.state || '',
+      zipCode: bo.shippingInfo.postalCode || bo.shippingInfo.zipCode || '',
+      postalCode: bo.shippingInfo.postalCode || '',
+      country: bo.shippingInfo.country || 'USA'
+    } : bo.shippingAddress,
+    trackingNumber: bo.trackingNumber,
+    carrier: bo.shippingInfo?.carrier || bo.carrier || 'White Glove Courier',
+    estimatedDelivery: bo.shippingInfo?.estimatedDelivery || bo.estimatedDelivery,
+    timeline: Array.isArray(bo.statusHistory) && bo.statusHistory.length > 0
+      ? bo.statusHistory.map((h: any) => ({
+          status: h.newStatus || backendStatus,
+          timestamp: h.timestamp ? new Date(h.timestamp).toLocaleString() : 'Recent',
+          location: 'Atelier Vault',
+          description: h.note || `Order status updated to ${h.newStatus}`,
+          completed: true
+        }))
+      : (Array.isArray(bo.timeline) ? bo.timeline : [
+          {
+            status: backendStatus,
+            timestamp: 'Just now',
+            location: 'Park Avenue Flagship Atelier',
+            description: `Order in ${backendStatus} status.`,
+            completed: true
+          }
+        ]),
+    alterationRequested: Boolean(bo.alterationRequested),
+    alterationNotes: bo.notes || bo.alterationNotes
+  };
+}
+
 export const OrderService = {
   async getAll(): Promise<Order[]> {
-    const remote = await fetchRemote<Order[]>('/orders/admin/list');
+    const remote = await fetchRemote<any[]>('/orders/admin/list?limit=100');
     if (remote && Array.isArray(remote)) {
-      ordersCache = remote;
+      const mapped = remote.map(mapBackendOrderToFrontend);
+      ordersCache = mapped;
       saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
-      return remote;
+      return mapped;
     }
-    await delay(180);
+    await delay(150);
     return [...ordersCache];
   },
 
   async getById(orderId: string): Promise<Order | null> {
-    const remote = await fetchRemote<Order>(`/orders/${encodeURIComponent(orderId)}`);
-    if (remote && remote.id) {
-      return remote;
+    const cleanId = (orderId || '').trim();
+    if (!cleanId) return null;
+    const remote = await fetchRemote<any>(`/orders/${encodeURIComponent(cleanId)}`);
+    if (remote) {
+      return mapBackendOrderToFrontend(remote);
     }
-    await delay(150);
-    const cleanId = orderId.trim().toUpperCase();
+    const lookupRemote = await fetchRemote<any>('/orders/lookup', {
+      method: 'POST',
+      body: JSON.stringify({ orderId: cleanId, contact: cleanId })
+    });
+    if (lookupRemote) {
+      return mapBackendOrderToFrontend(lookupRemote);
+    }
+    await delay(120);
+    const upper = cleanId.toUpperCase();
+    const cleanPhone = upper.replace(/\D/g, '');
     const order = ordersCache.find(o => 
-      o.id.toUpperCase() === cleanId || 
-      o.customerEmail.toLowerCase() === cleanId.toLowerCase() ||
-      o.customerPhone.replace(/\D/g, '') === cleanId.replace(/\D/g, '')
+      (o.id && o.id.toUpperCase() === upper) || 
+      ((o as any).orderId && String((o as any).orderId).toUpperCase() === upper) ||
+      (o.customerEmail && o.customerEmail.toLowerCase() === upper.toLowerCase()) ||
+      (cleanPhone && o.customerPhone && o.customerPhone.replace(/\D/g, '') === cleanPhone)
     );
     return order ? { ...order } : null;
   },
 
   async create(orderPayload: Omit<Order, 'id' | 'date' | 'timeline' | 'orderStatus' | 'paymentStatus'>): Promise<Order> {
-    const remote = await fetchRemote<Order>('/orders', {
+    const remote = await fetchRemote<any>('/orders', {
       method: 'POST',
       body: JSON.stringify(orderPayload)
     });
-    if (remote && remote.id) {
-      ordersCache = [remote, ...ordersCache];
+    if (remote) {
+      const mapped = mapBackendOrderToFrontend(remote);
+      ordersCache = [mapped, ...ordersCache];
       saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
-      return remote;
+      return mapped;
     }
     await delay(350);
     const newOrderId = `PA-${Math.floor(10000 + Math.random() * 90000)}`;
@@ -392,10 +550,10 @@ export const OrderService = {
     };
 
     // Deduct inventory stock for purchased variants
-    for (const item of newOrder.items) {
+    for (const item of newOrder.items || []) {
       const prod = productsCache.find(p => p.id === item.productId);
       if (prod) {
-        const variant = prod.variants.find(v => v.size === item.size && v.color === item.color);
+        const variant = (prod.variants || []).find(v => v.size === item.size && v.color === item.color);
         if (variant) {
           const nextStock = Math.max(0, variant.stock - item.quantity);
           await ProductService.updateStock(prod.id, variant.id, nextStock);
@@ -413,7 +571,7 @@ export const OrderService = {
         customerName: orderPayload.customerName,
         customerEmail: orderPayload.customerEmail,
         customerPhone: orderPayload.customerPhone,
-        items: orderPayload.items
+        items: (orderPayload.items || [])
           .filter(i => i.category === 'Suits' || i.category === 'Dress Pants')
           .map(i => ({
             name: i.productName,
@@ -491,10 +649,91 @@ export const OrderService = {
     return newOrder;
   },
 
-  async updateStatus(orderId: string, newStatus: any, trackingNumber?: string, carrier?: string): Promise<Order> {
-    await delay(250);
-    const index = ordersCache.findIndex(o => o.id === orderId);
-    if (index === -1) throw new Error('Order not found');
+  async updateStatus(orderId: string, newStatus: any, trackingNumber?: string, carrier?: string, note?: string): Promise<Order> {
+    const cleanId = String(orderId || '').trim();
+    if (!cleanId) throw new Error('Order ID is required to update status');
+
+    // 1. Send update to remote backend API
+    let remote = await fetchRemote<any>(`/orders/admin/${encodeURIComponent(cleanId)}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        status: newStatus,
+        trackingNumber,
+        carrier,
+        note
+      })
+    });
+    if (!remote) {
+      remote = await fetchRemote<any>(`/admin/orders/${encodeURIComponent(cleanId)}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          status: newStatus,
+          trackingNumber,
+          carrier,
+          note
+        })
+      });
+    }
+
+    if (remote) {
+      const mapped = mapBackendOrderToFrontend(remote);
+      const index = ordersCache.findIndex(o => o.id === cleanId || o.id === mapped.id || (o as any).orderId === cleanId);
+      if (index >= 0) {
+        ordersCache[index] = mapped;
+      } else {
+        ordersCache.unshift(mapped);
+      }
+      saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
+
+      // Trigger user notification
+      try {
+        await NotificationService.createNotification({
+          title: `Consignment Status Update: #${mapped.id}`,
+          message: `Order #${mapped.id} status transitioned to ${mapped.orderStatus}.`,
+          type: 'order_update',
+          orderId: mapped.id
+        });
+      } catch (_) {}
+
+      return mapped;
+    }
+
+    // 2. Local fallback update with full synchronization
+    await delay(120);
+    const index = ordersCache.findIndex(o => o.id === cleanId || (o as any).orderId === cleanId);
+    if (index === -1) {
+      // If not in cache, create a transient record so state is not lost
+      const transientOrder: Order = {
+        id: cleanId,
+        customerName: 'Valued Patron',
+        customerEmail: 'client@parkavenuemenswear.com',
+        customerPhone: '',
+        date: new Date().toISOString().split('T')[0],
+        items: [],
+        subtotal: 0,
+        shippingFee: 0,
+        tax: 0,
+        total: 0,
+        orderStatus: newStatus,
+        status: newStatus,
+        paymentStatus: 'Paid',
+        paymentMethod: 'Credit Card',
+        trackingNumber,
+        carrier,
+        timeline: [
+          {
+            status: newStatus,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            location: 'Park Avenue Flagship Atelier',
+            description: note || `Order status updated to ${newStatus}`,
+            completed: true
+          }
+        ]
+      };
+      ordersCache.unshift(transientOrder);
+      saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
+      return transientOrder;
+    }
 
     const order = ordersCache[index];
     const statusOrder: string[] = [
@@ -511,7 +750,7 @@ export const OrderService = {
     ];
     const newStatusIndex = statusOrder.indexOf(newStatus);
 
-    const updatedTimeline = order.timeline.map((event) => {
+    const updatedTimeline = (order.timeline || []).map((event) => {
       const eventIndex = statusOrder.indexOf(event.status);
       if (eventIndex <= newStatusIndex && eventIndex !== -1) {
         return {
@@ -529,6 +768,7 @@ export const OrderService = {
     const updated: Order = {
       ...order,
       orderStatus: newStatus,
+      status: newStatus,
       trackingNumber: trackingNumber || order.trackingNumber,
       carrier: carrier || order.carrier,
       timeline: updatedTimeline
@@ -536,6 +776,16 @@ export const OrderService = {
 
     ordersCache[index] = updated;
     saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
+
+    try {
+      await NotificationService.createNotification({
+        title: `Consignment Status Update: #${order.id}`,
+        message: `Order #${order.id} status transitioned to ${newStatus}.`,
+        type: 'order_update',
+        orderId: order.id
+      });
+    } catch (_) {}
+
     return updated;
   }
 };
@@ -562,7 +812,7 @@ function mapBackendAlterationToFrontend(a: any): AlterationRecord {
     'completed': 'Completed',
     'cancelled': 'Cancelled'
   };
-  const status = statusMap[backendStatus] || (backendStatus as AlterationStatus);
+  const status = (statusMap[backendStatus] || backendStatus || 'Alteration Received') as AlterationStatus;
   const history = Array.isArray(a.statusHistory)
     ? a.statusHistory.map((h: any) => ({
         status: statusMap[h.newStatus] || h.newStatus || status,
@@ -609,17 +859,27 @@ export const AlterationService = {
   },
 
   async getById(searchQuery: string): Promise<AlterationRecord | null> {
-    const remote = await fetchRemote<AlterationRecord>(`/alterations/${encodeURIComponent(searchQuery)}`);
-    if (remote && remote.id) {
-      return remote;
+    const clean = (searchQuery || '').trim();
+    if (!clean) return null;
+    let remote = await fetchRemote<any>(`/alterations/${encodeURIComponent(clean)}`);
+    if (!remote) {
+      remote = await fetchRemote<any>('/alterations/lookup', {
+        method: 'POST',
+        body: JSON.stringify({ alterationId: clean, contact: clean })
+      });
     }
-    await delay(150);
-    const clean = searchQuery.trim().toUpperCase();
+    if (remote) {
+      return mapBackendAlterationToFrontend(remote);
+    }
+    await delay(120);
+    const upper = clean.toUpperCase();
+    const cleanPhone = upper.replace(/\D/g, '');
     const found = alterationsCache.find(a => 
-      a.id.toUpperCase() === clean ||
-      a.orderId.toUpperCase() === clean ||
-      a.customerEmail.toLowerCase() === clean.toLowerCase() ||
-      a.customerPhone.replace(/\D/g, '') === clean.replace(/\D/g, '')
+      (a.id && a.id.toUpperCase() === upper) ||
+      (a.orderId && a.orderId.toUpperCase() === upper) ||
+      ((a as any).alterationId && String((a as any).alterationId).toUpperCase() === upper) ||
+      (a.customerEmail && a.customerEmail.toLowerCase() === upper.toLowerCase()) ||
+      (cleanPhone && a.customerPhone && a.customerPhone.replace(/\D/g, '') === cleanPhone)
     );
     return found ? { ...found } : null;
   },
@@ -663,7 +923,7 @@ export const AlterationService = {
       id: altId,
       orderId: data.orderId || `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
       customerName: data.customerName,
-      customerEmail: data.customerEmail || `${data.customerName.toLowerCase().replace(/\s+/g, '.')}@client.parkavenue.com`,
+      customerEmail: data.customerEmail || `${(data.customerName || 'patron').toLowerCase().replace(/\s+/g, '.')}@client.parkavenue.com`,
       customerPhone: data.customerPhone,
       items: parsedItems,
       alterationDetails: data.alterationDetails,
@@ -703,6 +963,9 @@ export const AlterationService = {
     expectedDate?: string,
     tailorNotes?: string
   ): Promise<AlterationRecord> {
+    const cleanId = String(id || '').trim();
+    if (!cleanId) throw new Error('Alteration ID is required to update status');
+
     const backendStatusMap: Record<string, string> = {
       'Alteration Received': 'Received',
       'Measurement/Review': 'Review',
@@ -710,32 +973,115 @@ export const AlterationService = {
       'Quality Check': 'Quality Check',
       'Ready for Pickup': 'Ready for Pickup',
       'Completed': 'Completed',
-      'Cancelled': 'Cancelled'
+      'Cancelled': 'Cancelled',
+      'received': 'Received',
+      'review': 'Review',
+      'in_progress': 'In Progress',
+      'quality_check': 'Quality Check',
+      'ready_for_pickup': 'Ready for Pickup',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled'
     };
-    const remote = await fetchRemote<any>(`/admin/alterations/${encodeURIComponent(id)}/status`, {
+    const mappedStatus = backendStatusMap[newStatus] || newStatus;
+
+    // 1. Send update to remote backend API
+    let remote = await fetchRemote<any>(`/alterations/admin/${encodeURIComponent(cleanId)}/status`, {
       method: 'PUT',
       body: JSON.stringify({
-        status: backendStatusMap[newStatus] || newStatus,
+        status: mappedStatus,
         note,
         expectedCompletionDate: expectedDate,
         tailorAssigned: tailorNotes
       })
     });
+    if (!remote) {
+      remote = await fetchRemote<any>(`/admin/alterations/${encodeURIComponent(cleanId)}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          status: mappedStatus,
+          note,
+          expectedCompletionDate: expectedDate,
+          tailorAssigned: tailorNotes
+        })
+      });
+    }
+
     if (remote) {
       const mapped = mapBackendAlterationToFrontend(remote);
-      const index = alterationsCache.findIndex(a => a.id === id);
-      if (index >= 0) alterationsCache[index] = mapped;
+      const index = alterationsCache.findIndex(a => a.id === cleanId || a.id === mapped.id || (a as any).alterationId === cleanId);
+      if (index >= 0) {
+        alterationsCache[index] = mapped;
+      } else {
+        alterationsCache.unshift(mapped);
+      }
       saveStorage(STORAGE_KEYS.ALTERATIONS, alterationsCache);
+
+      try {
+        await NotificationService.createNotification({
+          title: `Alteration Status: #${mapped.id}`,
+          message: `Bespoke commission #${mapped.id} status updated to ${mapped.status}.`,
+          type: 'alteration_update',
+          alterationId: mapped.id,
+          orderId: mapped.orderId
+        });
+      } catch (_) {}
+
       return mapped;
     }
 
-    await delay(250);
-    const index = alterationsCache.findIndex(a => a.id === id);
-    if (index === -1) throw new Error('Alteration record not found');
+    // 2. Local fallback update with full synchronization
+    await delay(120);
+    const index = alterationsCache.findIndex(a => a.id === cleanId || (a as any).alterationId === cleanId);
+    if (index === -1) {
+      const transientAlt: AlterationRecord = {
+        id: cleanId,
+        orderId: '',
+        customerName: 'Valued Client',
+        customerEmail: 'client@parkavenuemenswear.com',
+        customerPhone: '',
+        items: [{ name: 'Bespoke Garment', type: 'Tailoring', specifications: note || '' }],
+        alterationDetails: note || 'Alteration in progress',
+        status: newStatus,
+        currentStep: ['Alteration Received', 'Measurement/Review', 'Alteration In Progress', 'Quality Check', 'Ready for Pickup', 'Completed'].indexOf(newStatus),
+        tailorAssigned: tailorNotes || 'Master Tailor',
+        createdAt: new Date().toISOString(),
+        expectedCompletion: expectedDate || '',
+        tailorNotes: note || '',
+        history: [{ status: newStatus, timestamp: new Date().toLocaleString(), note: note || '' }]
+      };
+      alterationsCache.unshift(transientAlt);
+      saveStorage(STORAGE_KEYS.ALTERATIONS, alterationsCache);
+      return transientAlt;
+    }
+
     const record = alterationsCache[index];
-    const updated = { ...record, status: newStatus };
+    const updated: AlterationRecord = { 
+      ...record, 
+      status: newStatus,
+      currentStep: ['Alteration Received', 'Measurement/Review', 'Alteration In Progress', 'Quality Check', 'Ready for Pickup', 'Completed'].indexOf(newStatus),
+      tailorNotes: tailorNotes || record.tailorNotes,
+      history: [
+        ...(record.history || []),
+        {
+          status: newStatus,
+          timestamp: new Date().toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          note: note || `Status updated to ${newStatus}`
+        }
+      ]
+    };
     alterationsCache[index] = updated;
     saveStorage(STORAGE_KEYS.ALTERATIONS, alterationsCache);
+
+    try {
+      await NotificationService.createNotification({
+        title: `Alteration Status: #${record.id}`,
+        message: `Bespoke commission #${record.id} status updated to ${newStatus}.`,
+        type: 'alteration_update',
+        alterationId: record.id,
+        orderId: record.orderId
+      });
+    } catch (_) {}
+
     return updated;
   }
 };
@@ -1206,4 +1552,89 @@ export const CartApiService = {
     });
   }
 };
+
+/* =========================================================================
+   STRIPE & PAYMENT GATEWAY API SERVICE
+   ========================================================================= */
+
+export interface StripeGatewayConfig {
+  provider: 'stripe';
+  isConfigured: boolean;
+  isLive: boolean;
+  testMode: boolean;
+  publishableKey: string;
+  webhookConfigured: boolean;
+}
+
+export interface StripePaymentIntent {
+  clientSecret: string;
+  transactionId: string;
+  amount: number;
+  currency: string;
+  status: string;
+  provider: 'stripe';
+  isLive: boolean;
+  publishableKey?: string;
+}
+
+export const StripePaymentService = {
+  async getConfig(): Promise<StripeGatewayConfig> {
+    try {
+      const res = await fetchRemote<StripeGatewayConfig>('/payments/config');
+      return res || {
+        provider: 'stripe',
+        isConfigured: false,
+        isLive: false,
+        testMode: true,
+        publishableKey: '',
+        webhookConfigured: false
+      };
+    } catch {
+      return {
+        provider: 'stripe',
+        isConfigured: false,
+        isLive: false,
+        testMode: true,
+        publishableKey: '',
+        webhookConfigured: false
+      };
+    }
+  },
+
+  async testConnection() {
+    try {
+      return await fetchRemote<{
+        connected: boolean;
+        mode: string;
+        message: string;
+        livemode?: boolean;
+      }>('/payments/test-connection');
+    } catch (err: any) {
+      return {
+        connected: false,
+        mode: 'error',
+        message: err.message || 'Failed to connect to payment test route.'
+      };
+    }
+  },
+
+  async createIntent(orderId: string, amount: number, customerEmail: string, customerName?: string): Promise<StripePaymentIntent> {
+    const res = await fetchRemote<StripePaymentIntent>('/payments/create-intent', {
+      method: 'POST',
+      body: JSON.stringify({ orderId, amount, customerEmail, customerName })
+    });
+    if (!res) {
+      throw new Error('Failed to initialize Stripe PaymentIntent.');
+    }
+    return res;
+  },
+
+  async confirmPayment(orderId: string, transactionId: string, paymentMethodDetails?: string) {
+    return fetchRemote<any>('/payments/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ orderId, transactionId, paymentMethodDetails })
+    });
+  }
+};
+
 

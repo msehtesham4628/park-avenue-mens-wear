@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import {
   Product,
   CartItem,
@@ -189,11 +189,27 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Toast notifications
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const continueFromWelcome = () => {
-    const destination = sessionStorage.getItem('pa_entry_path') || '/';
+  const continueFromWelcome = useCallback(() => {
+    const rawDest = sessionStorage.getItem('pa_entry_path') || '/';
     sessionStorage.removeItem('pa_entry_path');
-    navigateToUrl(destination);
-  };
+    try {
+      sessionStorage.removeItem('pa_welcome_seen');
+    } catch (_) {}
+    const dest = (rawDest === '/welcome' || rawDest === '') ? '/' : rawDest;
+    const match = parseRoute(dest);
+    const targetView = (match.view === 'welcome') ? 'home' : match.view;
+    
+    setActiveViewState(targetView);
+    if (match.category) {
+      setSelectedCategoryState(match.category);
+    }
+    if (match.productId) {
+      setSelectedProductId(match.productId);
+    }
+    setIsProductsSubpage(!!match.isProductsSubpage);
+
+    navigateTo(dest === '/welcome' ? '/' : dest);
+  }, []);
 
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'info') => {
     const id = `toast-${Date.now()}-${Math.random()}`;

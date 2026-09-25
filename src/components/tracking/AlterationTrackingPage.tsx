@@ -117,7 +117,7 @@ export const AlterationTrackingPage: React.FC = () => {
 
               <div className="text-right font-mono text-xs text-[#666666]">
                 <div className="text-[#8C6D3B] uppercase tracking-wider font-semibold">
-                  STATUS: {currentAlteration.status.replace(/_/g, ' ').toUpperCase()}
+                  STATUS: {(currentAlteration.status || 'Alteration Received').replace(/_/g, ' ').toUpperCase()}
                 </div>
                 <div className="mt-1">
                   Est. Completion: {new Date(currentAlteration.estimatedCompletion || (currentAlteration as any).targetCompletionDate || Date.now()).toLocaleDateString()}
@@ -133,7 +133,7 @@ export const AlterationTrackingPage: React.FC = () => {
 
               <div className="space-y-3">
                 {steps.map((st, idx) => {
-                  const sStatus = getStepStatus(st.key, currentAlteration.status);
+                  const sStatus = getStepStatus(st.key, (currentAlteration.status || 'received').toLowerCase().replace(/\s+/g, '_'));
                   return (
                     <div 
                       key={st.key}

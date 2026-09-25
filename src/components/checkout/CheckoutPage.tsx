@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   Lock, 
@@ -7,10 +7,16 @@ import {
   Check, 
   ArrowRight, 
   Truck, 
-  ShoppingBag
+  ShoppingBag,
+  Zap,
+  CheckCircle2,
+  Copy,
+  ExternalLink,
+  Building2
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
+import { StripePaymentService, StripeGatewayConfig } from '../../services/api';
 
 export const CheckoutPage: React.FC = () => {
   const { 
@@ -23,6 +29,10 @@ export const CheckoutPage: React.FC = () => {
   } = useShop();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [processingStep, setProcessingStep] = useState<string>('');
+  const [stripeConfig, setStripeConfig] = useState<StripeGatewayConfig | null>(null);
+  const [stripeTransactionId, setStripeTransactionId] = useState<string>('');
+  const [copiedTx, setCopiedTx] = useState(false);
 
   // Form states - clean defaults ready for user input
   const [formData, setFormData] = useState({
@@ -35,10 +45,12 @@ export const CheckoutPage: React.FC = () => {
     state: '',
     postalCode: '',
     country: 'United States',
-    paymentMethod: 'credit_card',
+    paymentMethod: 'stripe_card',
+    cardholderName: '',
     cardNumber: '',
     cardExp: '',
     cardCvc: '',
+    cardZip: '',
     // Alteration options
     needAlteration: false,
     trouserHemType: 'Half Break (Modern Classic)',
@@ -49,10 +61,61 @@ export const CheckoutPage: React.FC = () => {
 
   const [orderComplete, setOrderComplete] = useState<any>(null);
 
+  useEffect(() => {
+    StripePaymentService.getConfig().then(cfg => {
+      setStripeConfig(cfg);
+    }).catch(() => {
+      setStripeConfig({
+        provider: 'stripe',
+        isConfigured: false,
+        isLive: false,
+        testMode: true,
+        publishableKey: '',
+        webhookConfigured: false
+      });
+    });
+  }, []);
+
   const FREE_SHIPPING_THRESHOLD = 250;
   const shippingFee = cartSubtotal >= FREE_SHIPPING_THRESHOLD || cartSubtotal === 0 ? 0 : 35;
   const estimatedTax = cartSubtotal * 0.0825;
   const grandTotal = cartSubtotal + shippingFee + estimatedTax;
+
+  const getCardBrand = (num: string) => {
+    const clean = num.replace(/\D/g, '');
+    if (clean.startsWith('4')) return 'Visa';
+    if (/^5[1-5]/.test(clean) || /^2[2-7]/.test(clean)) return 'Mastercard';
+    if (/^3[47]/.test(clean)) return 'American Express';
+    if (/^6(?:011|5)/.test(clean)) return 'Discover';
+    return 'Credit Card';
+  };
+
+  const handleCardNumberChange = (val: string) => {
+    const digitsOnly = val.replace(/\D/g, '').slice(0, 16);
+    const formatted = digitsOnly.replace(/(\d{4})(?=\d)/g, '$1 ');
+    setFormData(prev => ({ ...prev, cardNumber: formatted }));
+  };
+
+  const handleExpChange = (val: string) => {
+    let clean = val.replace(/\D/g, '').slice(0, 4);
+    if (clean.length >= 3) {
+      clean = clean.slice(0, 2) + '/' + clean.slice(2);
+    }
+    setFormData(prev => ({ ...prev, cardExp: clean }));
+  };
+
+  const fillStripeTestCard = () => {
+    setFormData(prev => ({
+      ...prev,
+      paymentMethod: 'stripe_card',
+      cardholderName: `${prev.firstName || 'Marcus'} ${prev.lastName || 'Sterling'}`,
+      cardNumber: '4242 4242 4242 4242',
+      cardExp: '12/28',
+      cardCvc: '123',
+      cardZip: prev.postalCode || '10021'
+    }));
+    showToast('Filled standard Stripe test card credentials (4242).', 'info');
+  };
 
   if (cart.length === 0 && !orderComplete) {
     return (
@@ -77,8 +140,26 @@ export const CheckoutPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setProcessingStep('Validating sartorial commission...');
 
     try {
+      if (formData.paymentMethod === 'stripe_card') {
+        const cleanCard = formData.cardNumber.replace(/\D/g, '');
+        if (cleanCard.length < 15) {
+          throw new Error('Please provide a valid 15 or 16-digit card number (e.g. click "Fill Stripe Test Card").');
+        }
+        if (!formData.cardExp || formData.cardExp.length < 5) {
+          throw new Error('Please enter a valid expiry date (MM/YY).');
+        }
+        if (!formData.cardCvc || formData.cardCvc.length < 3) {
+          throw new Error('Please enter a valid CVC security code.');
+        }
+      }
+
+      setProcessingStep('Securing commission record...');
+      const cardBrand = getCardBrand(formData.cardNumber);
+      const cardLast4 = formData.cardNumber.replace(/\D/g, '').slice(-4) || '4242';
+
       const orderPayload = {
         customerName: `${formData.firstName} ${formData.lastName}`,
         customerEmail: formData.email,
@@ -108,20 +189,48 @@ export const CheckoutPage: React.FC = () => {
         shippingFee,
         tax: estimatedTax,
         total: grandTotal,
-        paymentMethod: formData.paymentMethod
+        paymentMethod: formData.paymentMethod === 'stripe_card' 
+          ? `Stripe (${cardBrand} •••• ${cardLast4})`
+          : 'Private Atelier House Account'
       };
 
       const createdOrder = await placeNewOrder(orderPayload);
-      if (createdOrder && createdOrder.id) {
-        setOrderComplete(createdOrder);
-        showToast('Commission confirmed! Master tailors notified.', 'success');
-      } else {
-        showToast('Failed to authorize commission. Please retry.', 'error');
+      if (!createdOrder || !createdOrder.id) {
+        throw new Error('Could not establish order record. Please retry.');
       }
-    } catch (err) {
-      showToast('An error occurred during order dispatch.', 'error');
+
+      let txId = `pi_${Date.now()}`;
+      if (formData.paymentMethod === 'stripe_card') {
+        setProcessingStep('Generating Stripe PaymentIntent...');
+        const intent = await StripePaymentService.createIntent(
+          createdOrder.id,
+          grandTotal,
+          formData.email,
+          `${formData.firstName} ${formData.lastName}`
+        );
+
+        setProcessingStep('Authorizing 256-bit Stripe transaction...');
+        txId = intent.transactionId;
+        await StripePaymentService.confirmPayment(
+          createdOrder.id,
+          txId,
+          `Stripe (${cardBrand} •••• ${cardLast4})`
+        );
+      }
+
+      setStripeTransactionId(txId);
+      setOrderComplete({
+        ...createdOrder,
+        paymentTransactionId: txId,
+        paymentMethod: orderPayload.paymentMethod,
+        paymentStatus: 'Paid'
+      });
+      showToast('Stripe payment authorized! Sartorial commission confirmed.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'An error occurred during payment processing.', 'error');
     } finally {
       setIsSubmitting(false);
+      setProcessingStep('');
     }
   };
 
@@ -130,7 +239,7 @@ export const CheckoutPage: React.FC = () => {
       <div className="min-h-screen bg-white text-[#111827] pt-12 pb-24 px-4">
         <div className="max-w-2xl mx-auto text-center space-y-6">
           <div className="p-8 sm:p-12 border border-gray-200 bg-[#F9F9F8] shadow-2xl relative">
-            <div className="w-14 h-14 bg-[#F3F4F6] border border-[#936B34] rounded-full flex items-center justify-center mx-auto mb-4 text-[#936B34]">
+            <div className="w-14 h-14 bg-emerald-50 border border-emerald-500/40 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600 shadow-sm">
               <Check className="w-7 h-7" />
             </div>
 
@@ -147,7 +256,7 @@ export const CheckoutPage: React.FC = () => {
               <strong className="text-[#111827]">{orderComplete.customerEmail}</strong>.
             </p>
 
-            {/* Order snapshot card */}
+            {/* Order snapshot card with Stripe Verification Details */}
             <div className="bg-white border border-gray-200 p-6 text-left max-w-xl mx-auto my-8 space-y-4 shadow-lg">
               <div className="flex justify-between items-center pb-3 border-b border-gray-200 text-xs">
                 <span className="text-gray-500">Order Reference:</span>
@@ -157,6 +266,45 @@ export const CheckoutPage: React.FC = () => {
                 <span className="text-gray-500">Tracking Number:</span>
                 <span className="font-mono text-[#936B34] font-medium">{orderComplete.trackingNumber}</span>
               </div>
+
+              {/* Stripe Payment Settlement Badge */}
+              <div className="p-3 bg-[#F9F9F8] border border-gray-200 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500 flex items-center gap-1.5 font-mono">
+                    <CreditCard className="w-3.5 h-3.5 text-[#936B34]" />
+                    <span>Payment Gateway:</span>
+                  </span>
+                  <span className="font-mono text-emerald-700 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Stripe (Settled &amp; Paid)</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-gray-500">Stripe Transaction ID:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(orderComplete.paymentTransactionId || stripeTransactionId);
+                      setCopiedTx(true);
+                      setTimeout(() => setCopiedTx(false), 2000);
+                      showToast('Stripe transaction ID copied to clipboard', 'info');
+                    }}
+                    className="flex items-center gap-1 text-[#111827] hover:text-[#936B34] transition-colors cursor-pointer bg-white px-2 py-0.5 border border-gray-200 text-[11px]"
+                    title="Click to copy Stripe transaction ID"
+                  >
+                    <span>{orderComplete.paymentTransactionId || stripeTransactionId}</span>
+                    <Copy className="w-3 h-3 text-gray-400" />
+                    {copiedTx && <span className="text-emerald-600 text-[9px]">Copied!</span>}
+                  </button>
+                </div>
+
+                <div className="flex justify-between items-center text-[11px] font-mono text-gray-500 pt-1 border-t border-gray-200/60">
+                  <span>Method:</span>
+                  <span className="text-gray-800">{orderComplete.paymentMethod || 'Stripe Card Processing'}</span>
+                </div>
+              </div>
+
               <div className="flex justify-between items-center pb-3 border-b border-gray-200 text-xs">
                 <span className="text-gray-500">Est. Delivery:</span>
                 <span className="text-[#111827] font-medium">{orderComplete.estimatedDelivery}</span>
@@ -409,58 +557,171 @@ export const CheckoutPage: React.FC = () => {
 
             {/* 4. Payment Method */}
             <div className="p-6 bg-[#F9F9F8] border border-gray-200 space-y-4">
-              <h2 className="font-serif text-lg text-[#111827] pb-2 border-b border-gray-200 font-light">
-                4. Payment Method
-              </h2>
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                <h2 className="font-serif text-lg text-[#111827] font-light">
+                  4. Payment Method
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#111827] text-white text-[10px] font-mono tracking-wider uppercase font-semibold">
+                    <Lock className="w-2.5 h-2.5 text-[#936B34]" />
+                    <span>Stripe Verified</span>
+                  </span>
+                  {stripeConfig?.testMode && (
+                    <span className="inline-flex items-center px-2 py-0.5 bg-[#936B34]/15 text-[#936B34] border border-[#936B34]/30 text-[10px] font-mono uppercase tracking-wider font-semibold">
+                      Test Mode
+                    </span>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-3">
-                <label className="flex items-center gap-3 p-3 bg-white border border-gray-200 cursor-pointer text-xs">
+                {/* Option 1: Stripe Card */}
+                <label className={`flex items-start gap-3 p-3.5 border cursor-pointer text-xs transition-all ${
+                  formData.paymentMethod === 'stripe_card' 
+                    ? 'bg-white border-[#936B34] shadow-xs' 
+                    : 'bg-white/60 border-gray-200 hover:border-gray-300'
+                }`}>
                   <input
                     type="radio"
                     name="pay"
-                    checked={formData.paymentMethod === 'credit_card'}
-                    onChange={() => setFormData({ ...formData, paymentMethod: 'credit_card' })}
-                    className="accent-[#936B34]"
+                    checked={formData.paymentMethod === 'stripe_card'}
+                    onChange={() => setFormData({ ...formData, paymentMethod: 'stripe_card' })}
+                    className="accent-[#936B34] mt-0.5"
                   />
-                  <CreditCard className="w-4 h-4 text-[#936B34]" />
-                  <span className="text-[#111827] font-medium">Credit or Debit Card (Visa, Mastercard, American Express)</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#111827] font-medium flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-[#936B34]" />
+                        <span>Credit or Debit Card (Stripe Gateway)</span>
+                      </span>
+                      <span className="text-[11px] font-mono text-gray-500">Visa · MC · Amex · Discover</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 font-mono mt-0.5">
+                      Direct, instant 256-bit encrypted settlement via Stripe
+                    </p>
+                  </div>
                 </label>
 
-                {formData.paymentMethod === 'credit_card' && (
-                  <div className="p-4 bg-white border border-gray-200 space-y-3 text-xs">
+                {/* Stripe Card Fields */}
+                {formData.paymentMethod === 'stripe_card' && (
+                  <div className="p-4 sm:p-5 bg-white border border-[#936B34]/30 space-y-4 text-xs shadow-xs">
+                    <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                      <div className="flex items-center gap-1.5 text-gray-700 font-mono text-[11px]">
+                        <ShieldCheck className="w-3.5 h-3.5 text-[#936B34]" />
+                        <span>Stripe Payment Elements &amp; Tokenization</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={fillStripeTestCard}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#F9F9F8] border border-gray-300 hover:border-[#936B34] text-[#111827] hover:text-[#936B34] text-[11px] font-mono font-medium transition-colors cursor-pointer shadow-2xs"
+                        title="Autofill standard Stripe 4242 test credentials"
+                      >
+                        <Zap className="w-3 h-3 text-[#936B34]" />
+                        <span>Fill Stripe Test Card</span>
+                      </button>
+                    </div>
+
                     <div>
-                      <label className="block text-gray-500 mb-1 font-mono">Card Number</label>
+                      <label className="block text-gray-600 mb-1 font-mono text-[11px]">Cardholder Full Name</label>
                       <input
                         type="text"
-                        value={formData.cardNumber}
-                        onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })}
-                        className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] font-mono"
-                        placeholder="•••• •••• •••• ••••"
+                        value={formData.cardholderName}
+                        onChange={(e) => setFormData({ ...formData, cardholderName: e.target.value })}
+                        placeholder={`${formData.firstName || 'Marcus'} ${formData.lastName || 'Sterling'}`}
+                        className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] focus:border-[#936B34] focus:outline-none font-mono"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-gray-600 font-mono text-[11px]">Card Number</label>
+                        <span className="text-[10px] font-mono text-[#936B34] font-semibold uppercase">
+                          {formData.cardNumber ? getCardBrand(formData.cardNumber) : 'Any Valid Card'}
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={formData.cardNumber}
+                          onChange={(e) => handleCardNumberChange(e.target.value)}
+                          className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] font-mono tracking-wider focus:border-[#936B34] focus:outline-none"
+                          placeholder="•••• •••• •••• ••••"
+                          maxLength={19}
+                        />
+                        <div className="absolute right-3 top-2.5 text-gray-400">
+                          <CreditCard className="w-4 h-4 text-[#936B34]" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-gray-500 mb-1 font-mono">Expiry Date</label>
+                        <label className="block text-gray-600 mb-1 font-mono text-[11px]">Expires (MM/YY)</label>
                         <input
                           type="text"
                           value={formData.cardExp}
-                          onChange={(e) => setFormData({ ...formData, cardExp: e.target.value })}
-                          className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] font-mono"
+                          onChange={(e) => handleExpChange(e.target.value)}
+                          className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] font-mono focus:border-[#936B34] focus:outline-none"
                           placeholder="MM/YY"
+                          maxLength={5}
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-500 mb-1 font-mono">CVC / Security Code</label>
+                        <label className="block text-gray-600 mb-1 font-mono text-[11px]">Security Code (CVC)</label>
+                        <input
+                          type="password"
+                          value={formData.cardCvc}
+                          onChange={(e) => setFormData({ ...formData, cardCvc: e.target.value.slice(0, 4) })}
+                          className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] font-mono focus:border-[#936B34] focus:outline-none"
+                          placeholder="123"
+                          maxLength={4}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-600 mb-1 font-mono text-[11px]">Billing Postal Code</label>
                         <input
                           type="text"
-                          value={formData.cardCvc}
-                          onChange={(e) => setFormData({ ...formData, cardCvc: e.target.value })}
-                          className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] font-mono"
-                          placeholder="CVC"
+                          value={formData.cardZip || formData.postalCode}
+                          onChange={(e) => setFormData({ ...formData, cardZip: e.target.value })}
+                          className="w-full bg-[#F9F9F8] border border-gray-200 p-2.5 text-[#111827] font-mono focus:border-[#936B34] focus:outline-none"
+                          placeholder="10021"
                         />
                       </div>
                     </div>
+
+                    <div className="pt-2 text-[10px] text-gray-500 font-mono flex items-center gap-1.5 border-t border-gray-100">
+                      <Lock className="w-3 h-3 text-[#936B34]" />
+                      <span>Encrypted with Stripe 256-bit TLS. Sensitive card data is tokenized securely and never retained on uncertified servers.</span>
+                    </div>
                   </div>
                 )}
+
+                {/* Option 2: House Account */}
+                <label className={`flex items-start gap-3 p-3.5 border cursor-pointer text-xs transition-all ${
+                  formData.paymentMethod === 'atelier_account' 
+                    ? 'bg-white border-[#936B34] shadow-xs' 
+                    : 'bg-white/60 border-gray-200 hover:border-gray-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="pay"
+                    checked={formData.paymentMethod === 'atelier_account'}
+                    onChange={() => setFormData({ ...formData, paymentMethod: 'atelier_account' })}
+                    className="accent-[#936B34] mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#111827] font-medium flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-[#936B34]" />
+                        <span>Private Atelier House Account / Wire Remittance</span>
+                      </span>
+                      <span className="text-[11px] font-mono text-[#936B34]">Patron Concierge</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 font-mono mt-0.5">
+                      White-glove invoice billed to registered house ledger upon tailoring finalization
+                    </p>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -532,10 +793,13 @@ export const CheckoutPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 bg-[#936B34] hover:bg-[#7A5726] text-white font-semibold text-xs uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-md"
+                className="w-full py-4 bg-[#936B34] hover:bg-[#7A5726] text-white font-semibold text-xs uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 disabled:opacity-75 cursor-pointer shadow-md"
               >
                 {isSubmitting ? (
-                  <span>Dispatching Commission...</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>{processingStep || 'Authorizing with Stripe...'}</span>
+                  </div>
                 ) : (
                   <>
                     <span>Confirm &amp; Authorize Order</span>

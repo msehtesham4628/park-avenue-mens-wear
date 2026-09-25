@@ -89,7 +89,7 @@ export function parseRoute(pathname?: string): RouteMatch {
   const segments = getPathSegments(pathname);
 
   if (segments.length === 0) {
-    return { view: 'welcome' };
+    return { view: 'home' };
   }
 
   const firstSeg = segments[0];

@@ -105,7 +105,7 @@ export const ShopPage: React.FC = () => {
 
   // Filtered & Sorted Products
   const filteredProducts = useMemo(() => {
-    return products
+    const filtered = products
       .filter(product => {
         // Category filter
         if (selectedCategory !== 'All') {
@@ -142,7 +142,7 @@ export const ShopPage: React.FC = () => {
 
         // Size filter
         if (selectedSizes.length > 0) {
-          const hasMatchingSize = product.variants.some(
+          const hasMatchingSize = (product.variants || []).some(
             v => selectedSizes.includes(v.size) && v.stock > 0
           );
           if (!hasMatchingSize) return false;
@@ -150,7 +150,7 @@ export const ShopPage: React.FC = () => {
 
         // Color filter
         if (selectedColors.length > 0) {
-          const hasMatchingColor = product.variants.some(
+          const hasMatchingColor = (product.variants || []).some(
             v => selectedColors.includes(v.color)
           );
           if (!hasMatchingColor) return false;
@@ -158,9 +158,9 @@ export const ShopPage: React.FC = () => {
 
         // Availability filter
         if (availability === 'in_stock') {
-          if (product.totalStock <= 0) return false;
+          if ((product.totalStock ?? 0) <= 0) return false;
         } else if (availability === 'low_stock') {
-          const hasLow = product.variants.some(v => v.stock > 0 && v.stock <= 3);
+          const hasLow = (product.variants || []).some(v => v.stock > 0 && v.stock <= 3);
           if (!hasLow) return false;
         }
 

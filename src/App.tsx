@@ -30,7 +30,7 @@ const MainContent: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-white text-[#111827] selection:bg-[#936B34] selection:text-white">
       {activeView !== 'welcome' && <Navbar />}
 
-      <main className={`flex-1 ${activeView !== 'home' ? 'pt-24 sm:pt-28' : ''}`}>
+      <main className={`flex-1 ${(activeView !== 'home' && activeView !== 'welcome') ? 'pt-24 sm:pt-28' : ''}`}>
         {activeView === 'welcome' && <WelcomePage />}
 
         {activeView === 'home' && (

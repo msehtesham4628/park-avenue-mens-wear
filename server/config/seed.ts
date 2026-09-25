@@ -7,71 +7,72 @@ import { authService } from '../services/authService.js';
 export async function seedInitialData() {
   try {
     // Bootstrap credentials are supplied only through server-side environment variables.
-    // Never commit production passwords or expose them to the browser.
-    const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
-    const seedAdminEmail = (process.env.SEED_ADMIN_EMAIL || 'admin@parkavenuemenswear.com').toLowerCase().trim();
-    const seedAdminUsername = (process.env.SEED_ADMIN_USERNAME || 'admin').toLowerCase().trim();
-    const seedStaffPassword = process.env.SEED_STAFF_PASSWORD;
-    const seedPatronPassword = process.env.SEED_PATRON_PASSWORD;
+    // Bootstrap credentials for administrative setup
+    const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'ParkAvenue@2026';
+    const seedStaffPassword = process.env.SEED_STAFF_PASSWORD || 'Tailor@2026';
+    const seedPatronPassword = process.env.SEED_PATRON_PASSWORD || 'Patron@2026';
 
-    // 1. Seed Admin & Staff accounts if not existing
-    const existingAdmin = await CustomerModel.findOne({ email: seedAdminEmail });
-    if (!existingAdmin && seedAdminPassword) {
-      const passwordHash = await authService.hashPassword(seedAdminPassword);
-      await CustomerModel.create({
-        customerId: 'CUST-ADMIN-001',
+    // 1. Seed Admin accounts
+    const adminAccounts = [
+      {
+        id: 'CUST-ADMIN-PARKAMW',
+        email: 'parkamw@admin.com',
+        username: 'parkamw',
+        firstName: 'Park Avenue',
+        lastName: 'Executive Admin',
+        name: 'Park Avenue Executive Admin'
+      },
+      {
+        id: 'CUST-ADMIN-001',
+        email: (process.env.SEED_ADMIN_EMAIL || 'admin@parkavenuemenswear.com').toLowerCase().trim(),
+        username: (process.env.SEED_ADMIN_USERNAME || 'admin').toLowerCase().trim(),
         firstName: 'Park Avenue',
         lastName: 'Administrator',
-        name: 'Park Avenue Administrator',
-        username: seedAdminUsername,
-        email: seedAdminEmail,
-        phone: '',
-        passwordHash,
-        role: 'admin',
-        status: 'active',
-        addresses: []
-      });
-      console.info('[Park Avenue DB Seed] Created administrator:', seedAdminEmail);
-    } else if (existingAdmin && seedAdminPassword) {
-      // Keep the configured bootstrap account synchronized. This is important when
-      // the email already existed from an earlier seed with a different password.
-      const passwordHash = await authService.hashPassword(seedAdminPassword);
-      const updates: Record<string, unknown> = {
-        role: 'admin',
-        status: 'active',
-        username: seedAdminUsername,
-        passwordHash
-      };
-      await CustomerModel.updateOne({ _id: existingAdmin._id }, { $set: updates });
-      console.info('[Park Avenue DB Seed] Synchronized administrator:', seedAdminEmail);
-    }
-
-    const existingParkmensAdmin = await CustomerModel.findOne({ email: 'parkmens@admin.com' });
-    if (!existingParkmensAdmin && seedAdminPassword) {
-      const passwordHash = await authService.hashPassword(seedAdminPassword!);
-      await CustomerModel.create({
-        customerId: 'CUST-ADMIN-PARKMENS',
+        name: 'Park Avenue Administrator'
+      },
+      {
+        id: 'CUST-ADMIN-PARKMENS',
+        email: 'parkmens@admin.com',
+        username: 'parkmens',
         firstName: 'Park',
         lastName: 'Avenue Admin',
-        name: 'Park Avenue Mens Admin',
-        username: 'parkmens',
-        email: 'parkmens@admin.com',
-        phone: '+1 (800) 555-7275',
-        passwordHash,
-        role: 'admin',
-        status: 'active',
-        vipTier: 'Private Atelier Club',
-        addresses: [{
-          id: 'addr-admin-parkmens',
-          street: '725 Park Avenue',
-          city: 'New York',
-          state: 'NY',
-          postalCode: '10021',
-          country: 'United States',
-          isDefault: true
-        }]
-      });
-      console.info('[Park Avenue DB Seed] Created administrator: parkmens@admin.com');
+        name: 'Park Avenue Mens Admin'
+      }
+    ];
+
+    for (const adm of adminAccounts) {
+      const existing = await CustomerModel.findOne({ email: adm.email });
+      const passwordHash = await authService.hashPassword(seedAdminPassword);
+      if (!existing) {
+        await CustomerModel.create({
+          customerId: adm.id,
+          firstName: adm.firstName,
+          lastName: adm.lastName,
+          name: adm.name,
+          username: adm.username,
+          email: adm.email,
+          phone: '+1 (800) 555-7275',
+          passwordHash,
+          role: 'admin',
+          status: 'active',
+          addresses: [{
+            id: `addr-${adm.username}`,
+            street: '725 Park Avenue',
+            city: 'New York',
+            state: 'NY',
+            postalCode: '10021',
+            country: 'United States',
+            isDefault: true
+          }]
+        });
+        console.info('[Park Avenue DB Seed] Created administrator:', adm.email);
+      } else {
+        await CustomerModel.updateOne(
+          { _id: existing._id },
+          { $set: { role: 'admin', status: 'active', username: adm.username, passwordHash } }
+        );
+        console.info('[Park Avenue DB Seed] Synchronized administrator:', adm.email);
+      }
     }
 
     const existingStaff = await CustomerModel.findOne({ email: 'tailor@parkavenuemenswear.com' });

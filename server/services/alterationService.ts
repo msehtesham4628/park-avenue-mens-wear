@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { AlterationModel, IAlteration, AlterationStatus, IAlterationMeasurements } from '../models/Alteration.js';
 import { notificationService } from './notificationService.js';
 import { auditService } from './auditService.js';
@@ -114,7 +115,7 @@ export const alterationService = {
    */
   async updateStatus(
     alterationId: string,
-    newStatus: AlterationStatus,
+    newStatus: string,
     adminUser: { id: string; name: string; email: string; role: string },
     options: {
       note?: string;
@@ -124,13 +125,38 @@ export const alterationService = {
       notificationChannel?: 'email' | 'sms' | 'whatsapp';
     } = {}
   ): Promise<IAlteration> {
-    const alteration = await AlterationModel.findOne({ alterationId });
+    const isObjectId = mongoose.isValidObjectId(alterationId);
+    const alteration = await AlterationModel.findOne({
+      $or: [
+        { alterationId },
+        { alterationId: { $regex: new RegExp(`^${alterationId.trim()}$`, 'i') } },
+        ...(isObjectId ? [{ _id: alterationId }] : [])
+      ]
+    });
     if (!alteration) {
       throw new Error(`Alteration ticket ${alterationId} not found.`);
     }
 
+    const statusNormalizeMap: Record<string, AlterationStatus> = {
+      'alteration received': 'Received',
+      'received': 'Received',
+      'measurement/review': 'Review',
+      'review': 'Review',
+      'alteration in progress': 'In Progress',
+      'in progress': 'In Progress',
+      'in_progress': 'In Progress',
+      'quality check': 'Quality Check',
+      'quality_check': 'Quality Check',
+      'ready for pickup': 'Ready for Pickup',
+      'ready_for_pickup': 'Ready for Pickup',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled',
+      'canceled': 'Cancelled'
+    };
+    const resolvedStatus = statusNormalizeMap[String(newStatus).toLowerCase().trim()] || (newStatus as AlterationStatus);
+
     const previousStatus = alteration.currentStatus;
-    alteration.currentStatus = newStatus;
+    alteration.currentStatus = resolvedStatus;
 
     if (options.expectedCompletionDate) {
       alteration.expectedCompletionDate = options.expectedCompletionDate;
@@ -138,7 +164,7 @@ export const alterationService = {
     if (options.tailorAssigned) {
       alteration.tailorAssigned = options.tailorAssigned;
     }
-    if (newStatus === 'Completed') {
+    if (resolvedStatus === 'Completed') {
       alteration.actualCompletionDate = new Date();
     }
 

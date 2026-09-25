@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { ProductModel, IProductVariant } from '../models/Product.js';
 import { 
   InventoryTransactionModel, 
@@ -32,7 +33,15 @@ export const inventoryService = {
     transaction: IInventoryTransaction;
     updatedVariant?: IProductVariant;
   }> {
-    const product = await ProductModel.findOne({ productId: input.productId });
+    const isObjectId = mongoose.isValidObjectId(input.productId);
+    const product = await ProductModel.findOne({
+      $or: [
+        { productId: input.productId },
+        { productId: { $regex: new RegExp(`^${input.productId.trim()}$`, 'i') } },
+        { sku: { $regex: new RegExp(`^${input.productId.trim()}$`, 'i') } },
+        ...(isObjectId ? [{ _id: input.productId }] : [])
+      ]
+    });
     if (!product) {
       throw new Error(`Product ${input.productId} not found.`);
     }
@@ -40,13 +49,20 @@ export const inventoryService = {
     // Locate target variant if variantId or size/color provided
     let targetVariantIndex = -1;
     if (input.variantId) {
-      targetVariantIndex = product.variants.findIndex((v: IProductVariant) => v.id === input.variantId);
-    } else if (input.size && input.color) {
+      targetVariantIndex = product.variants.findIndex((v: IProductVariant) => 
+        v.id === input.variantId || 
+        (v as any)._id?.toString() === input.variantId ||
+        v.sku === input.variantId ||
+        v.size === input.variantId
+      );
+    }
+    if (targetVariantIndex === -1 && input.size && input.color) {
       targetVariantIndex = product.variants.findIndex(
         (v: IProductVariant) => v.size.toLowerCase() === input.size?.toLowerCase() && 
              v.color.toLowerCase() === input.color?.toLowerCase()
       );
-    } else if (input.size) {
+    }
+    if (targetVariantIndex === -1 && input.size) {
       targetVariantIndex = product.variants.findIndex(
         (v: IProductVariant) => v.size.toLowerCase() === input.size?.toLowerCase()
       );

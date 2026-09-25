@@ -1,8 +1,10 @@
+import mongoose from 'mongoose';
 import { OrderModel, IOrder, OrderStatus, PaymentStatus, IShippingInfo } from '../models/Order.js';
 import { ProductModel, IProductVariant } from '../models/Product.js';
 import { inventoryService } from './inventoryService.js';
 import { notificationService } from './notificationService.js';
 import { auditService } from './auditService.js';
+import { taxService } from './taxService.js';
 
 export interface CreateOrderInput {
   customerId?: string;
@@ -18,6 +20,9 @@ export interface CreateOrderInput {
     alterationRequested?: boolean;
   }>;
   shippingInfo: IShippingInfo;
+  shippingFee?: number;
+  shippingMethod?: string;
+  tax?: number;
   paymentMethod?: string;
   paymentTransactionId?: string;
   notes?: string;
@@ -112,11 +117,17 @@ export const orderService = {
       });
     }
 
-    // STEP 3 & 4: Calculate shipping, tax, total and generate Order ID
-    const FREE_SHIPPING_THRESHOLD = 250;
-    const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 35;
-    const tax = Math.round(subtotal * 0.0825 * 100) / 100;
-    const total = subtotal + shipping + tax;
+    // STEP 3 & 4: Calculate shipping, state-level destination tax, total and generate Order ID
+    const destinationState = input.shippingInfo?.state || '';
+    const taxCalc = taxService.calculateTax(
+      destinationState,
+      validatedItems.map(vi => ({ price: vi.priceAtPurchase, quantity: vi.quantity })),
+      subtotal
+    );
+
+    const calculatedTax = input.tax !== undefined && input.tax >= 0 ? input.tax : taxCalc.taxAmount;
+    const shipping = input.shippingFee !== undefined && input.shippingFee >= 0 ? input.shippingFee : 0;
+    const total = Math.round((subtotal + shipping + calculatedTax) * 100) / 100;
 
     const orderId = await this.generateOrderId();
 
@@ -154,7 +165,7 @@ export const orderService = {
       })),
       subtotal,
       shipping,
-      tax,
+      tax: calculatedTax,
       total,
       paymentStatus: 'Paid' as PaymentStatus,
       orderStatus: initialStatus,
@@ -206,34 +217,61 @@ export const orderService = {
    */
   async updateOrderStatus(
     orderId: string, 
-    newStatus: OrderStatus, 
+    newStatus: string, 
     adminUser: { id: string; name: string; email: string; role: string },
     options: {
       note?: string;
       trackingNumber?: string;
+      carrier?: string;
+      estimatedDelivery?: string;
       customNotificationMessage?: string;
       notificationChannel?: 'email' | 'sms' | 'whatsapp';
     } = {}
   ): Promise<IOrder> {
-    const order = await OrderModel.findOne({ orderId });
+    const isObjectId = mongoose.isValidObjectId(orderId);
+    const order = await OrderModel.findOne({
+      $or: [
+        { orderId },
+        { orderId: { $regex: new RegExp(`^${orderId.trim()}$`, 'i') } },
+        ...(isObjectId ? [{ _id: orderId }] : [])
+      ]
+    });
     if (!order) {
       throw new Error(`Order ${orderId} not found.`);
     }
 
+    const normalizedMap: Record<string, OrderStatus> = {
+      'pending': 'Pending',
+      'confirmed': 'Confirmed',
+      'order confirmed': 'Confirmed',
+      'processing': 'Processing',
+      'packed': 'Packed',
+      'shipped': 'Shipped',
+      'out for delivery': 'Out for Delivery',
+      'out_for_delivery': 'Out for Delivery',
+      'delivered': 'Delivered',
+      'cancelled': 'Cancelled',
+      'canceled': 'Cancelled'
+    };
+    const resolvedStatus = normalizedMap[String(newStatus).toLowerCase().trim()] || (newStatus as OrderStatus);
+
     const previousStatus = order.orderStatus;
-    if (previousStatus === newStatus && !options.trackingNumber) {
-      return order;
+    order.orderStatus = resolvedStatus;
+
+    if (options.trackingNumber !== undefined) {
+      order.trackingNumber = options.trackingNumber.trim();
     }
 
-    order.orderStatus = newStatus;
-
-    if (options.trackingNumber) {
-      order.trackingNumber = options.trackingNumber;
+    if (options.carrier && order.shippingInfo) {
+      order.shippingInfo.carrier = options.carrier.trim();
+    }
+    if (options.estimatedDelivery && order.shippingInfo) {
+      order.shippingInfo.estimatedDelivery = options.estimatedDelivery.trim();
     }
 
     order.statusHistory.push({
       previousStatus,
-      newStatus,
+      newStatus: resolvedStatus,
       changedBy: {
         id: adminUser.id,
         name: adminUser.name,

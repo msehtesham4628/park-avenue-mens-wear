@@ -26,7 +26,12 @@ import {
   Package,
   Layers,
   UserCheck,
-  DollarSign
+  DollarSign,
+  CreditCard,
+  Zap,
+  Copy,
+  ExternalLink,
+  Globe
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { 
@@ -35,6 +40,8 @@ import {
   AlterationService, 
   CustomerService, 
   NotificationService,
+  StripePaymentService,
+  StripeGatewayConfig,
   API_CONFIG
 } from '../../services/api';
 import { Product, Order, AlterationRecord, Customer, ProductCategory } from '../../types';
@@ -124,6 +131,18 @@ export const AdminDashboard: React.FC = () => {
   const [manualAlterationNotes, setManualAlterationNotes] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
+  // Stripe Gateway state
+  const [stripeConfig, setStripeConfig] = useState<StripeGatewayConfig | null>(null);
+  const [isTestingStripe, setIsTestingStripe] = useState(false);
+  const [stripeTestResult, setStripeTestResult] = useState<{
+    connected: boolean;
+    mode: string;
+    message: string;
+    livemode?: boolean;
+    availableCurrencies?: string[];
+  } | null>(null);
+  const [copiedWebhookUrl, setCopiedWebhookUrl] = useState(false);
+
   // Form states
   const [productForm, setProductForm] = useState({
     name: '',
@@ -155,20 +174,53 @@ export const AdminDashboard: React.FC = () => {
   const loadAllData = async () => {
     setIsLoading(true);
     try {
-      const [prods, ords, alts, custs] = await Promise.all([
+      const [prods, ords, alts, custs, stripeCfg] = await Promise.all([
         ProductService.getAll(),
         OrderService.getAll(),
         AlterationService.getAll(),
-        CustomerService.getAll()
+        CustomerService.getAll(),
+        StripePaymentService.getConfig().catch(() => null)
       ]);
       setProductsList(prods);
       setOrdersList(ords);
       setAlterationsList(alts);
       setCustomersList(custs);
+      if (stripeCfg) setStripeConfig(stripeCfg);
     } catch {
       showToast('Could not sync with archive ledger', 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleTestStripe = async () => {
+    setIsTestingStripe(true);
+    setStripeTestResult(null);
+    try {
+      const res = await StripePaymentService.testConnection();
+      if (res) {
+        setStripeTestResult(res);
+        if (res.connected) {
+          showToast(`Stripe Connected: ${res.mode?.toUpperCase()} Mode Active`, 'success');
+        } else {
+          showToast(res.message || 'Stripe API ping completed', 'info');
+        }
+      } else {
+        setStripeTestResult({
+          connected: false,
+          mode: 'error',
+          message: 'No response received from Stripe connection test.'
+        });
+      }
+    } catch (err: any) {
+      setStripeTestResult({
+        connected: false,
+        mode: 'error',
+        message: err.message || 'Failed to ping Stripe API'
+      });
+      showToast('Stripe test failed', 'error');
+    } finally {
+      setIsTestingStripe(false);
     }
   };
 
@@ -288,27 +340,14 @@ export const AdminDashboard: React.FC = () => {
       const prod = productsList.find(p => p.id === adjustingInventory.productId);
       if (!prod) return;
 
-      const updatedVariants = (prod.variants || []).map(v => {
-        if (v.id === adjustingInventory.variantId) {
-          return { ...v, stock: newStock };
-        }
-        return v;
-      });
+      await ProductService.updateStock(prod.id, adjustingInventory.variantId, newStock);
 
-      const totalStock = updatedVariants.reduce((sum, v) => sum + v.stock, 0);
-
-      await ProductService.update(prod.id, {
-        ...prod,
-        variants: updatedVariants,
-        totalStock
-      });
-
-      showToast(`Stock updated for ${prod.name} (${adjustingInventory.size})`, 'success');
+      showToast(`Stock updated for ${prod.name} (${adjustingInventory.size}) to ${newStock} units`, 'success');
       setAdjustingInventory(null);
       await loadAllData();
       await refreshProducts();
-    } catch {
-      showToast('Failed to adjust stock', 'error');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to adjust stock', 'error');
     }
   };
 
@@ -396,18 +435,16 @@ export const AdminDashboard: React.FC = () => {
         showToast('Please provide executive username and password', 'error');
         return;
       }
-      if (cleanEmail !== 'parkamw@admin.com') {
-        showToast('Access Denied: Only authorized administrator account (parkamw@admin.com) has access.', 'error');
-        return;
-      }
       setIsAuthenticating(true);
       try {
         const res = await login(cleanEmail, adminPassword);
-        if (res.success && res.role === 'admin') {
+        if (res.success && (res.role === 'admin' || res.role === 'staff')) {
           showToast('Atelier Executive clearance confirmed. Welcome Administrator.', 'success');
           await loadAllData();
+        } else if (res.success) {
+          showToast('Access restricted: Account is active but does not possess Atelier Admin privileges.', 'error');
         } else {
-          showToast('Access restricted: Invalid executive password credentials.', 'error');
+          showToast(res.message || 'Access restricted: Invalid executive credentials.', 'error');
         }
       } catch {
         showToast('Authentication protocol failed', 'error');
@@ -433,6 +470,30 @@ export const AdminDashboard: React.FC = () => {
             <p className="text-xs text-gray-500 font-mono mt-2 leading-relaxed">
               Restricted portal path (<code className="text-[#936B34]">/admin</code> &amp; <code className="text-[#936B34]">/dashboard</code>). Enter administrator credentials to access products catalogue, Excel operations, manual orders, and Tally ERP.
             </p>
+          </div>
+
+          {/* Quick-fill helper banner */}
+          <div className="bg-[#FAF8F5] border border-[#936B34]/30 p-3.5 mb-6 text-left shadow-xs">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                DEFAULT ATELIER CREDENTIALS
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setAdminUsername('parkamw@admin.com');
+                  setAdminPassword('ParkAvenue@2026');
+                }}
+                className="text-[10px] font-mono text-[#936B34] hover:underline uppercase font-bold cursor-pointer"
+              >
+                Auto-Fill
+              </button>
+            </div>
+            <div className="text-[11px] font-mono text-gray-600 flex flex-col gap-0.5">
+              <div>Email: <span className="text-[#111827] font-semibold">parkamw@admin.com</span></div>
+              <div>Password: <span className="text-[#111827] font-semibold">ParkAvenue@2026</span></div>
+            </div>
           </div>
 
           <form onSubmit={handleAdminSubmit} className="space-y-4">
@@ -842,8 +903,8 @@ export const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {productsList.map(prod => (
-                      <tr key={prod.id} className="hover:bg-black/[0.02]">
+                    {productsList.map((prod, pIdx) => (
+                      <tr key={prod.id ? `prod-${prod.id}-${pIdx}` : `prod-${pIdx}`} className="hover:bg-black/[0.02]">
                         <td className="p-4 text-[#936B34] font-medium">{prod.sku}</td>
                         <td className="p-4 text-[#111827] font-serif text-sm font-light">{prod.name}</td>
                         <td className="p-4 uppercase text-gray-500">{prod.category}</td>
@@ -923,9 +984,9 @@ export const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {productsList.flatMap(p => 
-                      (p.variants || []).map(v => (
-                        <tr key={v.id} className="hover:bg-black/[0.02]">
+                    {productsList.flatMap((p, pIdx) => 
+                      (p.variants || []).map((v, vIdx) => (
+                        <tr key={`inv-${p.id || pIdx}-${v.id || v.size || vIdx}-${vIdx}`} className="hover:bg-black/[0.02]">
                           <td className="p-4 text-[#111827] font-serif">{p.name}</td>
                           <td className="p-4 text-[#936B34] font-medium">{v.sku}</td>
                           <td className="p-4 text-gray-500">{v.size}</td>
@@ -1034,8 +1095,8 @@ export const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {ordersList.map(ord => (
-                      <tr key={ord.id} className="hover:bg-black/[0.02]">
+                    {ordersList.map((ord, ordIdx) => (
+                      <tr key={ord.id ? `ord-${ord.id}-${ordIdx}` : `ord-${ordIdx}`} className="hover:bg-black/[0.02]">
                         <td className="p-4 text-[#936B34] font-medium">{ord.id}</td>
                         <td className="p-4 text-[#111827]">
                           {(ord.shippingAddress as any)?.fullName || ord.customerEmail || 'Client'}
@@ -1045,22 +1106,38 @@ export const AdminDashboard: React.FC = () => {
                         </td>
                         <td className="p-4 tabular-nums font-semibold text-[#111827]">${ord.total.toLocaleString()}</td>
                         <td className="p-4 uppercase text-[#936B34] font-medium">
-                          {ord.status || (ord as any).orderStatus}
+                          <span className="inline-block px-2.5 py-1 text-[10px] font-mono tracking-wider bg-[#936B34]/10 text-[#936B34] border border-[#936B34]/30">
+                            {ord.orderStatus || ord.status || 'Confirmed'}
+                          </span>
                         </td>
-                        <td className="p-4 text-right space-x-2">
-                          {['pending', 'processing', 'shipped', 'delivered'].map(st => (
-                            <button
-                              key={st}
-                              onClick={async () => {
-                                await OrderService.updateStatus(ord.id, st);
-                                showToast(`Order ${ord.id} status changed to ${st}`, 'success');
-                                await loadAllData();
-                              }}
-                              className="px-2 py-1 text-[9px] border border-gray-200 hover:border-[#936B34] text-gray-500 hover:text-[#111827] uppercase cursor-pointer bg-[#F9F9F8] transition-colors"
-                            >
-                              {st}
-                            </button>
-                          ))}
+                        <td className="p-4 text-right space-x-1.5">
+                          {['pending', 'processing', 'shipped', 'delivered'].map(st => {
+                            const currentStatusNorm = (ord.orderStatus || ord.status || '').toLowerCase();
+                            const isCurrent = currentStatusNorm === st.toLowerCase();
+                            const orderIdentifier = ord.id || (ord as any).orderId;
+                            return (
+                              <button
+                                key={`status-${ord.id || ordIdx}-${st}`}
+                                disabled={isCurrent}
+                                onClick={async () => {
+                                  try {
+                                    await OrderService.updateStatus(orderIdentifier, st);
+                                    showToast(`Order ${orderIdentifier} status updated to ${st.toUpperCase()}`, 'success');
+                                    await loadAllData();
+                                  } catch (err: any) {
+                                    showToast(err.message || `Failed to update status for order ${orderIdentifier}`, 'error');
+                                  }
+                                }}
+                                className={`px-2.5 py-1 text-[9px] border uppercase transition-all ${
+                                  isCurrent
+                                    ? 'bg-[#111827] text-white border-[#111827] font-semibold shadow-xs cursor-default'
+                                    : 'border-gray-200 hover:border-[#936B34] text-gray-500 hover:text-[#111827] bg-[#F9F9F8] cursor-pointer'
+                                }`}
+                              >
+                                {st}
+                              </button>
+                            );
+                          })}
                         </td>
                       </tr>
                     ))}
@@ -1122,8 +1199,8 @@ export const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {customersList.map(cust => (
-                      <tr key={cust.id} className="hover:bg-black/[0.02]">
+                    {customersList.map((cust, custIdx) => (
+                      <tr key={cust.id ? `cust-${cust.id}-${custIdx}` : `cust-${custIdx}`} className="hover:bg-black/[0.02]">
                         <td className="p-4 text-[#111827] font-medium">{cust.name}</td>
                         <td className="p-4 text-gray-500">{cust.email}</td>
                         <td className="p-4 text-gray-500">{cust.phone}</td>
@@ -1189,14 +1266,16 @@ export const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {alterationsList.map(alt => (
-                      <tr key={alt.id} className="hover:bg-black/[0.02]">
+                    {alterationsList.map((alt, altIdx) => (
+                      <tr key={alt.id ? `alt-${alt.id}-${altIdx}` : `alt-${altIdx}`} className="hover:bg-black/[0.02]">
                         <td className="p-4 text-[#936B34] font-medium">{alt.id}</td>
                         <td className="p-4 text-[#111827] font-medium">{alt.customerName}</td>
                         <td className="p-4 text-gray-500">{alt.productName || alt.items?.[0]?.name || 'Garment'}</td>
                         <td className="p-4 text-gray-500">{alt.alterationDetails || alt.items?.[0]?.type || 'Tailoring'}</td>
                         <td className="p-4 uppercase text-[#936B34] font-medium">
-                          {alt.status.replace(/_/g, ' ')}
+                          <span className="inline-block px-2.5 py-1 text-[10px] font-mono tracking-wider bg-[#936B34]/10 text-[#936B34] border border-[#936B34]/30">
+                            {(alt.status || 'Alteration Received').replace(/_/g, ' ')}
+                          </span>
                         </td>
                         <td className="p-4 text-right space-x-1.5">
                           {[
@@ -1206,23 +1285,34 @@ export const AdminDashboard: React.FC = () => {
                             'Quality Check',
                             'Ready for Pickup',
                             'Completed'
-                          ].map(st => (
-                            <button
-                              key={st}
-                              onClick={async () => {
-                                try {
-                                  await AlterationService.updateStatus(alt.id, st as any);
-                                  showToast(`Alteration ${alt.id} status updated`, 'success');
-                                  await loadAllData();
-                                } catch {
-                                  showToast(`Could not update alteration ${alt.id}`, 'error');
-                                }
-                              }}
-                              className="px-2 py-1 text-[9px] border border-gray-200 hover:border-[#936B34] text-gray-500 hover:text-[#111827] uppercase cursor-pointer bg-[#F9F9F8] transition-colors"
-                            >
-                              {st}
-                            </button>
-                          ))}
+                          ].map(st => {
+                            const currentAltNorm = (alt.status || '').toLowerCase().replace(/_/g, ' ');
+                            const targetAltNorm = st.toLowerCase().replace(/_/g, ' ');
+                            const isCurrent = currentAltNorm === targetAltNorm;
+                            const altIdentifier = alt.id || (alt as any).alterationId;
+                            return (
+                              <button
+                                key={`alt-st-${alt.id || altIdx}-${st}`}
+                                disabled={isCurrent}
+                                onClick={async () => {
+                                  try {
+                                    await AlterationService.updateStatus(altIdentifier, st as any);
+                                    showToast(`Alteration ${altIdentifier} updated to ${st}`, 'success');
+                                    await loadAllData();
+                                  } catch (err: any) {
+                                    showToast(err.message || `Could not update alteration ${altIdentifier}`, 'error');
+                                  }
+                                }}
+                                className={`px-2.5 py-1 text-[9px] border uppercase transition-all ${
+                                  isCurrent
+                                    ? 'bg-[#111827] text-white border-[#111827] font-semibold shadow-xs cursor-default'
+                                    : 'border-gray-200 hover:border-[#936B34] text-gray-500 hover:text-[#111827] bg-[#F9F9F8] cursor-pointer'
+                                }`}
+                              >
+                                {st}
+                              </button>
+                            );
+                          })}
                         </td>
                       </tr>
                     ))}
@@ -1474,6 +1564,220 @@ export const AdminDashboard: React.FC = () => {
 
             </div>
 
+            {/* Stripe Payment Gateway & Financial Settlement Card */}
+            <div className="border border-gray-200 bg-white p-6 space-y-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-none bg-[#111827] text-white flex items-center justify-center">
+                    <CreditCard className="w-5 h-5 text-[#936B34]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-serif text-lg text-[#111827] uppercase tracking-wide">
+                        STRIPE PAYMENT GATEWAY &amp; FINANCIAL SETTLEMENT
+                      </h3>
+                      {stripeConfig?.isConfigured ? (
+                        <span className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold tracking-wider ${
+                          stripeConfig.isLive ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {stripeConfig.isLive ? '● Live Acquiring' : '● Test Mode Active'}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-[10px] font-mono uppercase font-bold tracking-wider bg-gray-100 text-gray-700">
+                          ○ Simulator / Standby
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 font-mono">
+                      Real-time payment tokenization, 256-bit TLS authorization, and webhook settlement
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleTestStripe}
+                    disabled={isTestingStripe}
+                    className="px-4 py-2 bg-[#111827] text-white hover:bg-[#936B34] text-xs font-mono uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer font-medium disabled:opacity-50 shadow-xs"
+                  >
+                    {isTestingStripe ? (
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Testing Gateway...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Zap className="w-3.5 h-3.5 text-[#936B34]" />
+                        <span>Test Stripe Connection</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Stripe Test Result Alert */}
+              {stripeTestResult && (
+                <div className={`p-4 border text-xs font-mono flex items-start justify-between gap-4 ${
+                  stripeTestResult.connected 
+                    ? 'bg-emerald-50/80 border-emerald-300 text-emerald-900'
+                    : 'bg-amber-50/80 border-amber-300 text-amber-900'
+                }`}>
+                  <div className="space-y-1">
+                    <div className="font-bold flex items-center gap-1.5">
+                      {stripeTestResult.connected ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                      )}
+                      <span>Stripe Connection Diagnostic Report ({stripeTestResult.mode.toUpperCase()})</span>
+                    </div>
+                    <p>{stripeTestResult.message}</p>
+                    {stripeTestResult.availableCurrencies && stripeTestResult.availableCurrencies.length > 0 && (
+                      <p className="text-[11px] text-gray-600">
+                        Settlement Currencies: {stripeTestResult.availableCurrencies.join(', ').toUpperCase()}
+                      </p>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => setStripeTestResult(null)}
+                    className="text-gray-400 hover:text-gray-700 cursor-pointer text-sm"
+                  >
+                    &times;
+                  </button>
+                </div>
+              )}
+
+              {/* Status Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+                {/* 1. API Keys */}
+                <div className="p-4 bg-[#F9F9F8] border border-gray-200 space-y-2">
+                  <div className="text-[#936B34] font-bold uppercase text-[11px] flex items-center justify-between">
+                    <span>API CREDENTIALS</span>
+                    <Lock className="w-3.5 h-3.5 text-gray-400" />
+                  </div>
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Secret Key:</span>
+                      <span className={stripeConfig?.isConfigured ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-medium'}>
+                        {stripeConfig?.isConfigured ? (stripeConfig.isLive ? 'sk_live_••••' : 'sk_test_••••') : 'Simulator Fallback'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Publishable Key:</span>
+                      <span className="text-gray-800 truncate max-w-[140px]">
+                        {stripeConfig?.publishableKey ? stripeConfig.publishableKey.slice(0, 14) + '...' : 'pk_test_...'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Environment:</span>
+                      <span className="font-semibold text-gray-800">
+                        {stripeConfig?.isLive ? 'Production Live' : 'Test / Sandbox'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Webhook Endpoint */}
+                <div className="p-4 bg-[#F9F9F8] border border-gray-200 space-y-2">
+                  <div className="text-[#936B34] font-bold uppercase text-[11px] flex items-center justify-between">
+                    <span>WEBHOOK INTEGRATION</span>
+                    <Globe className="w-3.5 h-3.5 text-gray-400" />
+                  </div>
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Signing Secret:</span>
+                      <span className={stripeConfig?.webhookConfigured ? 'text-emerald-700 font-semibold' : 'text-gray-500'}>
+                        {stripeConfig?.webhookConfigured ? 'whsec_•••• Active' : 'Optional (Test Mode)'}
+                      </span>
+                    </div>
+                    <div className="pt-1">
+                      <span className="text-gray-500 block mb-1">Webhook Endpoint URL:</span>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          readOnly
+                          value={typeof window !== 'undefined' ? `${window.location.origin}/api/payments/webhook` : '/api/payments/webhook'}
+                          className="w-full bg-white border border-gray-300 p-1 text-[10px] text-gray-700 font-mono select-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = typeof window !== 'undefined' ? `${window.location.origin}/api/payments/webhook` : '/api/payments/webhook';
+                            navigator.clipboard.writeText(url);
+                            setCopiedWebhookUrl(true);
+                            setTimeout(() => setCopiedWebhookUrl(false), 2000);
+                            showToast('Copied Stripe Webhook URL to clipboard', 'info');
+                          }}
+                          className="px-2 py-1 bg-[#111827] text-white text-[10px] uppercase hover:bg-[#936B34] transition-colors cursor-pointer"
+                          title="Copy webhook URL"
+                        >
+                          {copiedWebhookUrl ? 'Copied' : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Setup Instructions */}
+                <div className="p-4 bg-[#F9F9F8] border border-gray-200 space-y-2">
+                  <div className="text-[#936B34] font-bold uppercase text-[11px] flex items-center justify-between">
+                    <span>HOW TO CONFIGURE</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-gray-400" />
+                  </div>
+                  <p className="text-[11px] text-gray-600 leading-relaxed">
+                    Add the following keys to your project environment or <code className="text-[#936B34]">.env</code>:
+                  </p>
+                  <div className="bg-white p-2 border border-gray-200 text-[10px] space-y-0.5 text-gray-700 select-all">
+                    <div>STRIPE_SECRET_KEY=sk_test_...</div>
+                    <div>STRIPE_PUBLISHABLE_KEY=pk_test_...</div>
+                    <div>STRIPE_WEBHOOK_SECRET=whsec_...</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Stripe Payments Mini-Log */}
+              <div className="space-y-2 pt-2 border-t border-gray-100">
+                <div className="flex justify-between items-center text-xs font-mono">
+                  <span className="font-bold text-[#111827] uppercase">Recent Stripe Orders &amp; Authorizations</span>
+                  <span className="text-gray-500">
+                    {ordersList.filter(o => o.paymentMethod?.toLowerCase().includes('stripe') || o.paymentTransactionId?.startsWith('pi_')).length} Stripe Orders Found
+                  </span>
+                </div>
+                <div className="border border-gray-200 overflow-x-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead className="bg-[#F9F9F8] border-b border-gray-200 text-[10px] uppercase text-gray-500">
+                      <tr>
+                        <th className="p-2.5">Order ID</th>
+                        <th className="p-2.5">Customer</th>
+                        <th className="p-2.5">Stripe Transaction ID</th>
+                        <th className="p-2.5">Amount</th>
+                        <th className="p-2.5">Payment Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {ordersList.slice(0, 5).map((o, oIdx) => (
+                        <tr key={o.id ? `recent-ord-${o.id}-${oIdx}` : `recent-ord-${oIdx}`} className="hover:bg-gray-50">
+                          <td className="p-2.5 font-medium text-[#111827]">{o.id}</td>
+                          <td className="p-2.5 text-gray-700">{o.customerName}</td>
+                          <td className="p-2.5 text-gray-500 font-mono text-[11px]">
+                            {o.paymentTransactionId || `pi_${o.id ? String(o.id).replace(/\D/g, '') : `${oIdx + 1001}`}`}
+                          </td>
+                          <td className="p-2.5 font-medium text-[#936B34]">${Number(o.total || 0).toFixed(2)}</td>
+                          <td className="p-2.5">
+                            <span className={`px-2 py-0.5 text-[10px] uppercase font-semibold ${
+                              o.paymentStatus === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {o.paymentStatus}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
             {/* Tally Ledger Account Structure & Audit Info */}
             <div className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-4 shadow-xs">
               <div className="flex items-center gap-2 text-[#936B34] font-mono text-xs uppercase tracking-wider font-semibold">
@@ -1532,11 +1836,11 @@ export const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
-                    {ordersList.slice(0, 10).map(ord => {
+                    {ordersList.slice(0, 10).map((ord, ordIdx) => {
                       const net = ord.subtotal || (ord.total / 1.08875);
                       const tax = ord.tax || (ord.total - net);
                       return (
-                        <tr key={ord.id} className="hover:bg-black/[0.02]">
+                        <tr key={ord.id ? `daybook-ord-${ord.id}-${ordIdx}` : `daybook-ord-${ordIdx}`} className="hover:bg-black/[0.02]">
                           <td className="p-3 text-[#936B34] font-medium">{ord.id}</td>
                           <td className="p-3 text-gray-500">{ord.date}</td>
                           <td className="p-3 text-[#111827] font-medium">
@@ -2130,7 +2434,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="max-h-24 overflow-y-auto space-y-0.5 text-[11px] pl-4 list-disc">
                   {excelImportErrors.map((err, i) => (
-                    <div key={i}>&bull; {err}</div>
+                    <div key={`import-err-${i}`}>&bull; {err}</div>
                   ))}
                 </div>
               </div>
@@ -2161,7 +2465,7 @@ export const AdminDashboard: React.FC = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {parsedExcelProducts.map((p, idx) => (
-                        <tr key={idx} className="hover:bg-black/[0.02]">
+                        <tr key={`excel-prod-${p.sku || idx}-${idx}`} className="hover:bg-black/[0.02]">
                           <td className="p-2.5 text-[#936B34] font-medium">{p.sku}</td>
                           <td className="p-2.5 text-[#111827] font-medium">{p.name}</td>
                           <td className="p-2.5 text-gray-500">{p.category}</td>
@@ -2379,8 +2683,8 @@ export const AdminDashboard: React.FC = () => {
                       className="w-full bg-[#F9F9F8] border border-gray-300 p-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                     >
                       <option value="">-- Choose Garment --</option>
-                      {productsList.map(p => (
-                        <option key={p.id} value={p.id}>
+                      {productsList.map((p, pIdx) => (
+                        <option key={p.id ? `opt-prod-${p.id}-${pIdx}` : `opt-prod-${pIdx}`} value={p.id}>
                           {p.name} (${p.price})
                         </option>
                       ))}
@@ -2397,8 +2701,8 @@ export const AdminDashboard: React.FC = () => {
                       className="w-full bg-[#F9F9F8] border border-gray-300 p-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                     >
                       {selectedProdForManual ? (
-                        productsList.find(p => p.id === selectedProdForManual)?.variants.map(v => (
-                          <option key={v.id} value={v.size}>
+                        (productsList.find(p => p.id === selectedProdForManual)?.variants || []).map((v, vIdx) => (
+                          <option key={v.id ? `opt-var-${v.id}-${vIdx}` : `opt-var-${vIdx}`} value={v.size}>
                             {v.size} ({v.stock} in vault)
                           </option>
                         ))
@@ -2456,7 +2760,7 @@ export const AdminDashboard: React.FC = () => {
                 {manualOrderItems.length > 0 ? (
                   <div className="border border-gray-200 mt-3 divide-y divide-gray-100">
                     {manualOrderItems.map((item, idx) => (
-                      <div key={idx} className="p-2.5 flex items-center justify-between text-xs font-mono">
+                      <div key={`manual-item-${item.productId}-${item.size}-${idx}`} className="p-2.5 flex items-center justify-between text-xs font-mono">
                         <div>
                           <span className="font-semibold text-[#111827]">{item.productName}</span>
                           <span className="text-gray-500 ml-2">Size: {item.size} &bull; Qty: {item.quantity}</span>

@@ -124,6 +124,17 @@ export const Footer: React.FC = () => {
                   CONTACT
                 </span>
               </li>
+              <li>
+                <button 
+                  onClick={() => {
+                    setActiveView('admin');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }} 
+                  className="hover:text-[#936B34] transition-colors cursor-pointer text-[#936B34] font-medium"
+                >
+                  ADMIN / ATELIER PORTAL
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -137,7 +148,15 @@ export const Footer: React.FC = () => {
           <div className="flex items-center gap-6 text-[11px]">
             <span className="hover:text-[#936B34] transition-colors cursor-pointer">PRIVACY</span>
             <span className="hover:text-[#936B34] transition-colors cursor-pointer">TERMS OF COMMISSION</span>
-            <span className="text-[#936B34]">ATELIER COMMISSIONS</span>
+            <button
+              onClick={() => {
+                setActiveView('admin');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="text-[#936B34] hover:underline cursor-pointer"
+            >
+              ADMIN CONSOLE
+            </button>
           </div>
         </div>
 

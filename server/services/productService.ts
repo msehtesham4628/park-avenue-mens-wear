@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { ProductModel, IProduct, IProductVariant } from '../models/Product.js';
 import { auditService } from './auditService.js';
 
@@ -244,7 +245,15 @@ export const productService = {
    * Update an existing product (admin)
    */
   async updateProduct(productId: string, updates: Partial<IProduct>, adminUser: { id: string; name: string; email: string; role: string }): Promise<IProduct | null> {
-    const product = await ProductModel.findOne({ productId });
+    const isObjectId = mongoose.isValidObjectId(productId);
+    const product = await ProductModel.findOne({
+      $or: [
+        { productId },
+        { productId: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
+        { sku: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
+        ...(isObjectId ? [{ _id: productId }] : [])
+      ]
+    });
     if (!product) return null;
 
     const previousValue = product.toObject();
@@ -279,7 +288,7 @@ export const productService = {
       adminUser,
       action: 'PRODUCT_UPDATED',
       entity: 'Product',
-      entityId: productId,
+      entityId: product.productId,
       previousValue,
       newValue: product.toObject()
     });
@@ -291,32 +300,36 @@ export const productService = {
    * Delete or deactivate product
    */
   async deactivateOrDelete(productId: string, hardDelete: boolean, adminUser: { id: string; name: string; email: string; role: string }) {
-    if (hardDelete) {
-      const deleted = await ProductModel.findOneAndDelete({ productId });
-      if (deleted) {
-        await auditService.record({
-          adminUser,
-          action: 'PRODUCT_HARD_DELETED',
-          entity: 'Product',
-          entityId: productId
-        });
-      }
-      return deleted;
-    } else {
-      const updated = await ProductModel.findOneAndUpdate(
+    const isObjectId = mongoose.isValidObjectId(productId);
+    const product = await ProductModel.findOne({
+      $or: [
         { productId },
-        { isActive: false },
-        { new: true }
-      );
-      if (updated) {
-        await auditService.record({
-          adminUser,
-          action: 'PRODUCT_DEACTIVATED',
-          entity: 'Product',
-          entityId: productId
-        });
-      }
-      return updated;
+        { productId: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
+        { sku: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
+        ...(isObjectId ? [{ _id: productId }] : [])
+      ]
+    });
+    if (!product) return false;
+
+    if (hardDelete) {
+      await ProductModel.deleteOne({ _id: product._id });
+      await auditService.record({
+        adminUser,
+        action: 'PRODUCT_HARD_DELETED',
+        entity: 'Product',
+        entityId: product.productId
+      });
+      return true;
+    } else {
+      product.isActive = false;
+      await product.save();
+      await auditService.record({
+        adminUser,
+        action: 'PRODUCT_DEACTIVATED',
+        entity: 'Product',
+        entityId: product.productId
+      });
+      return true;
     }
   }
 };

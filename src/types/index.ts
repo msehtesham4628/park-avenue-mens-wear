@@ -66,6 +66,7 @@ export interface Product {
   images: string[];
   /** Images associated with each color when products are grouped by name. */
   colorImages?: Record<string, string[]>;
+  colors?: string[];
   variants: ProductVariant[];
   isFeatured?: boolean;
   isNewArrival?: boolean;
@@ -85,7 +86,7 @@ export interface CartItem {
 
 export type OrderStatus = 'Order Confirmed' | 'Processing' | 'Packed' | 'Shipped' | 'Out for Delivery' | 'Delivered' | 'Cancelled';
 
-export type PaymentStatus = 'Paid' | 'Pending' | 'Authorized' | 'Refunded' | 'Invoice';
+export type PaymentStatus = 'Paid' | 'Pending' | 'Authorized' | 'Failed' | 'Refunded' | 'Invoice';
 
 export interface OrderItem {
   productId: string;
@@ -124,6 +125,7 @@ export interface Order {
   status?: string; // convenient alias
   paymentStatus: PaymentStatus;
   paymentMethod: string;
+  paymentTransactionId?: string;
   shippingAddress?: {
     street: string;
     apartment?: string;
@@ -148,12 +150,14 @@ export type AlterationStatus =
   | 'Quality Check'
   | 'Ready for Pickup'
   | 'Completed'
+  | 'Cancelled'
   | 'received'
   | 'chalking_and_pinning'
   | 'cutting_and_stitching'
   | 'pressing_and_inspection'
   | 'ready_for_pickup'
-  | 'completed';
+  | 'completed'
+  | 'cancelled';
 
 export interface AlterationItem {
   name: string;

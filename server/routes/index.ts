@@ -48,6 +48,7 @@ apiRouter.use('/notifications', notificationRoutes);
 
 // Admin Specific Modules
 apiRouter.use('/admin/inventory', inventoryRoutes);
+apiRouter.use('/inventory', inventoryRoutes);
 apiRouter.use('/admin/customers', customerRoutes);
 apiRouter.use('/admin/dashboard', dashboardRoutes);
 apiRouter.use('/admin/notifications', notificationRoutes);

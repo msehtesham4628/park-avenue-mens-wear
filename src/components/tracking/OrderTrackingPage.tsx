@@ -34,12 +34,19 @@ export const OrderTrackingPage: React.FC = () => {
   const getStepStatus = (stepKey: string, currentStatus: string) => {
     const orderRank: Record<string, number> = {
       pending: 0,
+      confirmed: 0,
+      'order confirmed': 0,
       processing: 1,
+      packed: 1,
       shipped: 2,
+      'out for delivery': 2,
+      out_for_delivery: 2,
       delivered: 3,
-      cancelled: -1
+      cancelled: -1,
+      canceled: -1
     };
-    const currentRank = orderRank[currentStatus] ?? 0;
+    const norm = (currentStatus || '').toLowerCase().trim();
+    const currentRank = orderRank[norm] ?? 0;
     const targetRank = orderRank[stepKey] ?? 0;
 
     if (currentStatus === 'cancelled') return 'cancelled';

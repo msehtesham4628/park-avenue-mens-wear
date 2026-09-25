@@ -9,9 +9,11 @@ router.get('/', authenticateJWT, alterationController.getAlterations);
 router.post('/', alterationController.createAlteration);
 router.post('/lookup', orderLookupLimiter, alterationController.customerLookup);
 
-// Admin alteration routes must be declared before /:id so "admin" is not treated as an alteration ID.
+// Admin alteration routes (support both /admin/list and /list, /admin/:id/status and /:id/status)
 router.get('/admin/list', ...requireAdminOrStaff, alterationController.getAdminAlterations);
+router.get('/list', ...requireAdminOrStaff, alterationController.getAdminAlterations);
 router.put('/admin/:id/status', ...requireAdminOrStaff, alterationController.updateStatus);
+router.put('/:id/status', ...requireAdminOrStaff, alterationController.updateStatus);
 
 router.get('/:id', authenticateJWT, alterationController.getAlterationById);
 

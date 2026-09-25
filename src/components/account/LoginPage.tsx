@@ -313,6 +313,20 @@ export const LoginPage: React.FC = () => {
                 >
                   Create account
                 </button>
+
+                <div className="pt-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveView('admin');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="text-[11px] font-mono text-gray-500 hover:text-[#936B34] flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#936B34]" />
+                    <span>Atelier Executive Admin Portal (/admin) &rarr;</span>
+                  </button>
+                </div>
               </div>
 
             </form>

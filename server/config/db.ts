@@ -17,7 +17,7 @@ const cache: MongooseCache = globalForMongoose.__parkAvenueMongoose || {
 globalForMongoose.__parkAvenueMongoose = cache;
 
 export async function connectDB(): Promise<boolean> {
-  if (mongoose.connection.readyState === 1) {
+  if (Number(mongoose.connection.readyState) === 1) {
     cache.conn = mongoose;
     return true;
   }
@@ -33,7 +33,7 @@ export async function connectDB(): Promise<boolean> {
 
   if (cache.promise) {
     await cache.promise;
-    return mongoose.connection.readyState === 1;
+    return Number(mongoose.connection.readyState) === 1;
   }
 
   cache.promise = mongoose.connect(uri, {

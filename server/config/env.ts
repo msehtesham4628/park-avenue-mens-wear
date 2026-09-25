@@ -22,8 +22,11 @@ export const ENV = {
   WHATSAPP_API_KEY: process.env.WHATSAPP_API_KEY || '',
   WHATSAPP_PHONE_ID: process.env.WHATSAPP_PHONE_ID || '',
 
-  // Payment Processing
-  PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER || 'mock',
-  PAYMENT_SECRET: process.env.PAYMENT_SECRET || '',
-  PAYMENT_WEBHOOK_SECRET: process.env.PAYMENT_WEBHOOK_SECRET || ''
+  // Payment Processing (Stripe)
+  PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER || 'stripe',
+  PAYMENT_SECRET: process.env.PAYMENT_SECRET || process.env.STRIPE_SECRET_KEY || '',
+  PAYMENT_WEBHOOK_SECRET: process.env.PAYMENT_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET || '',
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || process.env.PAYMENT_SECRET || '',
+  STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY || '',
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || process.env.PAYMENT_WEBHOOK_SECRET || ''
 };

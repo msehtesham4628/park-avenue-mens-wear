@@ -6,7 +6,8 @@ import {
   ArrowRight,
   Trash2,
   LogOut,
-  LogIn
+  LogIn,
+  ShieldCheck
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { AuthService } from '../../services/api';
@@ -104,7 +105,7 @@ export const AccountPage: React.FC = () => {
               <span>ALTERATIONS</span>
             </button>
 
-            {(currentCustomer?.role === 'admin' || currentCustomer?.role === 'staff') && (
+            {(currentCustomer?.role === 'admin' || currentCustomer?.role === 'staff') ? (
               <button
                 onClick={() => {
                   setActiveView('admin');
@@ -112,7 +113,20 @@ export const AccountPage: React.FC = () => {
                 }}
                 className="px-3.5 py-2 bg-[#111827] text-white text-xs font-mono hover:bg-[#936B34] flex items-center gap-1.5 cursor-pointer transition-colors font-semibold"
               >
+                <ShieldCheck className="w-3.5 h-3.5 text-[#936B34]" />
                 <span>ATELIER ADMIN CONSOLE</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setActiveView('admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="px-3.5 py-2 bg-[#F9F9F8] border border-[#936B34]/40 text-xs font-mono text-[#936B34] hover:bg-[#936B34] hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors font-medium"
+                title="Atelier Admin Portal"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>ADMIN PORTAL</span>
               </button>
             )}
 
@@ -330,7 +344,7 @@ export const AccountPage: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <span className="text-[#936B34] uppercase block font-semibold mb-2">
-                        {alt.status.replace(/_/g, ' ')}
+                        {(alt.status || 'In Progress').replace(/_/g, ' ')}
                       </span>
                       <button
                         onClick={() => handleTrackAlteration(alt)}

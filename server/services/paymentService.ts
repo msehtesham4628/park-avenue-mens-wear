@@ -1,7 +1,15 @@
+import Stripe from 'stripe';
 import { OrderModel, PaymentStatus } from '../models/Order.js';
 import { ENV } from '../config/env.js';
 import { auditService } from './auditService.js';
 import crypto from 'crypto';
+
+// Initialize official Stripe SDK instance if secret key is configured
+const stripeClient: Stripe | null = ENV.STRIPE_SECRET_KEY
+  ? new Stripe(ENV.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-02-24.acacia' as any
+    })
+  : null;
 
 export interface PaymentIntentResult {
   clientSecret: string;
@@ -9,14 +17,67 @@ export interface PaymentIntentResult {
   amount: number;
   currency: string;
   status: PaymentStatus;
-  provider: string;
+  provider: 'stripe';
+  isLive: boolean;
+  publishableKey?: string;
 }
 
 export const paymentService = {
   /**
-   * Create payment intent with payment provider
+   * Return current Stripe gateway configuration for clients
    */
-  async createPaymentIntent(orderId: string, amount: number, customerEmail: string): Promise<PaymentIntentResult> {
+  getConfig() {
+    const isConfigured = Boolean(stripeClient && ENV.STRIPE_SECRET_KEY);
+    const isLive = Boolean(ENV.STRIPE_SECRET_KEY && ENV.STRIPE_SECRET_KEY.startsWith('sk_live_'));
+    return {
+      provider: 'stripe' as const,
+      isConfigured,
+      isLive,
+      testMode: !isLive,
+      publishableKey: ENV.STRIPE_PUBLISHABLE_KEY || '',
+      webhookConfigured: Boolean(ENV.STRIPE_WEBHOOK_SECRET)
+    };
+  },
+
+  /**
+   * Test connection to Stripe API
+   */
+  async testConnection() {
+    if (!stripeClient) {
+      return {
+        connected: false,
+        mode: 'simulation',
+        message: 'Stripe Secret Key (STRIPE_SECRET_KEY) not set. Running in luxury simulator test mode.'
+      };
+    }
+
+    try {
+      const balance = await stripeClient.balance.retrieve();
+      return {
+        connected: true,
+        mode: ENV.STRIPE_SECRET_KEY.startsWith('sk_live_') ? 'live' : 'test',
+        livemode: balance.livemode,
+        availableCurrencies: balance.available.map(b => b.currency),
+        message: 'Successfully authenticated with Stripe Payment Gateway.'
+      };
+    } catch (err: any) {
+      return {
+        connected: false,
+        mode: 'error',
+        message: `Stripe API Authentication Failed: ${err.message}`
+      };
+    }
+  },
+
+  /**
+   * Create payment intent with Stripe or luxury test simulation
+   */
+  async createPaymentIntent(
+    orderId: string,
+    amount: number,
+    customerEmail: string,
+    customerName?: string
+  ): Promise<PaymentIntentResult> {
     const order = await OrderModel.findOne({ orderId });
     if (!order) {
       throw new Error(`Order ${orderId} not found.`);
@@ -27,50 +88,47 @@ export const paymentService = {
       throw new Error(`Payment amount mismatch: Order total is $${order.total.toFixed(2)}, but requested $${amount.toFixed(2)}.`);
     }
 
-    if (ENV.PAYMENT_SECRET && ENV.PAYMENT_PROVIDER !== 'mock') {
+    // If real Stripe client is configured, create live/test intent via Stripe API
+    if (stripeClient) {
       try {
-        // Real payment provider integration (e.g. Stripe API)
-        const res = await fetch('https://api.stripe.com/v1/payment_intents', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${ENV.PAYMENT_SECRET}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
+        const intent = await stripeClient.paymentIntents.create({
+          amount: Math.round(order.total * 100), // in cents
+          currency: 'usd',
+          receipt_email: customerEmail,
+          description: `Park Avenue Menswear Sartorial Commission #${orderId}`,
+          metadata: {
+            orderId: order.orderId,
+            customerEmail,
+            customerName: customerName || order.customerName || 'Park Avenue Patron'
           },
-          body: new URLSearchParams({
-            amount: Math.round(order.total * 100).toString(),
-            currency: 'usd',
-            'metadata[orderId]': orderId,
-            receipt_email: customerEmail
-          })
+          automatic_payment_methods: {
+            enabled: true
+          }
         });
 
-        if (res.ok) {
-          const pi = await res.json();
-          order.paymentTransactionId = pi.id;
-          order.paymentStatus = 'Authorized';
-          await order.save();
+        order.paymentTransactionId = intent.id;
+        order.paymentStatus = 'Authorized';
+        await order.save();
 
-          return {
-            clientSecret: pi.client_secret,
-            transactionId: pi.id,
-            amount: order.total,
-            currency: 'usd',
-            status: 'Authorized',
-            provider: 'stripe'
-          };
-        } else {
-          const err = await res.text();
-          throw new Error(`Payment gateway rejected intent: ${err}`);
-        }
+        return {
+          clientSecret: intent.client_secret || '',
+          transactionId: intent.id,
+          amount: order.total,
+          currency: 'usd',
+          status: 'Authorized',
+          provider: 'stripe',
+          isLive: Boolean(ENV.STRIPE_SECRET_KEY.startsWith('sk_live_')),
+          publishableKey: ENV.STRIPE_PUBLISHABLE_KEY
+        };
       } catch (err: any) {
-        console.warn(`[PaymentGateway] Error contacting remote payment processor: ${err.message}`);
-        throw err;
+        console.error(`[StripePaymentService] PaymentIntent creation failed:`, err);
+        throw new Error(`Stripe error: ${err.message}`);
       }
     }
 
-    // Secure atelier payment intent token for configured gateway
-    const transactionId = `pi_pa_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
-    const clientSecret = `${transactionId}_secret_${crypto.randomBytes(12).toString('hex')}`;
+    // High-fidelity luxury test simulation when no external Stripe API key is provided
+    const transactionId = `pi_pa_test_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const clientSecret = `${transactionId}_secret_${crypto.randomBytes(10).toString('hex')}`;
 
     order.paymentTransactionId = transactionId;
     order.paymentStatus = 'Authorized';
@@ -82,48 +140,118 @@ export const paymentService = {
       amount: order.total,
       currency: 'usd',
       status: 'Authorized',
-      provider: ENV.PAYMENT_PROVIDER
+      provider: 'stripe',
+      isLive: false,
+      publishableKey: ENV.STRIPE_PUBLISHABLE_KEY || 'pk_test_parkavenue_simulation'
     };
   },
 
   /**
-   * Handle secure webhook from payment gateway
+   * Manually confirm or settle order payment (e.g. following client-side tokenization)
    */
-  async handleWebhook(payload: any, signatureHeader?: string): Promise<{ received: boolean; orderId?: string; status?: PaymentStatus }> {
-    // Validate signature if webhook secret configured
-    if (ENV.PAYMENT_WEBHOOK_SECRET && signatureHeader) {
-      const hmac = crypto.createHmac('sha256', ENV.PAYMENT_WEBHOOK_SECRET);
-      const digest = hmac.update(typeof payload === 'string' ? payload : JSON.stringify(payload)).digest('hex');
-      // In production, compare signature
-      if (signatureHeader !== digest && !signatureHeader.includes(digest)) {
-        console.warn('[PaymentWebhook] Warning: Webhook signature verification mismatch.');
+  async confirmPayment(orderId: string, transactionId: string, paymentMethodDetails?: string) {
+    const order = await OrderModel.findOne({ orderId });
+    if (!order) {
+      throw new Error(`Order ${orderId} not found.`);
+    }
+
+    order.paymentTransactionId = transactionId || order.paymentTransactionId || `pi_settled_${Date.now()}`;
+    order.paymentStatus = 'Paid';
+    if (paymentMethodDetails) {
+      order.paymentMethod = paymentMethodDetails;
+    }
+    if (order.orderStatus === 'Order Confirmed' || order.orderStatus === 'Processing') {
+      order.timeline.push({
+        status: 'Order Confirmed',
+        timestamp: new Date().toISOString(),
+        description: `Stripe settlement processed successfully (${order.paymentTransactionId}). Authorized funds confirmed.`,
+        completed: true
+      });
+    }
+
+    await order.save();
+
+    await auditService.record({
+      adminUser: { id: 'STRIPE_GATEWAY', name: 'Stripe Payment Processor', email: 'stripe@parkavenuemenswear.com', role: 'system' },
+      action: 'ORDER_PAYMENT_SETTLED',
+      entity: 'Order',
+      entityId: order.orderId,
+      newValue: {
+        paymentStatus: 'Paid',
+        paymentTransactionId: order.paymentTransactionId,
+        total: order.total
+      }
+    });
+
+    return order;
+  },
+
+  /**
+   * Handle secure webhook from Stripe
+   */
+  async handleWebhook(payload: any, signatureHeader?: string, rawBody?: Buffer): Promise<{ received: boolean; orderId?: string; status?: PaymentStatus }> {
+    let event: any = payload;
+
+    // Validate Stripe webhook signature if configured
+    if (stripeClient && ENV.STRIPE_WEBHOOK_SECRET && signatureHeader && rawBody) {
+      try {
+        event = stripeClient.webhooks.constructEvent(
+          rawBody,
+          signatureHeader,
+          ENV.STRIPE_WEBHOOK_SECRET
+        );
+      } catch (err: any) {
+        console.warn(`[StripeWebhook] Webhook signature verification failed: ${err.message}`);
+        throw new Error(`Stripe Webhook Signature Verification Failed: ${err.message}`);
+      }
+    } else if (typeof payload === 'string') {
+      try {
+        event = JSON.parse(payload);
+      } catch (e) {
+        event = payload;
       }
     }
 
-    const event = typeof payload === 'string' ? JSON.parse(payload) : payload;
-    const orderId = event.data?.object?.metadata?.orderId || event.orderId;
-    const paymentStatus: PaymentStatus = 
-      event.type === 'payment_intent.succeeded' || event.status === 'succeeded' ? 'Paid' :
-      event.type === 'payment_intent.payment_failed' || event.status === 'failed' ? 'Failed' :
-      event.type === 'charge.refunded' || event.status === 'refunded' ? 'Refunded' : 'Pending';
+    const eventType = event.type || event.event;
+    const eventData = event.data?.object || event;
+    const orderId = eventData.metadata?.orderId || eventData.orderId;
+
+    let paymentStatus: PaymentStatus = 'Pending';
+    if (eventType === 'payment_intent.succeeded' || eventType === 'charge.succeeded') {
+      paymentStatus = 'Paid';
+    } else if (eventType === 'payment_intent.payment_failed' || eventType === 'charge.failed') {
+      paymentStatus = 'Failed';
+    } else if (eventType === 'charge.refunded') {
+      paymentStatus = 'Refunded';
+    }
 
     if (orderId) {
       const order = await OrderModel.findOne({ orderId });
       if (order) {
         const previousStatus = order.paymentStatus;
         order.paymentStatus = paymentStatus;
-        if (paymentStatus === 'Paid' && order.orderStatus === 'Pending') {
-          order.orderStatus = 'Confirmed';
+        if (eventData.id) {
+          order.paymentTransactionId = eventData.id;
         }
+
+        if (paymentStatus === 'Paid') {
+          order.timeline.push({
+            status: 'Processing',
+            timestamp: new Date().toISOString(),
+            description: `Stripe Webhook confirmed payment settlement (${eventData.id || 'N/A'}).`,
+            completed: true
+          });
+        }
+
         await order.save();
 
         await auditService.record({
-          adminUser: { id: 'PAYMENT_WEBHOOK', name: 'Gateway Webhook', email: 'gateway@parkavenuemenswear.com', role: 'system' },
-          action: 'PAYMENT_STATUS_WEBHOOK_UPDATED',
+          adminUser: { id: 'STRIPE_WEBHOOK', name: 'Stripe Webhook Handler', email: 'webhook@stripe.com', role: 'system' },
+          action: 'STRIPE_WEBHOOK_STATUS_UPDATED',
           entity: 'Order',
           entityId: order.orderId,
           previousValue: { paymentStatus: previousStatus },
-          newValue: { paymentStatus }
+          newValue: { paymentStatus, transactionId: eventData.id }
         });
 
         return { received: true, orderId, status: paymentStatus };
