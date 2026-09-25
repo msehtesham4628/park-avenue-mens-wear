@@ -336,9 +336,9 @@ export const CartPage: React.FC = () => {
                   </span>
                   <div className="text-right">
                     <span className="font-serif text-2xl text-[#111827] font-semibold block">
-                      ${finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      ${subtotalAfterDiscount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[10px] font-mono text-gray-400">USD · Taxes included in checkout</span>
+                    <span className="text-[10px] font-mono text-gray-400">USD · Shipping and tax calculated at checkout</span>
                   </div>
                 </div>
 
