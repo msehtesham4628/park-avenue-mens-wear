@@ -930,7 +930,6 @@ export const AdminDashboard: React.FC = () => {
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => { setShipmentOrder(ord); setShipmentForm({ carrier:(ord as any).carrier || 'FedEx', trackingId:(ord as any).trackingNumber || '', trackingUrl:(ord as any).shipment?.trackingUrl || '', status:(ord as any).shipment?.status || 'Shipped', estimatedDelivery:(ord as any).estimatedDelivery || '', notes:'' }); }} className="ml-2 px-2.5 py-1 text-[9px] border border-[#936B34] text-[#936B34] uppercase hover:bg-[#936B34] hover:text-white">TRACKING</button>
                         </td>
                       </tr>
                     ))}
@@ -1142,6 +1141,7 @@ export const AdminDashboard: React.FC = () => {
                               </button>
                             );
                           })}
+                          <button onClick={() => { setShipmentOrder(ord); setShipmentForm({ carrier:(ord as any).carrier || 'FedEx', trackingId:(ord as any).trackingNumber || '', trackingUrl:(ord as any).shipment?.trackingUrl || '', status:(ord as any).shipment?.status || 'Shipped', estimatedDelivery:(ord as any).estimatedDelivery || '', notes:'' }); }} className="ml-2 px-2.5 py-1 text-[9px] border border-[#936B34] text-[#936B34] uppercase hover:bg-[#936B34] hover:text-white">TRACKING</button>
                         </td>
                       </tr>
                     ))}
