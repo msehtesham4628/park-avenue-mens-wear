@@ -198,15 +198,14 @@ export const OrderTrackingPage: React.FC = () => {
             </div>
 
             {/* Courier Details */}
-            {currentOrder.trackingNumber && (
-              <div className="p-4 bg-white border border-gray-200 flex items-center justify-between text-xs font-mono shadow-md">
-                <div className="flex items-center gap-2">
-                  <Truck className="w-4 h-4 text-[#936B34]" />
-                  <span className="text-gray-600">COURIER: DHL EXPRESS PRIORITY</span>
+            <div className="p-4 bg-white border border-gray-200 text-xs font-mono shadow-md">
+              {currentOrder.trackingNumber ? (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-2"><Truck className="w-4 h-4 text-[#936B34]" /><span className="text-gray-600">COURIER: {currentOrder.carrier || currentOrder.shipment?.carrier || 'Carrier'}</span></div>
+                  <div className="flex items-center gap-3"><span className="text-[#936B34] font-medium">TRACKING #{currentOrder.trackingNumber}</span>{currentOrder.shipment?.trackingUrl && <a href={currentOrder.shipment.trackingUrl} target="_blank" rel="noreferrer" className="underline text-[#936B34]">TRACK SHIPMENT</a>}</div>
                 </div>
-                <span className="text-[#936B34] font-medium">TRACKING #{currentOrder.trackingNumber}</span>
-              </div>
-            )}
+              ) : <span className="text-gray-500">Tracking information will be available once your order has been dispatched.</span>}
+            </div>
           </div>
         ) : (
           <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-2xl">
