@@ -10,6 +10,7 @@ import notificationRoutes from './notificationRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
 import categoryRoutes from './categoryRoutes.js';
+import checkoutRoutes from './checkoutRoutes.js';
 import { API_DOCUMENTATION } from '../docs/apiDocs.js';
 import { isDbConnected } from '../config/db.js';
 
@@ -44,6 +45,7 @@ apiRouter.use('/cart', cartRoutes);
 apiRouter.use('/orders', orderRoutes);
 apiRouter.use('/alterations', alterationRoutes);
 apiRouter.use('/payments', paymentRoutes);
+apiRouter.use('/checkout', checkoutRoutes);
 apiRouter.use('/notifications', notificationRoutes);
 
 // Admin Specific Modules
