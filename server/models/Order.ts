@@ -76,6 +76,7 @@ export interface IOrder extends Document {
   shippingInfo: IShippingInfo;
   trackingNumber?: string;
   statusHistory: IOrderStatusHistory[];
+  timeline: Array<{ status:string; timestamp:string; description:string; completed:boolean; location?:string }>;
   notes?: string;
   alterationIds?: string[];
   createdAt: Date;
@@ -122,6 +123,8 @@ const ShipmentSchema = new Schema<IShipment>({ carrier: String, trackingId: Stri
   estimatedDelivery: { type: String }
 }, { _id: false });
 
+const TimelineSchema = new Schema({ status:String, timestamp:String, description:String, completed:Boolean, location:String }, { _id:false });
+
 const OrderSchema = new Schema<IOrder>({
   orderId: { type: String, required: true, unique: true, index: true },
   customerId: { type: String, index: true },
@@ -152,6 +155,7 @@ const OrderSchema = new Schema<IOrder>({
   shippingInfo: { type: ShippingInfoSchema, required: true },
   trackingNumber: { type: String, index: true },
   statusHistory: [OrderStatusHistorySchema],
+  timeline: { type:[TimelineSchema], default:[] },
   notes: { type: String },
   alterationIds: [{ type: String }]
 }, {
