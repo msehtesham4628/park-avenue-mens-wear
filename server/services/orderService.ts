@@ -362,20 +362,17 @@ export const orderService = {
       order.shippingInfo.carrier = data.carrier.trim();
       order.shippingInfo.estimatedDelivery = data.estimatedDelivery?.trim();
     }
-    order.shipment = {
+    const shipment = {
       ...(order.shipment || {}),
-      carrier:data.carrier.trim(),
-      trackingId:data.trackingId.trim(),
-      trackingUrl:data.trackingUrl?.trim(),
-      status:data.status,
-      estimatedDelivery:data.estimatedDelivery?.trim(),
-      notes:data.notes?.trim()
+      carrier:data.carrier.trim(), trackingId:data.trackingId.trim(), trackingUrl:data.trackingUrl?.trim(),
+      status:data.status, estimatedDelivery:data.estimatedDelivery?.trim(), notes:data.notes?.trim()
     };
+    order.shipment = shipment;
     if (data.status === 'Shipped' || data.status === 'In Transit' || data.status === 'Out for Delivery' || data.status === 'Delivered') {
       order.orderStatus = data.status === 'Delivered' ? 'Delivered' : data.status === 'Out for Delivery' ? 'Out for Delivery' : 'Shipped';
     }
-    if (data.status === 'Shipped' || data.status === 'In Transit') order.shipment.shippedAt = order.shipment.shippedAt || new Date();
-    if (data.status === 'Delivered') order.shipment.deliveredAt = new Date();
+    if (data.status === 'Shipped' || data.status === 'In Transit') shipment.shippedAt = shipment.shippedAt || new Date();
+    if (data.status === 'Delivered') shipment.deliveredAt = new Date();
     order.statusHistory.push({
       previousStatus,
       newStatus: order.orderStatus,
