@@ -12,12 +12,15 @@ export const CartDrawer: React.FC = () => {
     updateCartQuantity,
     cartSubtotal,
     setActiveView,
-    navigateToProduct
+    navigateToProduct,
+    currentCustomer,
+    showToast
   } = useShop();
 
   if (!isCartOpen) return null;
 
   const handleCheckoutClick = () => {
+    if (!currentCustomer) { setIsCartOpen(false); sessionStorage.setItem('pa_checkout_return','1'); showToast('Please sign in or create an account to proceed to checkout.', 'info'); setActiveView('login'); return; }
     setIsCartOpen(false);
     setActiveView('checkout');
     window.scrollTo({ top: 0, behavior: 'smooth' });
