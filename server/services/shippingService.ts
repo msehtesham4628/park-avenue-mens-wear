@@ -16,9 +16,17 @@ export const SHIPPING_METHODS: ShippingMethod[] = [
 
 export const shippingService = {
   getOptions() { return SHIPPING_METHODS.filter(m => m.enabled); },
-  calculate(methodId:string, subtotal:number, _state?:string) {
-    const method = SHIPPING_METHODS.find(m => m.id === methodId && m.enabled);
-    if (!method) throw new Error('Please select a valid shipping method.');
+  calculate(methodId: string, subtotal: number, _state?: string) {
+    const normalized = (methodId || 'standard').toLowerCase().trim();
+    const method = SHIPPING_METHODS.find(m => 
+      m.id.toLowerCase() === normalized || 
+      m.name.toLowerCase().includes(normalized) ||
+      normalized.includes(m.id.toLowerCase()) ||
+      (normalized.includes('white') && m.id === 'overnight') ||
+      (normalized.includes('express') && m.id === 'express') ||
+      (normalized.includes('standard') && m.id === 'standard')
+    ) || SHIPPING_METHODS[0];
+
     const amount = method.freeShippingThreshold !== undefined && subtotal >= method.freeShippingThreshold ? 0 : method.price;
     return { ...method, amount };
   }

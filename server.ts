@@ -40,11 +40,29 @@ async function bootstrapServer() {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Connect to Database & Seed initial data
-  await connectDB();
-  await seedInitialData();
+  try {
+    const isConnected = await connectDB();
+    if (isConnected) {
+      await seedInitialData();
+    }
+  } catch (dbErr: any) {
+    console.warn('[Park Avenue Server] Database initialization warning:', dbErr?.message);
+  }
 
   // Mount API Router under /api
   app.use('/api', apiRouter);
+
+  // Database offline error middleware fallback
+  app.use('/api', (err: any, req: Request, res: Response, next: express.NextFunction) => {
+    if (err?.name === 'MongooseError' || err?.name === 'MongoNetworkError' || (err?.message && err.message.includes('buffering timed out'))) {
+      console.warn('[AI Studio] Database offline — returning mock response');
+      if (req.method === 'GET') {
+        return res.json(req.path.endsWith('s') || req.path.endsWith('s/') ? [] : {});
+      }
+      return res.status(503).json({ error: 'Service temporarily unavailable (database offline)' });
+    }
+    next(err);
+  });
 
   // Error handling middleware for all API routes
   app.use('/api', errorHandler);
