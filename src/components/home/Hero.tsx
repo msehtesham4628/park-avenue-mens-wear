@@ -24,11 +24,7 @@ export const Hero: React.FC = () => {
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${index === activeImage ? 'opacity-100' : 'opacity-0'}`}
             fetchPriority={index === 0 ? 'high' : 'auto'} loading={index === 0 ? 'eager' : 'lazy'} />
         ))}
-        <div className="absolute inset-0 bg-white/25" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#FAF8F5]/45 via-transparent to-[#FAF8F5]/55" />
       </div>
-      {/* The hero artwork already contains the campaign typography; keep the standalone logo out of the hero. */}
-      <div aria-hidden="true" className="absolute z-[5] top-[10%] left-[3%] w-[48%] sm:w-[40%] lg:w-[34%] h-[22%] bg-[#F1EDE6]/95 blur-[0.2px] pointer-events-none" />
       <button
         type="button"
         onClick={scrollToNext}
