@@ -155,7 +155,7 @@ export const paymentService = {
     const session = await stripeClient.checkout.sessions.create({
       mode:'payment',
       customer_email:customerEmail,
-      line_items:order.items.map(item => ({
+      line_items:order.items.map((item: any) => ({
         price_data:{
           currency:'usd',
           product_data:{ name:item.name, description:`${item.size} / ${item.color}` },
