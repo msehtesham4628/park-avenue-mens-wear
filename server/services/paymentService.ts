@@ -178,41 +178,8 @@ export const paymentService = {
    * Manually confirm or settle order payment (e.g. following client-side tokenization)
    */
   async confirmPayment(orderId: string, transactionId: string, paymentMethodDetails?: string) {
-    const order = await OrderModel.findOne({ orderId });
-    if (!order) {
-      throw new Error(`Order ${orderId} not found.`);
-    }
-
-    order.paymentTransactionId = transactionId || order.paymentTransactionId || `pi_settled_${Date.now()}`;
-    order.paymentStatus = 'Paid';
-    if (paymentMethodDetails) {
-      order.paymentMethod = paymentMethodDetails;
-    }
-    if (order.orderStatus === 'Order Confirmed' || order.orderStatus === 'Processing') {
-      order.timeline.push({
-        status: 'Order Confirmed',
-        timestamp: new Date().toISOString(),
-        description: `Stripe settlement processed successfully (${order.paymentTransactionId}). Authorized funds confirmed.`,
-        completed: true
-      });
-    }
-
-    await order.save();
-
-    await auditService.record({
-      adminUser: { id: 'STRIPE_GATEWAY', name: 'Stripe Payment Processor', email: 'stripe@parkavenuemenswear.com', role: 'system' },
-      action: 'ORDER_PAYMENT_SETTLED',
-      entity: 'Order',
-      entityId: order.orderId,
-      newValue: {
-        paymentStatus: 'Paid',
-        paymentTransactionId: order.paymentTransactionId,
-        total: order.total
-      }
-    });
-
-    return order;
-  },
+    throw new Error('Payment confirmation is webhook-controlled. Complete payment through Stripe Checkout.');
+  }
 
   /**
    * Handle secure webhook from Stripe
