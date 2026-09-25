@@ -138,6 +138,7 @@ export interface Order {
   trackingNumber?: string;
   carrier?: string;
   estimatedDelivery?: string;
+  shipment?: { carrier?: string; trackingId?: string; trackingUrl?: string; status?: string; estimatedDelivery?: string; notes?: string };
   timeline: OrderTimelineEvent[];
   alterationRequested?: boolean;
   alterationNotes?: string;
