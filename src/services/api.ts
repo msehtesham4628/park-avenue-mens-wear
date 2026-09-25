@@ -419,7 +419,7 @@ function mapBackendOrderToFrontend(bo: any): Order {
       country: bo.shippingInfo.country || 'USA'
     } : bo.shippingAddress,
     trackingNumber: bo.trackingNumber,
-    carrier: bo.shippingInfo?.carrier || bo.carrier || 'White Glove Courier',
+    carrier: bo.shippingInfo?.carrier || bo.carrier || undefined,
     estimatedDelivery: bo.shippingInfo?.estimatedDelivery || bo.estimatedDelivery,\n    shipment: bo.shipment ? { ...bo.shipment } : undefined,
     timeline: Array.isArray(bo.statusHistory) && bo.statusHistory.length > 0
       ? bo.statusHistory.map((h: any) => ({
