@@ -349,6 +349,11 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsAdminLoggedIn(true);
       }
       showToast(result.message || `Welcome to Park Avenue Mens Wear, ${result.customer.name || 'Patron'}!`, 'success');
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pa_checkout_return') === '1') {
+        sessionStorage.removeItem('pa_checkout_return');
+        setActiveViewState('checkout');
+        navigateTo('/checkout');
+      }
       return { success: true, role: result.customer.role };
     } else {
       showToast(result.message || 'Authentication failed. Please verify credentials.', 'error');
