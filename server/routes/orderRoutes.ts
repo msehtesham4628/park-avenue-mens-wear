@@ -7,7 +7,7 @@ const router = Router();
 
 // Storefront & Client routes
 router.get('/', authenticateJWT, orderController.getOrders);
-router.post('/', orderController.createOrder);
+router.post('/', ...requireAdminOrStaff, orderController.createOrder);
 router.post('/lookup', orderLookupLimiter, orderController.customerLookup);
 
 // Admin order routes (support both /admin/list and /list, /admin/:id/status and /:id/status)
