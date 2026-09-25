@@ -420,7 +420,7 @@ function mapBackendOrderToFrontend(bo: any): Order {
     } : bo.shippingAddress,
     trackingNumber: bo.trackingNumber,
     carrier: bo.shippingInfo?.carrier || bo.carrier || 'White Glove Courier',
-    estimatedDelivery: bo.shippingInfo?.estimatedDelivery || bo.estimatedDelivery,
+    estimatedDelivery: bo.shippingInfo?.estimatedDelivery || bo.estimatedDelivery,\n    shipment: bo.shipment ? { ...bo.shipment } : undefined,
     timeline: Array.isArray(bo.statusHistory) && bo.statusHistory.length > 0
       ? bo.statusHistory.map((h: any) => ({
           status: h.newStatus || backendStatus,
