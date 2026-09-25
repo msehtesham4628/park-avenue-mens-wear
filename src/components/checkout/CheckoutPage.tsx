@@ -10,7 +10,7 @@ const STATES = [
 const money=(n:number)=>`$${n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 
 export const CheckoutPage: React.FC = () => {
-  const { cart, cartSubtotal, currentCustomer, setActiveView, showToast, clearCart } = useShop();
+  const { cart, cartSubtotal, currentCustomer, setActiveView, showToast } = useShop();
   const [step,setStep]=useState<1|2|3>(1);
   const [calculating,setCalculating]=useState(false);
   const [loading,setLoading]=useState(false);
@@ -93,7 +93,7 @@ export const CheckoutPage: React.FC = () => {
           </div>}
           {step===3&&<div className="space-y-6">
             <h2 className="font-serif text-2xl">Order Review & Payment</h2>
-            <div className="grid sm:grid-cols-2 gap-5 text-sm"><div><div className="font-mono text-[10px] uppercase text-[#936B34]">Contact</div><p>{contact.firstName} {contact.lastName}<br/>{contact.email}<br/>{contact.phone}</p></div><div><div className="font-mono text-[10px] uppercase text-[#936B34]">Shipping</div><p>{address.street}{address.apartment&&`, ${address.apartment}`}<br/>{address.city}, {address.state} {address.postalCode}<br/>United States</p></div></div>
+            <div className="grid sm:grid-cols-2 gap-5 text-sm"><div><div className="font-mono text-[10px] uppercase text-[#936B34]">Contact</div><p>{contact.firstName} {contact.lastName}<br/>{contact.email}<br/>{contact.phone}</p></div><div><div className="font-mono text-[10px] uppercase text-[#936B34]">Shipping</div><p>{address.street}{address.apartment ? `, ${address.apartment}` : ''}<br/>{address.city}, {address.state} {address.postalCode}<br/>United States</p></div></div>
             <div className="border-t pt-5 space-y-3">{cart.map(i=><div key={i.id} className="flex justify-between text-sm"><span>{i.product.name} × {i.quantity}</span><span>{money(i.price*i.quantity)}</span></div>)}</div>
             <div className="flex justify-between gap-3"><button onClick={()=>setStep(2)} className="border px-5 py-3 text-xs uppercase tracking-wider">Back</button><button disabled={loading} onClick={makePayment} className="flex-1 bg-[#111827] text-white p-4 text-xs uppercase tracking-[.2em]">{loading?'Opening secure payment…':'Make Payment'} <Lock className="inline w-3.5 ml-2"/></button></div>
             <p className="text-[11px] text-gray-500 flex gap-2"><Lock className="w-3.5 shrink-0"/> Payment is processed on Stripe's hosted secure checkout. Final totals are recalculated and verified on the server.</p>
