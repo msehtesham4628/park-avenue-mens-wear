@@ -55,9 +55,6 @@ export const CartPage: React.FC = () => {
 
   const discountAmount = (cartSubtotal * discountPercent) / 100;
   const subtotalAfterDiscount = Math.max(0, cartSubtotal - discountAmount);
-  const estimatedTax = subtotalAfterDiscount * 0.08875; // NY State + City standard luxury sales tax
-  const finalTotal = subtotalAfterDiscount + estimatedTax;
-
   const handleCheckout = () => {
     setActiveView('checkout');
     navigateTo('/checkout');
@@ -327,8 +324,8 @@ export const CartPage: React.FC = () => {
                   </div>
 
                   <div className="flex justify-between text-gray-600">
-                    <span>ESTIMATED TAX (8.875%)</span>
-                    <span>${estimatedTax.toFixed(2)}</span>
+                    <span>SALES TAX</span>
+                    <span>Calculated at checkout</span>
                   </div>
                 </div>
 
