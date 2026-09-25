@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import apiRouter from '../server/routes/index.js';
 import { connectDB } from '../server/config/db.js';
-import { seedInitialData } from '../server/config/seed.js';
 import { errorHandler } from '../server/middleware/errorHandler.js';
 
 const app = express();
@@ -28,7 +27,6 @@ async function initialize() {
   if (!initialization) {
     initialization = (async () => {
       await connectDB();
-      await seedInitialData();
     })().catch((error) => {
       initialization = null;
       throw error;
@@ -47,7 +45,8 @@ export default async function handler(req: express.Request, res: express.Respons
       success: false,
       status: 'offline',
       database: 'disconnected',
-      message: error?.message || 'Database connection failed.'
+      message: error?.message || 'Database connection failed.',
+      path: req.originalUrl
     });
   }
 }
