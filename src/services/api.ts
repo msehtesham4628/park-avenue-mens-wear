@@ -595,6 +595,12 @@ export const OrderService = {
     return newOrder;
   },
 
+  async updateShipment(orderId:string, data:{carrier:string;trackingId:string;trackingUrl?:string;status:string;estimatedDelivery?:string;notes?:string}) {
+    const remote = await fetchRemote<any>(`/orders/admin/${encodeURIComponent(orderId)}/shipment`, { method:'PUT', body:JSON.stringify(data) });
+    if (!remote) throw new Error('Unable to update shipment information.');
+    return mapBackendOrderToFrontend(remote);
+  },
+
   async createManualOrder(manualPayload: Partial<Order> & {
     customerName: string;
     items: Order['items'];
