@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Check, Lock, ShoppingBag, Truck } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
-import { CheckoutService } from '../../services/api';
+import { CheckoutService, OrderService } from '../../services/api';
 
 const STATES = [
   ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','District of Columbia'],['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming']
@@ -10,7 +10,7 @@ const STATES = [
 const money=(n:number)=>`$${n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 
 export const CheckoutPage: React.FC = () => {
-  const { cart, cartSubtotal, currentCustomer, setActiveView, showToast } = useShop();
+  const { cart, cartSubtotal, currentCustomer, setActiveView, showToast, clearCart, setCurrentOrder } = useShop();
   const [step,setStep]=useState<1|2|3>(1);
   const [calculating,setCalculating]=useState(false);
   const [loading,setLoading]=useState(false);
@@ -20,8 +20,19 @@ export const CheckoutPage: React.FC = () => {
   const [contact,setContact]=useState({firstName:'',lastName:'',email:'',phone:''});
   const [address,setAddress]=useState({street:'',apartment:'',city:'',state:'',postalCode:''});
   const [shippingMethod,setShippingMethod]=useState('standard');
+  const [paymentResult,setPaymentResult]=useState<'success'|'cancelled'|null>(null);
 
   useEffect(()=>{
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get('payment');
+    const returnedOrderId = params.get('orderId');
+    if ((payment === 'success' || payment === 'cancelled') && returnedOrderId) {
+      setPaymentResult(payment);
+      if (payment === 'success') {
+        clearCart();
+        OrderService.getById(returnedOrderId).then(order => { if(order) setCurrentOrder(order); }).catch(()=>{});
+      }
+    }
     if(!currentCustomer){
       if(typeof sessionStorage!=='undefined') sessionStorage.setItem('pa_checkout_return','1');
       showToast('Please sign in or create an account to proceed to checkout','info');
@@ -63,6 +74,8 @@ export const CheckoutPage: React.FC = () => {
   };
 
   if(!currentCustomer) return null;
+  if(paymentResult==='success') return <div className="min-h-[70vh] flex items-center justify-center p-8"><div className="max-w-xl text-center border border-gray-200 p-10 bg-[#FBF9F5]"><Check className="w-10 h-10 text-emerald-600 mx-auto mb-4"/><div className="text-[10px] uppercase tracking-[.3em] text-[#936B34]">Payment submitted</div><h1 className="font-serif text-3xl mt-2">Thank you for your Park Avenue order.</h1><p className="text-sm text-gray-500 mt-4">Stripe payment confirmation is synchronized by webhook. Your order tracking information will appear in your account once dispatched.</p><button onClick={()=>setActiveView('account')} className="mt-6 bg-[#111827] text-white px-6 py-3 text-xs uppercase tracking-wider">View My Orders</button></div></div>;
+  if(paymentResult==='cancelled') return <div className="min-h-[70vh] flex items-center justify-center p-8"><div className="max-w-xl text-center border border-gray-200 p-10"><h1 className="font-serif text-3xl">Payment cancelled</h1><p className="text-sm text-gray-500 mt-3">Your order remains unpaid. Your shopping bag is preserved so you can retry payment.</p><button onClick={()=>{setPaymentResult(null); window.history.replaceState({},'', '/checkout');}} className="mt-6 bg-[#111827] text-white px-6 py-3 text-xs uppercase tracking-wider">Return to Checkout</button></div></div>;
   if(!cart.length) return <div className="min-h-[60vh] flex items-center justify-center p-8"><div className="text-center"><ShoppingBag className="mx-auto mb-4 text-[#936B34]"/><h2 className="font-serif text-2xl">Your shopping bag is empty</h2></div></div>;
 
   return <div className="min-h-[70vh] bg-white text-[#111827] px-4 py-10 sm:px-8">
