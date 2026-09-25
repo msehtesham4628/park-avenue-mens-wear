@@ -41,7 +41,7 @@ export const CheckoutPage: React.FC = () => {
     }
     const parts=(currentCustomer.name||'').trim().split(/\s+/);
     setContact({firstName:(currentCustomer as any).firstName||parts[0]||'',lastName:(currentCustomer as any).lastName||parts.slice(1).join(' '),email:currentCustomer.email||'',phone:currentCustomer.phone||''});
-    CheckoutService.getOptions().then(o=>{ if(o) {setOptions(o); if(o.shippingMethods?.[0]) setShippingMethod(o.shippingMethods[0].id);} }).catch(()=>{});
+    CheckoutService.getOptions().then((o:any)=>{ if(o) {setOptions(o); if(o.shippingMethods?.[0]) setShippingMethod(o.shippingMethods[0].id);} }).catch(()=>{});
   },[currentCustomer]);
 
   const items=useMemo(()=>cart.map(i=>({productId:i.productId,variantId:i.product.variants.find(v=>v.size===i.selectedSize&&v.color===i.selectedColor)?.id,size:i.selectedSize,color:i.selectedColor,quantity:i.quantity})),[cart]);
@@ -50,7 +50,7 @@ export const CheckoutPage: React.FC = () => {
     if(step<2 || !address.state || !items.length) { setCalc(null); return; }
     let cancelled=false;
     setCalculating(true);
-    CheckoutService.calculate({items,state:address.state,shippingMethod}).then(result=>{if(!cancelled)setCalc(result);}).catch(e=>{if(!cancelled)setError(e.message||'Unable to calculate totals.');}).finally(()=>{if(!cancelled)setCalculating(false);});
+    CheckoutService.calculate({items,state:address.state,shippingMethod}).then((result:any)=>{if(!cancelled)setCalc(result);}).catch((e:any)=>{if(!cancelled)setError(e.message||'Unable to calculate totals.');}).finally(()=>{if(!cancelled)setCalculating(false);});
     return()=>{cancelled=true};
   },[address.state,shippingMethod,items,step]);
 
