@@ -10,7 +10,7 @@ const STATES = [
 const money=(n:number)=>`$${n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 
 export const CheckoutPage: React.FC = () => {
-  const { cart, cartSubtotal, currentCustomer, setActiveView, showToast, clearCart, setCurrentOrder } = useShop();
+  const { cart, cartSubtotal, currentCustomer, currentOrder, setActiveView, showToast, clearCart, setCurrentOrder } = useShop();
   const [step,setStep]=useState<1|2|3>(1);
   const [calculating,setCalculating]=useState(false);
   const [loading,setLoading]=useState(false);
@@ -74,7 +74,7 @@ export const CheckoutPage: React.FC = () => {
   };
 
   if(!currentCustomer) return null;
-  if(paymentResult==='success') return <div className="min-h-[70vh] flex items-center justify-center p-8"><div className="max-w-xl text-center border border-gray-200 p-10 bg-[#FBF9F5]"><Check className="w-10 h-10 text-emerald-600 mx-auto mb-4"/><div className="text-[10px] uppercase tracking-[.3em] text-[#936B34]">Payment submitted</div><h1 className="font-serif text-3xl mt-2">Thank you for your Park Avenue order.</h1><p className="text-sm text-gray-500 mt-4">Stripe payment confirmation is synchronized by webhook. Your order tracking information will appear in your account once dispatched.</p><button onClick={()=>setActiveView('account')} className="mt-6 bg-[#111827] text-white px-6 py-3 text-xs uppercase tracking-wider">View My Orders</button></div></div>;
+  if(paymentResult==='success') return <div className="min-h-[70vh] flex items-center justify-center p-8"><div className="max-w-xl text-center border border-gray-200 p-10 bg-[#FBF9F5]"><Check className="w-10 h-10 text-emerald-600 mx-auto mb-4"/><div className="text-[10px] uppercase tracking-[.3em] text-[#936B34]">Payment submitted</div><h1 className="font-serif text-3xl mt-2">Thank you for your Park Avenue order.</h1><p className="text-sm text-gray-500 mt-4">{currentOrder?.id ? <>Order <strong>{currentOrder.id}</strong>. </> : ''}Stripe payment confirmation is synchronized by webhook. Your order tracking information will appear in your account once dispatched.</p><button onClick={()=>setActiveView('account')} className="mt-6 bg-[#111827] text-white px-6 py-3 text-xs uppercase tracking-wider">View My Orders</button></div></div>;
   if(paymentResult==='cancelled') return <div className="min-h-[70vh] flex items-center justify-center p-8"><div className="max-w-xl text-center border border-gray-200 p-10"><h1 className="font-serif text-3xl">Payment cancelled</h1><p className="text-sm text-gray-500 mt-3">Your order remains unpaid. Your shopping bag is preserved so you can retry payment.</p><button onClick={()=>{setPaymentResult(null); window.history.replaceState({},'', '/checkout');}} className="mt-6 bg-[#111827] text-white px-6 py-3 text-xs uppercase tracking-wider">Return to Checkout</button></div></div>;
   if(!cart.length) return <div className="min-h-[60vh] flex items-center justify-center p-8"><div className="text-center"><ShoppingBag className="mx-auto mb-4 text-[#936B34]"/><h2 className="font-serif text-2xl">Your shopping bag is empty</h2></div></div>;
 
