@@ -33,7 +33,18 @@ export const CategoryShowcase: React.FC = () => {
         product.category === category.name ||
         category.subcategories.some(sub => product.category === sub)
       );
-      const image = categoryProducts.find(product => product.images?.[0])?.images?.[0];
+      const categoryImageMap: Record<string, string> = {
+        'Suits': '/Suits_image.png',
+        'Blazers & Jackets': '/Blazers_jackets_image.png',
+        'Shirts': '/Shirts_image.png',
+        'Pants': '/Pants_image.png',
+        'Outerwear': '/Outwear_image.png',
+        'Sweaters & Knitwear': '/Sweaters_kintwear_image.png',
+        'Footwear': '/Footwear_image.png',
+        'Accessories': '/Accessories_image.png',
+        'Shorts': '/Shorts_image.png'
+      };
+      const image = categoryImageMap[category.name] || categoryProducts.find(product => product.images?.[0])?.images?.[0];
       return {
         title: category.queryValue as ProductCategory,
         displayName: category.name.toUpperCase(),
