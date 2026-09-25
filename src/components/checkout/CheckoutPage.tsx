@@ -29,7 +29,7 @@ export const CheckoutPage: React.FC = () => {
       return;
     }
     const parts=(currentCustomer.name||'').trim().split(/\s+/);
-    setContact({firstName:currentCustomer.firstName||parts[0]||'',lastName:currentCustomer.lastName||parts.slice(1).join(' '),email:currentCustomer.email||'',phone:currentCustomer.phone||''});
+    setContact({firstName:(currentCustomer as any).firstName||parts[0]||'',lastName:(currentCustomer as any).lastName||parts.slice(1).join(' '),email:currentCustomer.email||'',phone:currentCustomer.phone||''});
     CheckoutService.getOptions().then(o=>{ if(o) {setOptions(o); if(o.shippingMethods?.[0]) setShippingMethod(o.shippingMethods[0].id);} }).catch(()=>{});
   },[currentCustomer]);
 
