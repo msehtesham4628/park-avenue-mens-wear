@@ -100,22 +100,20 @@ export const orderService = {
     }
 
     // STEP 2: Safely reserve/deduct inventory with transactional logging
-    for (const item of validatedItems) {
-      await inventoryService.adjustStock({
-        productId: item.productId,
-        variantId: item.variantId,
-        size: item.size,
-        color: item.color,
-        adjustmentType: 'remove',
-        quantity: item.quantity,
-        reason: 'purchase',
-        notes: `Reserved for online order purchase`,
-        adminUser: {
-          id: 'SYSTEM',
-          name: 'Park Avenue Order Engine',
-          email: 'system@parkavenuemenswear.com'
-        }
-      });
+    if (input.paymentMethod !== 'stripe_checkout') {
+      for (const item of validatedItems) {
+        await inventoryService.adjustStock({
+          productId: item.productId,
+          variantId: item.variantId,
+          size: item.size,
+          color: item.color,
+          adjustmentType: 'remove',
+          quantity: item.quantity,
+          reason: 'purchase',
+          notes: 'Reserved for paid/manual order',
+          adminUser: { id:'SYSTEM', name:'Park Avenue Order Engine', email:'system@parkavenuemenswear.com' }
+        });
+      }
     }
 
     // STEP 3 & 4: Calculate shipping, state-level destination tax, total and generate Order ID
@@ -134,7 +132,7 @@ export const orderService = {
     const orderId = await this.generateOrderId();
 
     // STEP 5: Record initial status
-    const initialStatus: OrderStatus = 'Confirmed';
+    const initialStatus: OrderStatus = input.paymentMethod === 'stripe_checkout' ? 'Pending' : 'Confirmed';
     const statusHistory = [{
       previousStatus: 'None',
       newStatus: initialStatus,
