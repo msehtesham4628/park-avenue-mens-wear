@@ -55,6 +55,8 @@ interface ShopContextType {
   isProductsSubpage: boolean;
   setIsProductsSubpage: (val: boolean) => void;
   navigateToUrl: (url: string) => void;
+  entryPath: string;
+  continueFromWelcome: () => void;
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
   isCartOpen: boolean;
@@ -127,11 +129,23 @@ interface ShopContextType {
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const initialRoute = useMemo(() => {
-    return parseRoute(typeof window !== 'undefined' ? window.location.pathname : '/');
+  const initialPath = useMemo(() => {
+    if (typeof window === 'undefined') return '/';
+    return window.location.pathname + window.location.search;
   }, []);
 
-  const [activeView, setActiveViewState] = useState<AppView>(initialRoute.view);
+  const initialRoute = useMemo(() => parseRoute(initialPath), [initialPath]);
+
+  // Show the welcome screen for every direct website entry and remember
+  // the URL the visitor originally requested (/, /suits, /shop, etc.).
+  const [entryPath] = useState<string>(() => {
+    if (typeof window === 'undefined') return '/';
+    const path = window.location.pathname + window.location.search;
+    sessionStorage.setItem('pa_entry_path', path);
+    return path;
+  });
+
+  const [activeView, setActiveViewState] = useState<AppView>('welcome');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(initialRoute.productId || null);
   const [selectedCategory, setSelectedCategoryState] = useState<string>(initialRoute.category || 'All');
   const [isProductsSubpage, setIsProductsSubpage] = useState<boolean>(initialRoute.isProductsSubpage || false);
@@ -174,6 +188,12 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Toast notifications
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const continueFromWelcome = () => {
+    const destination = sessionStorage.getItem('pa_entry_path') || '/';
+    sessionStorage.removeItem('pa_entry_path');
+    navigateToUrl(destination);
+  };
 
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'info') => {
     const id = `toast-${Date.now()}-${Math.random()}`;
@@ -507,6 +527,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isProductsSubpage,
         setIsProductsSubpage,
         navigateToUrl,
+        entryPath,
+        continueFromWelcome,
         isSearchOpen,
         setIsSearchOpen,
         isCartOpen,
