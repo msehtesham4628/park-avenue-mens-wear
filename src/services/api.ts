@@ -1561,6 +1561,23 @@ export const CartApiService = {
 };
 
 /* =========================================================================
+   CHECKOUT SERVICE
+   ========================================================================= */
+export const CheckoutService = {
+  async getOptions(): Promise<any> { return fetchRemote<any>('/checkout/options'); },
+  async calculate(payload:{items:any[];state:string;shippingMethod:string}): Promise<any> {
+    const result = await fetchRemote<any>('/checkout/calculate',{method:'POST',body:JSON.stringify(payload)});
+    if(!result) throw new Error('Unable to calculate checkout totals.');
+    return result;
+  },
+  async createSession(payload:{contact:any;shippingAddress:any;shippingMethod:string;items:any[]}): Promise<any> {
+    const result = await fetchRemote<any>('/checkout/session',{method:'POST',body:JSON.stringify(payload)});
+    if(!result) throw new Error('Unable to create the secure payment session.');
+    return result;
+  }
+};
+
+/* =========================================================================
    STRIPE & PAYMENT GATEWAY API SERVICE
    ========================================================================= */
 
