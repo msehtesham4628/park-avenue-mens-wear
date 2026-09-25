@@ -71,7 +71,7 @@ export const AccountPage: React.FC = () => {
         {/* Profile Header */}
         <div className="py-8 border-b border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <ParkAvenueLogo variant="mark" size="lg" className="w-16 h-16 bg-[#F9F9F8] border border-[#936B34]/50 p-1 shadow-md" />
+            <ParkAvenueLogo variant="mark" size="lg" className="w-16 h-16" />
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-serif text-2xl sm:text-3xl text-[#111827] uppercase tracking-wide font-light">
@@ -182,7 +182,7 @@ export const AccountPage: React.FC = () => {
           <div className="space-y-6">
             {customerOrders.length === 0 ? (
               <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-2xl">
-                <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6 border border-[#936B34]/50 p-1 bg-white shadow-md" />
+                <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6" />
                 <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
@@ -200,37 +200,42 @@ export const AccountPage: React.FC = () => {
                 </button>
               </div>
             ) : (
-              customerOrders.map(order => (
-                <div key={order.id} className="bg-[#F9F9F8] border border-gray-200 p-6 space-y-4 shadow-xl">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-200 gap-2 text-xs font-mono">
-                    <div>
-                      <span className="text-base font-semibold text-[#111827] mr-3">{order.id}</span>
-                      <span className="text-gray-500">Date: {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : (order as any).date}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[#936B34] uppercase bg-[#936B34]/15 px-2.5 py-1 border border-[#936B34]/30 font-medium">
-                        {order.status || (order as any).orderStatus}
-                      </span>
-                      <span className="font-semibold text-[#111827] tabular-nums">
-                        ${order.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {order.items?.map((item, idx) => (
-                      <div key={idx} className="flex gap-3 bg-white p-3 border border-gray-100 shadow-md">
-                        <div className="w-12 h-16 shrink-0 overflow-hidden">
-                          <MediaPlaceholder label="PA" category="SUIT" aspectRatio="portrait" minimal className="w-full h-full p-1" />
-                        </div>
-                        <div className="text-xs min-w-0 font-mono">
-                          <h4 className="font-serif text-[#111827] truncate uppercase">{item.productName}</h4>
-                          <p className="text-gray-500 mt-0.5">Size: {item.size}</p>
-                          <p className="text-[#936B34] tabular-nums mt-1 font-medium">${item.price}</p>
-                        </div>
+              customerOrders.map((order, orderIdx) => {
+                const orderKey = order.id || (order as any).orderId || (order as any)._id || `ord-${orderIdx}`;
+                return (
+                  <div key={orderKey} className="bg-[#F9F9F8] border border-gray-200 p-6 space-y-4 shadow-xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-200 gap-2 text-xs font-mono">
+                      <div>
+                        <span className="text-base font-semibold text-[#111827] mr-3">{order.id || (order as any).orderId}</span>
+                        <span className="text-gray-500">Date: {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : (order as any).date}</span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[#936B34] uppercase bg-[#936B34]/15 px-2.5 py-1 border border-[#936B34]/30 font-medium">
+                          {order.status || (order as any).orderStatus}
+                        </span>
+                        <span className="font-semibold text-[#111827] tabular-nums">
+                          ${order.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {order.items?.map((item, idx) => {
+                        const itemKey = (item as any).id || (item as any)._id || `${orderKey}-item-${item.productId || idx}-${item.size || ''}-${idx}`;
+                        return (
+                          <div key={itemKey} className="flex gap-3 bg-white p-3 border border-gray-100 shadow-md">
+                            <div className="w-12 h-16 shrink-0 overflow-hidden">
+                              <MediaPlaceholder label="PA" category="SUIT" aspectRatio="portrait" minimal className="w-full h-full p-1" />
+                            </div>
+                            <div className="text-xs min-w-0 font-mono">
+                              <h4 className="font-serif text-[#111827] truncate uppercase">{item.productName}</h4>
+                              <p className="text-gray-500 mt-0.5">Size: {item.size}</p>
+                              <p className="text-[#936B34] tabular-nums mt-1 font-medium">${item.price}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
 
                   <div className="pt-3 border-t border-gray-200/80 flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
                     {order.trackingNumber || order.shipment?.trackingId ? (
@@ -272,8 +277,9 @@ export const AccountPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
-              ))
-            )}
+              );
+            })
+          )}
           </div>
         )}
 
@@ -281,7 +287,7 @@ export const AccountPage: React.FC = () => {
           <div>
             {wishlistedProducts.length === 0 ? (
               <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-2xl">
-                <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6 border border-[#936B34]/50 p-1 bg-white shadow-md" />
+                <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6" />
                 <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
@@ -300,43 +306,46 @@ export const AccountPage: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {wishlistedProducts.map(product => (
-                  <div key={product.id} className="border border-gray-200 bg-[#F9F9F8] p-4 flex flex-col justify-between shadow-xl">
-                    <div className="aspect-[3/4] mb-3 overflow-hidden bg-white">
-                      <MediaPlaceholder
-                        label="PARK AVENUE"
-                        category={product.category}
-                        aspectRatio="portrait"
-                        className="w-full h-full"
-                        subtext={product.name}
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between items-baseline mb-1">
-                        <span className="text-[10px] font-mono text-[#936B34] uppercase font-medium">{product.category}</span>
-                        <span className="text-xs font-mono text-[#111827]">${product.price.toLocaleString()}</span>
+                {wishlistedProducts.map((product, pIdx) => {
+                  const productKey = product.id || (product as any).productId || (product as any)._id || `wish-${pIdx}`;
+                  return (
+                    <div key={productKey} className="border border-gray-200 bg-[#F9F9F8] p-4 flex flex-col justify-between shadow-xl">
+                      <div className="aspect-[3/4] mb-3 overflow-hidden bg-white">
+                        <MediaPlaceholder
+                          label="PARK AVENUE"
+                          category={product.category}
+                          aspectRatio="portrait"
+                          className="w-full h-full"
+                          subtext={product.name}
+                        />
                       </div>
-                      <h4 className="font-serif text-base text-[#111827] uppercase line-clamp-1 mb-4 font-light">{product.name}</h4>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            addToCart(product, product.variants?.[0]?.size || 'Standard', product.variants?.[0]?.color || 'Standard', 1);
-                          }}
-                          className="flex-1 py-2 bg-[#111827] text-white text-xs font-mono uppercase font-semibold hover:bg-[#7A5726] cursor-pointer transition-colors shadow-md"
-                        >
-                          ADD TO BAG
-                        </button>
-                        <button
-                          onClick={() => toggleWishlist(product.id)}
-                          className="p-2 border border-gray-200 text-gray-500 hover:text-red-400 bg-white cursor-pointer transition-colors"
-                          aria-label="Remove from wishlist"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <div>
+                        <div className="flex justify-between items-baseline mb-1">
+                          <span className="text-[10px] font-mono text-[#936B34] uppercase font-medium">{product.category}</span>
+                          <span className="text-xs font-mono text-[#111827]">${product.price.toLocaleString()}</span>
+                        </div>
+                        <h4 className="font-serif text-base text-[#111827] uppercase line-clamp-1 mb-4 font-light">{product.name}</h4>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              addToCart(product, product.variants?.[0]?.size || 'Standard', product.variants?.[0]?.color || 'Standard', 1);
+                            }}
+                            className="flex-1 py-2 bg-[#111827] text-white text-xs font-mono uppercase font-semibold hover:bg-[#7A5726] cursor-pointer transition-colors shadow-md"
+                          >
+                            ADD TO BAG
+                          </button>
+                          <button
+                            onClick={() => toggleWishlist(product.id)}
+                            className="p-2 border border-gray-200 text-gray-500 hover:text-red-400 bg-white cursor-pointer transition-colors"
+                            aria-label="Remove from wishlist"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -346,7 +355,7 @@ export const AccountPage: React.FC = () => {
           <div>
             {customerAlterations.length === 0 ? (
               <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-2xl">
-                <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6 border border-[#936B34]/50 p-1 bg-white shadow-md" />
+                <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6" />
                 <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] mb-2 block font-medium">
                   PARK AVENUE MENSWEAR
                 </span>
@@ -365,26 +374,29 @@ export const AccountPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {customerAlterations.map(alt => (
-                  <div key={alt.id} className="border border-gray-200 bg-[#F9F9F8] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-mono text-xs shadow-xl">
-                    <div>
-                      <span className="text-[#936B34] block mb-1 font-medium">#{alt.id}</span>
-                      <h4 className="font-serif text-lg text-[#111827] uppercase font-light">{alt.productName || alt.items?.[0]?.name || 'Park Avenue Garment'}</h4>
-                      <p className="text-gray-500 mt-1">{alt.alterationDetails || alt.items?.[0]?.type || 'Bespoke Tailoring'} · Tailor: {alt.tailorAssigned}</p>
+                {customerAlterations.map((alt, altIdx) => {
+                  const altKey = alt.id || (alt as any).alterationId || (alt as any)._id || `alt-${altIdx}`;
+                  return (
+                    <div key={altKey} className="border border-gray-200 bg-[#F9F9F8] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-mono text-xs shadow-xl">
+                      <div>
+                        <span className="text-[#936B34] block mb-1 font-medium">#{alt.id || (alt as any).alterationId}</span>
+                        <h4 className="font-serif text-lg text-[#111827] uppercase font-light">{alt.productName || alt.items?.[0]?.name || 'Park Avenue Garment'}</h4>
+                        <p className="text-gray-500 mt-1">{alt.alterationDetails || alt.items?.[0]?.type || 'Bespoke Tailoring'} · Tailor: {alt.tailorAssigned}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[#936B34] uppercase block font-semibold mb-2">
+                          {(alt.status || 'In Progress').replace(/_/g, ' ')}
+                        </span>
+                        <button
+                          onClick={() => handleTrackAlteration(alt)}
+                          className="px-4 py-2 border border-gray-300 hover:border-[#936B34] text-[#111827] hover:text-[#936B34] text-[11px] uppercase cursor-pointer bg-white transition-colors"
+                        >
+                          VIEW WORKBENCH STATUS
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-[#936B34] uppercase block font-semibold mb-2">
-                        {(alt.status || 'In Progress').replace(/_/g, ' ')}
-                      </span>
-                      <button
-                        onClick={() => handleTrackAlteration(alt)}
-                        className="px-4 py-2 border border-gray-300 hover:border-[#936B34] text-[#111827] hover:text-[#936B34] text-[11px] uppercase cursor-pointer bg-white transition-colors"
-                      >
-                        VIEW WORKBENCH STATUS
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

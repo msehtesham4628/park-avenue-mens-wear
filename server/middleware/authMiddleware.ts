@@ -17,6 +17,19 @@ export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: 
   next();
 };
 
+export const optionalAuthenticateJWT = (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+  const token = authHeader.slice('Bearer '.length).trim();
+  const payload = authService.verifyToken(token);
+  if (payload) {
+    req.user = payload;
+  }
+  next();
+};
+
 export const requireRole = (roles: Array<'customer' | 'admin' | 'staff'>) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ success:false, message:'Authentication required.' });

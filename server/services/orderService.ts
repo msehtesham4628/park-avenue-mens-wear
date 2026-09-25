@@ -178,7 +178,20 @@ export const orderService = {
       orderStatus: initialStatus,
       paymentMethod: input.paymentMethod || 'Credit Card (Processed)',
       paymentTransactionId: input.paymentTransactionId,
-      shippingInfo: input.shippingInfo,
+      shippingInfo: {
+        recipientName: input.shippingInfo?.recipientName || input.customerName,
+        email: input.shippingInfo?.email || input.customerEmail,
+        phone: input.shippingInfo?.phone || input.customerPhone,
+        street: input.shippingInfo?.street || '',
+        apartment: input.shippingInfo?.apartment || '',
+        city: input.shippingInfo?.city || '',
+        state: input.shippingInfo?.state || '',
+        postalCode: input.shippingInfo?.postalCode || '',
+        country: input.shippingInfo?.country || 'United States',
+        carrier: input.shippingInfo?.carrier || 'Park Avenue White Glove Courier',
+        shippingMethod: input.shippingInfo?.shippingMethod || input.shippingMethod || 'Complimentary Express',
+        estimatedDelivery: input.shippingInfo?.estimatedDelivery
+      },
       statusHistory,
       notes: input.notes
     });

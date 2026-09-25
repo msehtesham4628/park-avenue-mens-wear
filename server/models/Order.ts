@@ -118,9 +118,9 @@ const ShipmentSchema = new Schema<IShipment>({ carrier: String, trackingId: Stri
 const TaxSnapshotSchema = new Schema<ITaxSnapshot>({ state:String, rate:Number, taxableAmount:Number, amount:Number, calculationVersion:String, details:String }, { _id:false });
 
 const ShippingInfoSchema = new Schema<IShippingInfo>({
-  recipientName: { type: String, required: true },
-  email: { type: String, required: true },
-  phone: { type: String, required: true },
+  recipientName: { type: String, required: false },
+  email: { type: String, required: false },
+  phone: { type: String, required: false },
   street: { type: String, required: true },
   apartment: { type: String },
   city: { type: String, required: true },

@@ -137,11 +137,15 @@ export const authService = {
     const clean = identifier.toLowerCase().trim();
     if (!clean) throw new Error('Username or email is required.');
 
-    // Email identifiers query email; all other identifiers query username.
-    // Registration and login use the same normalized fields.
-    const customer = clean.includes('@')
-      ? await CustomerModel.findOne({ email: clean })
-      : await CustomerModel.findOne({ username: clean });
+    // Query across email, username, or customerId for robust login matching
+    const customer = await CustomerModel.findOne({
+      $or: [
+        { email: clean },
+        { username: clean },
+        { customerId: identifier.trim() },
+        { customerId: identifier.trim().toUpperCase() }
+      ]
+    });
 
 
     if (!customer) {

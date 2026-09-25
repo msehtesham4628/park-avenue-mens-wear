@@ -4,6 +4,7 @@ import { requireAdminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
+router.get('/', ...requireAdminOrStaff, inventoryController.getOverview);
 router.get('/overview', ...requireAdminOrStaff, inventoryController.getOverview);
 router.post('/adjust', ...requireAdminOrStaff, inventoryController.adjustStock);
 router.get('/low-stock', ...requireAdminOrStaff, inventoryController.getLowStock);

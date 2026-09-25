@@ -1098,22 +1098,46 @@ export const AlterationService = {
    CUSTOMERS & ACCOUNTS SERVICE
    ========================================================================= */
 
+function mapBackendCustomerToFrontend(c: any): Customer {
+  return {
+    id: c.customerId || c.id || c._id || `CUST-${Date.now()}`,
+    name: c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Client Patron',
+    email: c.email || '',
+    phone: c.phone || '',
+    role: c.role || 'customer',
+    tier: c.vipTier || c.tier || 'Member',
+    addresses: Array.isArray(c.addresses) ? c.addresses.map((addr: any, i: number) => ({
+      id: addr.id || `addr-${i}`,
+      label: addr.label || 'Primary Address',
+      street: addr.street || '',
+      city: addr.city || '',
+      state: addr.state || '',
+      zipCode: addr.postalCode || addr.zipCode || '',
+      country: addr.country || 'United States',
+      isDefault: Boolean(addr.isDefault)
+    })) : [],
+    ordersCount: c.ordersCount ?? (Array.isArray(c.orders) ? c.orders.length : 0),
+    totalSpent: c.totalSpent ?? 0,
+    joinedDate: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : (c.joinedDate || new Date().toLocaleDateString())
+  };
+}
+
 export const CustomerService = {
   async getAll(): Promise<Customer[]> {
-    const remote = await fetchRemote<Customer[]>('/customers');
+    const remote = await fetchRemote<any[]>('/customers');
     if (remote && Array.isArray(remote)) {
-      customersCache = remote;
+      customersCache = remote.map(mapBackendCustomerToFrontend);
       saveStorage(STORAGE_KEYS.CUSTOMERS, customersCache);
-      return remote;
+      return customersCache;
     }
     await delay(150);
     return [...customersCache];
   },
 
   async getById(id: string): Promise<Customer | null> {
-    const remote = await fetchRemote<Customer>(`/customers/${encodeURIComponent(id)}`);
-    if (remote && remote.id) {
-      return remote;
+    const remote = await fetchRemote<any>(`/customers/${encodeURIComponent(id)}`);
+    if (remote) {
+      return mapBackendCustomerToFrontend(remote);
     }
     await delay(100);
     const c = customersCache.find(cust => cust.id === id);
@@ -1121,15 +1145,16 @@ export const CustomerService = {
   },
 
   async updateProfile(id: string, data: Partial<Customer>): Promise<Customer> {
-    const remote = await fetchRemote<Customer>(`/customers/${encodeURIComponent(id)}`, {
+    const remote = await fetchRemote<any>(`/customers/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     });
-    if (remote && remote.id) {
+    if (remote) {
+      const mapped = mapBackendCustomerToFrontend(remote);
       const idx = customersCache.findIndex(c => c.id === id);
-      if (idx !== -1) customersCache[idx] = remote;
+      if (idx !== -1) customersCache[idx] = mapped;
       saveStorage(STORAGE_KEYS.CUSTOMERS, customersCache);
-      return remote;
+      return mapped;
     }
     await delay(200);
     const idx = customersCache.findIndex(c => c.id === id);
@@ -1354,22 +1379,31 @@ export const AuthService = {
       const effEmail = (payload.emailId || payload.email || '').trim();
       const effUser = (payload.username || '').trim();
 
-      const res = await fetch(`${base.replace(/\/$/, '')}/register`, {
+      const regPayload = {
+        firstName: effFirst,
+        fName: effFirst,
+        lastName: effLast,
+        lName: effLast,
+        username: effUser,
+        email: effEmail,
+        emailId: effEmail,
+        phone: payload.phone || '',
+        password: payload.password,
+        reEnterPassword: payload.reEnterPassword
+      };
+
+      let res = await fetch(`${base.replace(/\/$/, '')}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: effFirst,
-          fName: effFirst,
-          lastName: effLast,
-          lName: effLast,
-          username: effUser,
-          email: effEmail,
-          emailId: effEmail,
-          phone: payload.phone || '',
-          password: payload.password,
-          reEnterPassword: payload.reEnterPassword
-        })
+        body: JSON.stringify(regPayload)
       });
+      if (res.status === 404) {
+        res = await fetch(`${base.replace(/\/$/, '')}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(regPayload)
+        });
+      }
       const responseText = await res.text();
       let data: any = null;
       try {
@@ -1447,8 +1481,8 @@ export const AuthService = {
     if (!remote) return null;
     return {
       customer: remote.customer || remote,
-      orders: Array.isArray(remote.orders) ? remote.orders : [],
-      alterations: Array.isArray(remote.alterations) ? remote.alterations : []
+      orders: Array.isArray(remote.orders) ? remote.orders.map(mapBackendOrderToFrontend) : [],
+      alterations: Array.isArray(remote.alterations) ? remote.alterations.map(mapBackendAlterationToFrontend) : []
     };
   },
 

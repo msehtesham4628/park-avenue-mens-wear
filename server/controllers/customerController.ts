@@ -61,9 +61,17 @@ export const customerController = {
         return res.status(404).json({ success: false, message: 'Customer profile not found.' });
       }
 
+      const customerData: any = {
+        ...profile.customer,
+        id: profile.customer.customerId || (profile.customer as any)._id,
+        orders: profile.orders,
+        alterations: profile.alterations
+      };
+      delete customerData.passwordHash;
+
       return res.status(200).json({
         success: true,
-        data: profile,
+        data: customerData,
         message: 'Customer profile loaded.'
       });
     } catch (err: any) {

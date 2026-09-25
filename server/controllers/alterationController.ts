@@ -86,16 +86,19 @@ export const alterationController = {
       }
 
       const customer = await import('../models/Customer.js').then(m =>
-        m.CustomerModel.findOne({ customerId: req.user!.customerId }).lean()
+        m.CustomerModel.findOne({
+          $or: [
+            { customerId: req.user!.customerId },
+            { email: req.user!.email?.toLowerCase() }
+          ]
+        }).lean()
       );
-      if (!customer) {
-        return res.status(404).json({ success: false, message: 'Customer profile not found.' });
-      }
 
       const alterations = await AlterationModel.find({
         $or: [
-          { customerId: customer.customerId },
-          { customerEmail: customer.email }
+          ...(customer ? [{ customerId: customer.customerId }, { customerEmail: customer.email }] : []),
+          { customerId: req.user!.customerId },
+          { customerEmail: req.user!.email?.toLowerCase() }
         ]
       }).sort({ createdAt: -1 }).lean();
 
@@ -111,14 +114,33 @@ export const alterationController = {
   async getAlterationById(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params;
-      const alteration = await AlterationModel.findOne({ alterationId: id }).lean();
+      const alteration = await AlterationModel.findOne({
+        $or: [
+          { alterationId: id },
+          { alterationId: id.toUpperCase() }
+        ]
+      }).lean();
 
       if (!alteration) {
         return res.status(404).json({ success: false, message: `Alteration ticket ${id} not found.` });
       }
 
       if (!req.user) {
-        return res.status(401).json({ success: false, message: 'Authentication required.' });
+        // Safe tracking view for direct lookup links
+        const publicSafe = {
+          alterationId: alteration.alterationId,
+          id: alteration.alterationId,
+          orderId: alteration.orderId,
+          productName: alteration.productName,
+          status: alteration.status,
+          dateReceived: alteration.dateReceived,
+          estimatedCompletion: alteration.estimatedCompletion,
+          completedAt: alteration.completedAt,
+          items: alteration.items || [],
+          history: alteration.history || [],
+          tailorAssigned: alteration.tailorAssigned
+        };
+        return res.status(200).json({ success: true, data: publicSafe, message: 'Alteration ticket retrieved.' });
       }
 
       if (req.user.role !== 'admin' && req.user.role !== 'staff') {

@@ -52,6 +52,7 @@ apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/admin/inventory', inventoryRoutes);
 apiRouter.use('/inventory', inventoryRoutes);
 apiRouter.use('/admin/customers', customerRoutes);
+apiRouter.use('/customers', customerRoutes);
 apiRouter.use('/admin/dashboard', dashboardRoutes);
 apiRouter.use('/admin/notifications', notificationRoutes);
 

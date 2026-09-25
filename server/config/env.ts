@@ -1,9 +1,29 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+function getPort(): number {
+  const args = process.argv;
+  const portArgIndex = args.indexOf('--port');
+  if (portArgIndex !== -1 && args[portArgIndex + 1]) {
+    const parsed = parseInt(args[portArgIndex + 1], 10);
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  if (process.env.SERVER_PORT) {
+    const parsed = parseInt(process.env.SERVER_PORT, 10);
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  // In AI Studio environments, port 8080 is used by the reverse proxy.
+  // The Node backend server must run on port 3000.
+  if (process.env.PORT && process.env.PORT !== '8080') {
+    const parsed = parseInt(process.env.PORT, 10);
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  return 3000;
+}
+
 export const ENV = {
   NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: parseInt(process.env.PORT || '3000', 10),
+  PORT: getPort(),
   MONGODB_URI: process.env.MONGODB_URI || process.env.DATABASE_URL || '',
   JWT_SECRET: process.env.JWT_SECRET || process.env.AUTH_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'park-avenue-luxury-jwt-secret-key-2026'),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',

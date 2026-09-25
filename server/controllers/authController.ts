@@ -168,12 +168,26 @@ export const authController = {
         return res.status(401).json({ success: false, message: 'Not authenticated.' });
       }
 
-      const profile = await customerService.getCustomerProfile(req.user.customerId);
+      const profile = await customerService.getCustomerProfile(req.user.customerId || req.user.email);
       if (!profile) {
-        return res.status(404).json({ success: false, message: 'User profile not found.' });
+        return res.status(200).json({
+          success: true,
+          data: {
+            customer: {
+              customerId: req.user.customerId,
+              id: req.user.customerId,
+              email: req.user.email,
+              name: req.user.name,
+              role: req.user.role
+            },
+            orders: [],
+            alterations: []
+          },
+          message: 'Profile retrieved successfully.'
+        });
       }
 
-      const copy: any = { ...profile.customer };
+      const copy: any = { ...profile.customer, id: profile.customer.customerId || profile.customer._id };
       delete copy.passwordHash;
 
       return res.status(200).json({

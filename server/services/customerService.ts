@@ -59,8 +59,16 @@ export const customerService = {
    * Get single customer with their orders and alterations
    */
   async getCustomerProfile(customerId: string) {
+    const clean = (customerId || '').trim();
+    if (!clean) return null;
+
     const customer = await CustomerModel.findOne({
-      $or: [{ customerId }, { email: customerId.toLowerCase() }]
+      $or: [
+        { customerId: clean },
+        { customerId: clean.toUpperCase() },
+        { email: clean.toLowerCase() },
+        { username: clean.toLowerCase() }
+      ]
     }).lean();
 
     if (!customer) return null;

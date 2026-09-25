@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { ENV } from './server/config/env.js';
 import { connectDB } from './server/config/db.js';
@@ -85,6 +86,19 @@ async function bootstrapServer() {
       appType: 'spa'
     });
     app.use(vite.middlewares);
+    app.use('*', async (req, res, next) => {
+      if (req.method === 'GET' && !req.originalUrl.startsWith('/api')) {
+        try {
+          const indexHtml = path.resolve(__dirname, 'index.html');
+          const template = fs.readFileSync(indexHtml, 'utf-8');
+          const html = await vite.transformIndexHtml(req.originalUrl, template);
+          return res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+        } catch (e) {
+          return next(e);
+        }
+      }
+      next();
+    });
     console.info('[Park Avenue Server] Mounted Vite development middleware with HMR.');
   } else {
     const distPath = path.resolve(__dirname, 'dist');

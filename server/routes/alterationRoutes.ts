@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { alterationController } from '../controllers/alterationController.js';
 import { orderLookupLimiter } from '../middleware/rateLimiter.js';
-import { authenticateJWT, requireAdminOrStaff } from '../middleware/authMiddleware.js';
+import { authenticateJWT, optionalAuthenticateJWT, requireAdminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
@@ -15,6 +15,6 @@ router.get('/list', ...requireAdminOrStaff, alterationController.getAdminAlterat
 router.put('/admin/:id/status', ...requireAdminOrStaff, alterationController.updateStatus);
 router.put('/:id/status', ...requireAdminOrStaff, alterationController.updateStatus);
 
-router.get('/:id', authenticateJWT, alterationController.getAlterationById);
+router.get('/:id', optionalAuthenticateJWT, alterationController.getAlterationById);
 
 export default router;

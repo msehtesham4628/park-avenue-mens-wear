@@ -32,13 +32,28 @@ export const orderController = {
         });
       }
 
+      const normalizedShippingInfo = {
+        recipientName: shippingInfo.recipientName || customerName,
+        email: shippingInfo.email || customerEmail,
+        phone: shippingInfo.phone || customerPhone,
+        street: shippingInfo.street || shippingInfo.address || '',
+        apartment: shippingInfo.apartment || '',
+        city: shippingInfo.city || '',
+        state: shippingInfo.state || '',
+        postalCode: shippingInfo.postalCode || shippingInfo.zipCode || '',
+        country: shippingInfo.country || 'United States',
+        shippingMethod: shippingInfo.shippingMethod || shippingMethod || 'standard',
+        trackingNumber: shippingInfo.trackingNumber,
+        carrier: shippingInfo.carrier
+      };
+
       const order = await orderService.createOrder({
         customerId,
         customerName,
         customerEmail,
         customerPhone,
         items,
-        shippingInfo,
+        shippingInfo: normalizedShippingInfo,
         shippingFee,
         shippingMethod,
         tax,
@@ -85,16 +100,19 @@ export const orderController = {
       }
 
       const customer = await import('../models/Customer.js').then(m =>
-        m.CustomerModel.findOne({ customerId: req.user!.customerId }).lean()
+        m.CustomerModel.findOne({
+          $or: [
+            { customerId: req.user!.customerId },
+            { email: req.user!.email?.toLowerCase() }
+          ]
+        }).lean()
       );
-      if (!customer) {
-        return res.status(404).json({ success: false, message: 'Customer profile not found.' });
-      }
 
       const orders = await OrderModel.find({
         $or: [
-          { customerId: customer.customerId },
-          { customerEmail: customer.email }
+          ...(customer ? [{ customerId: customer.customerId }, { customerEmail: customer.email }] : []),
+          { customerId: req.user!.customerId },
+          { customerEmail: req.user!.email?.toLowerCase() }
         ]
       }).sort({ createdAt: -1 }).lean();
 
@@ -110,14 +128,43 @@ export const orderController = {
   async getOrderById(req: AuthenticatedRequest, res: Response) {
     try {
       const { id } = req.params;
-      const order = await OrderModel.findOne({ orderId: id }).lean();
+      const order = await OrderModel.findOne({
+        $or: [
+          { orderId: id },
+          { orderId: id.toUpperCase() }
+        ]
+      }).lean();
 
       if (!order) {
         return res.status(404).json({ success: false, message: `Order ${id} not found.` });
       }
 
       if (!req.user) {
-        return res.status(401).json({ success: false, message: 'Authentication required.' });
+        // Safe public tracking view for guest or direct tracking links
+        const publicSafe = {
+          orderId: order.orderId,
+          id: order.orderId,
+          date: order.createdAt,
+          createdAt: order.createdAt,
+          status: order.status,
+          orderStatus: order.status,
+          paymentStatus: order.paymentStatus,
+          total: order.total,
+          subtotal: order.subtotal,
+          carrier: order.carrier,
+          trackingNumber: order.trackingNumber,
+          shipment: order.shipment,
+          timeline: order.statusHistory || [],
+          items: (order.items || []).map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            size: item.size,
+            color: item.color,
+            quantity: item.quantity,
+            price: item.price
+          }))
+        };
+        return res.status(200).json({ success: true, data: publicSafe, message: 'Order retrieved successfully.' });
       }
 
       if (req.user.role !== 'admin' && req.user.role !== 'staff') {
