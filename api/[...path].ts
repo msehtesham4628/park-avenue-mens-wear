@@ -14,6 +14,7 @@ app.use('/api', apiRouter);
 app.use('/api', errorHandler);
 
 // API requests must never fall through to Vercel's HTML 404 page.
+// Keep API failures JSON-shaped for the storefront client.
 app.use('/api', (req, res) => {
   res.status(404).json({
     success: false,
