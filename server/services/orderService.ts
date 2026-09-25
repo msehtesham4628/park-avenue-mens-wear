@@ -5,6 +5,7 @@ import { inventoryService } from './inventoryService.js';
 import { notificationService } from './notificationService.js';
 import { auditService } from './auditService.js';
 import { taxService } from './taxService.js';
+import { shippingService } from './shippingService.js';
 
 export interface CreateOrderInput {
   customerId?: string;
@@ -119,14 +120,15 @@ export const orderService = {
 
     // STEP 3 & 4: Calculate shipping, state-level destination tax, total and generate Order ID
     const destinationState = input.shippingInfo?.state || '';
+    const shippingCalc = shippingService.calculate(input.shippingInfo?.shippingMethod || 'standard', subtotal, destinationState);
     const taxCalc = taxService.calculateTax(
       destinationState,
       validatedItems.map(vi => ({ price: vi.priceAtPurchase, quantity: vi.quantity })),
-      subtotal
+      subtotal,
+      shippingCalc.amount
     );
-
-    const calculatedTax = input.tax !== undefined && input.tax >= 0 ? input.tax : taxCalc.taxAmount;
-    const shipping = input.shippingFee !== undefined && input.shippingFee >= 0 ? input.shippingFee : 0;
+    const shipping = shippingCalc.amount;
+    const calculatedTax = taxCalc.taxAmount;
     const total = Math.round((subtotal + shipping + calculatedTax) * 100) / 100;
 
     const orderId = await this.generateOrderId();
@@ -167,10 +169,10 @@ export const orderService = {
       shipping,
       tax: calculatedTax,
       total,
-      paymentStatus: 'Paid' as PaymentStatus,
+      paymentStatus: (input.paymentMethod === 'stripe_checkout' ? 'Pending' : 'Paid') as PaymentStatus,
       orderStatus: initialStatus,
       paymentMethod: input.paymentMethod || 'Credit Card (Processed)',
-      paymentTransactionId: input.paymentTransactionId || `PAY-${Date.now()}`,
+      paymentTransactionId: input.paymentTransactionId,
       shippingInfo: input.shippingInfo,
       statusHistory,
       notes: input.notes
