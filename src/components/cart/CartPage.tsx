@@ -26,7 +26,8 @@ export const CartPage: React.FC = () => {
     cartCount,
     setActiveView,
     navigateToProduct,
-    showToast
+    showToast,
+    currentCustomer
   } = useShop();
 
   const [promoCode, setPromoCode] = useState('');
@@ -56,6 +57,7 @@ export const CartPage: React.FC = () => {
   const discountAmount = (cartSubtotal * discountPercent) / 100;
   const subtotalAfterDiscount = Math.max(0, cartSubtotal - discountAmount);
   const handleCheckout = () => {
+    if (!currentCustomer) { sessionStorage.setItem('pa_checkout_return','1'); showToast('Please sign in or create an account to proceed to checkout.', 'info'); setActiveView('login'); return; }
     setActiveView('checkout');
     navigateTo('/checkout');
     window.scrollTo({ top: 0, behavior: 'smooth' });
