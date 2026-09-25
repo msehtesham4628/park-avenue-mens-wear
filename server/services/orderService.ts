@@ -329,6 +329,42 @@ export const orderService = {
     return order;
   },
 
+  async updateShipment(orderId: string, adminUser: { id:string; name:string; email:string; role:string }, data: { carrier:string; trackingId:string; trackingUrl?:string; status:'Shipped'|'In Transit'|'Out for Delivery'|'Delivered'; estimatedDelivery?:string; notes?:string }) {
+    const order = await OrderModel.findOne({ orderId });
+    if (!order) throw new Error(`Order ${orderId} not found.`);
+    if (!data.trackingId.trim()) throw new Error('Tracking ID is required.');
+    const previousStatus = order.orderStatus;
+    order.trackingNumber = data.trackingId.trim();
+    if (order.shippingInfo) {
+      order.shippingInfo.carrier = data.carrier.trim();
+      order.shippingInfo.estimatedDelivery = data.estimatedDelivery?.trim();
+    }
+    order.shipment = {
+      ...(order.shipment || {}),
+      carrier:data.carrier.trim(),
+      trackingId:data.trackingId.trim(),
+      trackingUrl:data.trackingUrl?.trim(),
+      status:data.status,
+      estimatedDelivery:data.estimatedDelivery?.trim(),
+      notes:data.notes?.trim()
+    };
+    if (data.status === 'Shipped' || data.status === 'In Transit' || data.status === 'Out for Delivery' || data.status === 'Delivered') {
+      order.orderStatus = data.status === 'Delivered' ? 'Delivered' : data.status === 'Out for Delivery' ? 'Out for Delivery' : 'Shipped';
+    }
+    if (data.status === 'Shipped' || data.status === 'In Transit') order.shipment.shippedAt = order.shipment.shippedAt || new Date();
+    if (data.status === 'Delivered') order.shipment.deliveredAt = new Date();
+    order.statusHistory.push({
+      previousStatus,
+      newStatus: order.orderStatus,
+      changedBy:{ id:adminUser.id, name:adminUser.name, role:adminUser.role },
+      note:data.notes || `Shipment updated: ${data.status}`,
+      timestamp:new Date()
+    });
+    await order.save();
+    await auditService.record({ adminUser, action:'ORDER_SHIPMENT_UPDATED', entity:'Order', entityId:order.orderId, previousValue:{status:previousStatus}, newValue:{shipment:order.shipment, orderStatus:order.orderStatus} });
+    return order;
+  },
+
   /**
    * Secure customer lookup by Order ID + Email or Phone
    */
