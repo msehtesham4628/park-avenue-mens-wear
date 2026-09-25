@@ -379,7 +379,7 @@ export const CartPage: React.FC = () => {
                     onClick={handleCheckout}
                     className="w-full py-4 bg-[#111827] text-white hover:bg-[#936B34] active:bg-[#7a5829] active:scale-[0.99] transition-all font-semibold text-xs uppercase tracking-[0.25em] flex items-center justify-center gap-2 cursor-pointer shadow-md"
                   >
-                    <span>PROCEED TO CHECKOUT</span>
+                    <span>PROCEED TO PAYMENT</span>
                     <ArrowRight className="w-4 h-4 text-[#936B34]" />
                   </button>
 

@@ -16,6 +16,7 @@ router.get('/list', ...requireAdminOrStaff, orderController.getAdminOrders);
 router.put('/admin/:id/status', ...requireAdminOrStaff, orderController.updateOrderStatus);
 router.put('/:id/status', ...requireAdminOrStaff, orderController.updateOrderStatus);
 router.put('/admin/:id/shipment', ...requireAdminOrStaff, orderController.updateShipment);
+router.put('/:id/shipment', ...requireAdminOrStaff, orderController.updateShipment);
 
 router.get('/:id', authenticateJWT, orderController.getOrderById);
 

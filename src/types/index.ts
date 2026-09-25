@@ -136,6 +136,7 @@ export interface Order {
     country: string;
   };
   trackingNumber?: string;
+  trackingUrl?: string;
   carrier?: string;
   estimatedDelivery?: string;
   shipment?: { carrier?: string; trackingId?: string; trackingUrl?: string; status?: string; estimatedDelivery?: string; notes?: string };

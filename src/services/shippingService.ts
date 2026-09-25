@@ -11,8 +11,8 @@ export interface ShippingMethodOption {
 
 export const LUXURY_SHIPPING_METHODS: ShippingMethodOption[] = [
   {
-    id: 'standard_ground',
-    name: 'Complimentary White-Glove Ground',
+    id: 'standard',
+    name: 'Complimentary Standard / Ground',
     carrier: 'UPS Ground / FedEx Home',
     speed: '3–5 Business Days',
     cost: 0,
@@ -21,17 +21,17 @@ export const LUXURY_SHIPPING_METHODS: ShippingMethodOption[] = [
     iconType: 'standard'
   },
   {
-    id: 'atelier_express',
-    name: 'Atelier Priority Air',
+    id: 'express',
+    name: 'Atelier Express Air',
     carrier: 'FedEx Priority / UPS 2nd Day Air',
-    speed: '2 Business Days',
+    speed: '2–3 Business Days',
     cost: 25,
     description: 'Expedited air courier dispatch with priority tailoring schedule.',
     iconType: 'express'
   },
   {
-    id: 'overnight_concierge',
-    name: 'Manhattan VIP Next-Day Courier',
+    id: 'overnight',
+    name: 'White-Glove VIP Courier / Overnight',
     carrier: 'Atelier Private White-Glove Courier',
     speed: 'Next Business Morning (Pre-10:30 AM)',
     cost: 65,

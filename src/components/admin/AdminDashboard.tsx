@@ -31,7 +31,8 @@ import {
   Zap,
   Copy,
   ExternalLink,
-  Globe
+  Globe,
+  Truck
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { 
@@ -1094,57 +1095,112 @@ export const AdminDashboard: React.FC = () => {
                       <th className="p-4">ITEMS</th>
                       <th className="p-4">TOTAL</th>
                       <th className="p-4">STATUS</th>
+                      <th className="p-4">CARRIER &amp; TRACKING</th>
                       <th className="p-4 text-right">UPDATE STATUS / SHIPMENT</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {ordersList.map((ord, ordIdx) => (
-                      <tr key={ord.id ? `ord-${ord.id}-${ordIdx}` : `ord-${ordIdx}`} className="hover:bg-black/[0.02]">
-                        <td className="p-4 text-[#936B34] font-medium">{ord.id}</td>
-                        <td className="p-4 text-[#111827]">
-                          {(ord.shippingAddress as any)?.fullName || ord.customerEmail || 'Client'}
-                        </td>
-                        <td className="p-4 text-gray-500">
-                          {ord.items?.map(it => `${it.productName} (${it.quantity})`).join(', ') || 'N/A'}
-                        </td>
-                        <td className="p-4 tabular-nums font-semibold text-[#111827]">${ord.total.toLocaleString()}</td>
-                        <td className="p-4 uppercase text-[#936B34] font-medium">
-                          <span className="inline-block px-2.5 py-1 text-[10px] font-mono tracking-wider bg-[#936B34]/10 text-[#936B34] border border-[#936B34]/30">
-                            {ord.orderStatus || ord.status || 'Confirmed'}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right space-x-1.5">
-                          {['pending', 'processing', 'shipped', 'delivered'].map(st => {
-                            const currentStatusNorm = (ord.orderStatus || ord.status || '').toLowerCase();
-                            const isCurrent = currentStatusNorm === st.toLowerCase();
-                            const orderIdentifier = ord.id || (ord as any).orderId;
-                            return (
-                              <button
-                                key={`status-${ord.id || ordIdx}-${st}`}
-                                disabled={isCurrent}
-                                onClick={async () => {
-                                  try {
-                                    await OrderService.updateStatus(orderIdentifier, st);
-                                    showToast(`Order ${orderIdentifier} status updated to ${st.toUpperCase()}`, 'success');
-                                    await loadAllData();
-                                  } catch (err: any) {
-                                    showToast(err.message || `Failed to update status for order ${orderIdentifier}`, 'error');
-                                  }
-                                }}
-                                className={`px-2.5 py-1 text-[9px] border uppercase transition-all ${
-                                  isCurrent
-                                    ? 'bg-[#111827] text-white border-[#111827] font-semibold shadow-xs cursor-default'
-                                    : 'border-gray-200 hover:border-[#936B34] text-gray-500 hover:text-[#111827] bg-[#F9F9F8] cursor-pointer'
-                                }`}
-                              >
-                                {st}
-                              </button>
-                            );
-                          })}
-                          <button onClick={() => { setShipmentOrder(ord); setShipmentForm({ carrier:(ord as any).carrier || 'FedEx', trackingId:(ord as any).trackingNumber || '', trackingUrl:(ord as any).shipment?.trackingUrl || '', status:(ord as any).shipment?.status || 'Shipped', estimatedDelivery:(ord as any).estimatedDelivery || '', notes:'' }); }} className="ml-2 px-2.5 py-1 text-[9px] border border-[#936B34] text-[#936B34] uppercase hover:bg-[#936B34] hover:text-white">TRACKING</button>
-                        </td>
-                      </tr>
-                    ))}
+                    {ordersList.map((ord, ordIdx) => {
+                      const carrierName = (ord as any).carrier || (ord as any).shipment?.carrier || 'FedEx';
+                      const trackingNumber = (ord as any).trackingNumber || (ord as any).shipment?.trackingId;
+                      const trackingUrl = (ord as any).trackingUrl || (ord as any).shipment?.trackingUrl;
+                      const shipmentStatus = (ord as any).shipment?.status || (ord as any).orderStatus || (ord as any).status;
+
+                      return (
+                        <tr key={ord.id ? `ord-${ord.id}-${ordIdx}` : `ord-${ordIdx}`} className="hover:bg-black/[0.02]">
+                          <td className="p-4 text-[#936B34] font-medium">{ord.id}</td>
+                          <td className="p-4 text-[#111827]">
+                            {(ord.shippingAddress as any)?.fullName || ord.customerEmail || 'Client'}
+                          </td>
+                          <td className="p-4 text-gray-500">
+                            {ord.items?.map(it => `${it.productName} (${it.quantity})`).join(', ') || 'N/A'}
+                          </td>
+                          <td className="p-4 tabular-nums font-semibold text-[#111827]">${ord.total.toLocaleString()}</td>
+                          <td className="p-4 uppercase text-[#936B34] font-medium">
+                            <span className="inline-block px-2.5 py-1 text-[10px] font-mono tracking-wider bg-[#936B34]/10 text-[#936B34] border border-[#936B34]/30">
+                              {ord.orderStatus || ord.status || 'Confirmed'}
+                            </span>
+                          </td>
+                          <td className="p-4 font-mono">
+                            {trackingNumber ? (
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#111827] text-white text-[10px] font-semibold uppercase">
+                                    <Truck className="w-2.5 h-2.5 text-[#936B34]" />
+                                    <span>{carrierName}</span>
+                                  </span>
+                                  <span className="text-[10px] text-gray-500 font-semibold">{shipmentStatus}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[#111827] font-semibold text-[11px] tabular-nums bg-white px-1.5 py-0.5 border border-gray-200 inline-block">
+                                    {trackingNumber}
+                                  </span>
+                                  {trackingUrl && (
+                                    <a
+                                      href={trackingUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[#936B34] hover:text-black p-0.5 inline-block"
+                                      title="Open tracking URL"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-[10px] italic">Pending Tracking ID</span>
+                            )}
+                          </td>
+                          <td className="p-4 text-right space-x-1.5">
+                            {['pending', 'processing', 'shipped', 'delivered'].map(st => {
+                              const currentStatusNorm = (ord.orderStatus || ord.status || '').toLowerCase();
+                              const isCurrent = currentStatusNorm === st.toLowerCase();
+                              const orderIdentifier = ord.id || (ord as any).orderId;
+                              return (
+                                <button
+                                  key={`status-${ord.id || ordIdx}-${st}`}
+                                  disabled={isCurrent}
+                                  onClick={async () => {
+                                    try {
+                                      await OrderService.updateStatus(orderIdentifier, st);
+                                      showToast(`Order ${orderIdentifier} status updated to ${st.toUpperCase()}`, 'success');
+                                      await loadAllData();
+                                    } catch (err: any) {
+                                      showToast(err.message || `Failed to update status for order ${orderIdentifier}`, 'error');
+                                    }
+                                  }}
+                                  className={`px-2 py-1 text-[9px] border uppercase transition-all ${
+                                    isCurrent
+                                      ? 'bg-[#111827] text-white border-[#111827] font-semibold shadow-xs cursor-default'
+                                      : 'border-gray-200 hover:border-[#936B34] text-gray-500 hover:text-[#111827] bg-[#F9F9F8] cursor-pointer'
+                                  }`}
+                                >
+                                  {st}
+                                </button>
+                              );
+                            })}
+                            <button
+                              onClick={() => {
+                                setShipmentOrder(ord);
+                                setShipmentForm({
+                                  carrier: (ord as any).carrier || (ord as any).shipment?.carrier || 'FedEx',
+                                  trackingId: (ord as any).trackingNumber || (ord as any).shipment?.trackingId || '',
+                                  trackingUrl: (ord as any).trackingUrl || (ord as any).shipment?.trackingUrl || '',
+                                  status: (ord as any).shipment?.status || ((ord as any).orderStatus === 'Delivered' ? 'Delivered' : 'Shipped'),
+                                  estimatedDelivery: (ord as any).estimatedDelivery || (ord as any).shipment?.estimatedDelivery || '',
+                                  notes: (ord as any).shipment?.notes || ''
+                                });
+                              }}
+                              className="ml-2 px-3 py-1 text-[10px] border border-[#936B34] bg-white text-[#936B34] hover:bg-[#936B34] hover:text-white uppercase transition-colors inline-flex items-center gap-1 font-semibold cursor-pointer shadow-2xs"
+                            >
+                              <Truck className="w-3 h-3" />
+                              <span>{trackingNumber ? 'EDIT TRACKING' : 'SET TRACKING'}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1170,16 +1226,139 @@ export const AdminDashboard: React.FC = () => {
         {shipmentOrder && (
           <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
             <div className="w-full max-w-lg bg-white border border-gray-200 shadow-2xl p-6">
-              <div className="flex items-center justify-between mb-5"><div><h3 className="font-serif text-2xl">Shipment & Tracking</h3><p className="text-xs font-mono text-gray-500 mt-1">{shipmentOrder.id}</p></div><button onClick={()=>setShipmentOrder(null)}><X className="w-5 h-5"/></button></div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <label className="text-[10px] font-mono uppercase">Carrier<select value={shipmentForm.carrier} onChange={e=>setShipmentForm({...shipmentForm,carrier:e.target.value})} className="mt-1 w-full border p-2.5 text-sm"><option>FedEx</option><option>UPS</option><option>DHL</option><option>USPS</option><option>Private Courier</option></select></label>
-                <label className="text-[10px] font-mono uppercase">Shipment Status<select value={shipmentForm.status} onChange={e=>setShipmentForm({...shipmentForm,status:e.target.value})} className="mt-1 w-full border p-2.5 text-sm"><option>Shipped</option><option>In Transit</option><option>Out for Delivery</option><option>Delivered</option></select></label>
-                <label className="text-[10px] font-mono uppercase sm:col-span-2">Tracking Number<input value={shipmentForm.trackingId} onChange={e=>setShipmentForm({...shipmentForm,trackingId:e.target.value})} className="mt-1 w-full border p-2.5 text-sm" placeholder="Enter real carrier tracking ID"/></label>
-                <label className="text-[10px] font-mono uppercase sm:col-span-2">Carrier Tracking Link<input value={shipmentForm.trackingUrl} onChange={e=>setShipmentForm({...shipmentForm,trackingUrl:e.target.value})} className="mt-1 w-full border p-2.5 text-sm" placeholder="https://..."/></label>
-                <label className="text-[10px] font-mono uppercase">Estimated Delivery<input type="date" value={shipmentForm.estimatedDelivery} onChange={e=>setShipmentForm({...shipmentForm,estimatedDelivery:e.target.value})} className="mt-1 w-full border p-2.5 text-sm"/></label>
-                <label className="text-[10px] font-mono uppercase">Dispatch Notes<textarea value={shipmentForm.notes} onChange={e=>setShipmentForm({...shipmentForm,notes:e.target.value})} className="mt-1 w-full border p-2.5 text-sm" rows={2}/></label>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="font-serif text-2xl text-[#111827]">Shipment &amp; Tracking Dispatch</h3>
+                  <p className="text-xs font-mono text-[#936B34] mt-1 font-semibold">Order ID: {shipmentOrder.id}</p>
+                </div>
+                <button onClick={() => setShipmentOrder(null)} className="p-1 text-gray-400 hover:text-black cursor-pointer">
+                  <X className="w-5 h-5"/>
+                </button>
               </div>
-              <div className="flex justify-end gap-2 mt-6"><button onClick={()=>setShipmentOrder(null)} className="px-4 py-2 border text-xs uppercase">Cancel</button><button disabled={isSavingShipment} onClick={async()=>{try{setIsSavingShipment(true);await OrderService.updateShipment(shipmentOrder.id,shipmentForm);showToast('Shipment tracking updated.','success');setShipmentOrder(null);await loadAllData();}catch(e:any){showToast(e.message||'Failed to update shipment.','error');}finally{setIsSavingShipment(false);}}} className="px-5 py-2 bg-[#111827] text-white text-xs uppercase">{isSavingShipment?'Saving…':'Save Shipment'}</button></div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <label className="text-[10px] font-mono uppercase text-gray-600 font-medium">
+                  Carrier
+                  <select 
+                    value={shipmentForm.carrier} 
+                    onChange={e => {
+                      const nextCarrier = e.target.value;
+                      let nextUrl = shipmentForm.trackingUrl;
+                      const trk = shipmentForm.trackingId.trim();
+                      if (trk) {
+                        if (nextCarrier === 'FedEx') nextUrl = `https://www.fedex.com/fedextrack/?trknbr=${trk}`;
+                        else if (nextCarrier === 'UPS') nextUrl = `https://www.ups.com/track?tracknum=${trk}`;
+                        else if (nextCarrier === 'USPS') nextUrl = `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trk}`;
+                        else if (nextCarrier === 'DHL') nextUrl = `https://www.dhl.com/en/express/tracking.html?AWB=${trk}`;
+                      }
+                      setShipmentForm({ ...shipmentForm, carrier: nextCarrier, trackingUrl: nextUrl });
+                    }} 
+                    className="mt-1 w-full border border-gray-200 p-2.5 text-sm bg-white font-sans focus:outline-none focus:border-[#936B34]"
+                  >
+                    <option value="FedEx">FedEx</option>
+                    <option value="UPS">UPS</option>
+                    <option value="DHL">DHL</option>
+                    <option value="USPS">USPS</option>
+                    <option value="Private Courier">Private Courier</option>
+                  </select>
+                </label>
+
+                <label className="text-[10px] font-mono uppercase text-gray-600 font-medium">
+                  Shipment Status
+                  <select 
+                    value={shipmentForm.status} 
+                    onChange={e => setShipmentForm({ ...shipmentForm, status: e.target.value })} 
+                    className="mt-1 w-full border border-gray-200 p-2.5 text-sm bg-white font-sans focus:outline-none focus:border-[#936B34]"
+                  >
+                    <option value="Shipped">Shipped</option>
+                    <option value="In Transit">In Transit</option>
+                    <option value="Out for Delivery">Out for Delivery</option>
+                    <option value="Delivered">Delivered</option>
+                  </select>
+                </label>
+
+                <label className="text-[10px] font-mono uppercase text-gray-600 font-medium sm:col-span-2">
+                  Tracking Number *
+                  <input 
+                    value={shipmentForm.trackingId} 
+                    onChange={e => {
+                      const nextTrk = e.target.value;
+                      let nextUrl = shipmentForm.trackingUrl;
+                      const c = shipmentForm.carrier;
+                      if (nextTrk.trim()) {
+                        if (c === 'FedEx') nextUrl = `https://www.fedex.com/fedextrack/?trknbr=${nextTrk.trim()}`;
+                        else if (c === 'UPS') nextUrl = `https://www.ups.com/track?tracknum=${nextTrk.trim()}`;
+                        else if (c === 'USPS') nextUrl = `https://tools.usps.com/go/TrackConfirmAction?tLabels=${nextTrk.trim()}`;
+                        else if (c === 'DHL') nextUrl = `https://www.dhl.com/en/express/tracking.html?AWB=${nextTrk.trim()}`;
+                      }
+                      setShipmentForm({ ...shipmentForm, trackingId: nextTrk, trackingUrl: nextUrl });
+                    }} 
+                    className="mt-1 w-full border border-gray-200 p-2.5 text-sm font-mono focus:outline-none focus:border-[#936B34]" 
+                    placeholder="e.g. 783921049281 or 1Z9999999999999999"
+                    required
+                  />
+                </label>
+
+                <label className="text-[10px] font-mono uppercase text-gray-600 font-medium sm:col-span-2">
+                  Carrier Tracking Link
+                  <input 
+                    value={shipmentForm.trackingUrl} 
+                    onChange={e => setShipmentForm({ ...shipmentForm, trackingUrl: e.target.value })} 
+                    className="mt-1 w-full border border-gray-200 p-2.5 text-sm font-mono focus:outline-none focus:border-[#936B34]" 
+                    placeholder="https://www.fedex.com/... or https://www.ups.com/..."
+                  />
+                  <span className="text-[10px] text-gray-400 mt-1 block">Customer will receive this direct link to track real-time delivery status.</span>
+                </label>
+
+                <label className="text-[10px] font-mono uppercase text-gray-600 font-medium">
+                  Estimated Delivery
+                  <input 
+                    type="date" 
+                    value={shipmentForm.estimatedDelivery} 
+                    onChange={e => setShipmentForm({ ...shipmentForm, estimatedDelivery: e.target.value })} 
+                    className="mt-1 w-full border border-gray-200 p-2.5 text-sm font-sans focus:outline-none focus:border-[#936B34]"
+                  />
+                </label>
+
+                <label className="text-[10px] font-mono uppercase text-gray-600 font-medium">
+                  Dispatch Notes
+                  <textarea 
+                    value={shipmentForm.notes} 
+                    onChange={e => setShipmentForm({ ...shipmentForm, notes: e.target.value })} 
+                    className="mt-1 w-full border border-gray-200 p-2.5 text-sm font-sans focus:outline-none focus:border-[#936B34]" 
+                    rows={2}
+                    placeholder="e.g. Handed to priority courier driver."
+                  />
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-100">
+                <button 
+                  onClick={() => setShipmentOrder(null)} 
+                  className="px-4 py-2.5 border border-gray-200 text-xs font-mono uppercase hover:border-black transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button 
+                  disabled={isSavingShipment || !shipmentForm.trackingId.trim()} 
+                  onClick={async () => {
+                    try {
+                      setIsSavingShipment(true);
+                      await OrderService.updateShipment(shipmentOrder.id, shipmentForm);
+                      showToast(`Tracking saved for ${shipmentOrder.id} with ${shipmentForm.carrier}`, 'success');
+                      setShipmentOrder(null);
+                      await loadAllData();
+                    } catch (e: any) {
+                      showToast(e.message || 'Failed to update shipment.', 'error');
+                    } finally {
+                      setIsSavingShipment(false);
+                    }
+                  }} 
+                  className="px-6 py-2.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer shadow-sm font-semibold"
+                >
+                  {isSavingShipment ? 'Saving…' : 'Save Shipment & Dispatch'}
+                </button>
+              </div>
             </div>
           </div>
         )}

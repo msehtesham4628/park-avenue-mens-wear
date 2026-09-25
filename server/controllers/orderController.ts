@@ -186,7 +186,10 @@ export const orderController = {
           shippingMethod: order.shippingInfo.shippingMethod,
           estimatedDelivery: order.shippingInfo.estimatedDelivery
         },
-        trackingNumber: order.trackingNumber,
+        trackingNumber: order.trackingNumber || (order as any).shipment?.trackingId,
+        trackingUrl: (order as any).trackingUrl || (order as any).shipment?.trackingUrl,
+        carrier: (order as any).carrier || order.shippingInfo.carrier || (order as any).shipment?.carrier,
+        shipment: (order as any).shipment,
         statusHistory: order.statusHistory,
         createdAt: order.createdAt
       };

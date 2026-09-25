@@ -7,7 +7,8 @@ import {
   Trash2,
   LogOut,
   LogIn,
-  ShieldCheck
+  ShieldCheck,
+  ExternalLink
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { AuthService } from '../../services/api';
@@ -231,12 +232,40 @@ export const AccountPage: React.FC = () => {
                     ))}
                   </div>
 
-                  <div className="pt-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-                    <span className="text-gray-500">Tracking: {order.trackingNumber ? <><span className="text-[#111827] font-semibold">{order.carrier || order.shipment?.carrier || 'Carrier'}</span> · {order.trackingNumber}</> : 'Tracking information will be available once your order has been dispatched.'}</span>
-                    {order.shipment?.trackingUrl && <a href={order.shipment.trackingUrl} target="_blank" rel="noreferrer" className="text-[#936B34] underline">TRACK SHIPMENT</a>}
+                  <div className="pt-3 border-t border-gray-200/80 flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
+                    {order.trackingNumber || order.shipment?.trackingId ? (
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#111827] text-white text-[11px] font-semibold tracking-wider uppercase shadow-xs">
+                          <Truck className="w-3.5 h-3.5 text-[#936B34]" />
+                          <span>{order.carrier || order.shipment?.carrier || 'Carrier'}</span>
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gray-500 text-[11px] uppercase tracking-wider">Tracking ID:</span>
+                          <span className="font-semibold text-[#111827] text-xs tabular-nums bg-white px-2.5 py-1 border border-gray-200">
+                            {order.trackingNumber || order.shipment?.trackingId}
+                          </span>
+                        </div>
+                        {(order.trackingUrl || order.shipment?.trackingUrl) && (
+                          <a
+                            href={order.trackingUrl || order.shipment?.trackingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-3 py-1 bg-[#936B34] hover:bg-[#7A5726] text-white text-[10px] font-semibold uppercase tracking-wider transition-colors shadow-xs"
+                          >
+                            <span>Live Carrier Tracking</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 text-[11px]">
+                        Tracking information will be available once your consignment has been dispatched.
+                      </span>
+                    )}
+
                     <button
                       onClick={() => handleTrackOrder(order)}
-                      className="text-[#936B34] hover:text-[#111827] flex items-center gap-1 font-medium uppercase cursor-pointer transition-colors"
+                      className="text-[#936B34] hover:text-[#111827] flex items-center gap-1 font-semibold text-xs uppercase tracking-wider cursor-pointer transition-colors ml-auto"
                     >
                       <span>TRACK CONSIGNMENT</span>
                       <ArrowRight className="w-3.5 h-3.5" />

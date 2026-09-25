@@ -3,7 +3,8 @@ import {
   Truck, 
   CheckCircle2, 
   Clock, 
-  Scissors
+  Scissors,
+  ExternalLink
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
@@ -198,14 +199,77 @@ export const OrderTrackingPage: React.FC = () => {
             </div>
 
             {/* Courier Details */}
-            <div className="p-4 bg-white border border-gray-200 text-xs font-mono shadow-md">
-              {currentOrder.trackingNumber ? (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-2"><Truck className="w-4 h-4 text-[#936B34]" /><span className="text-gray-600">COURIER: {currentOrder.carrier || currentOrder.shipment?.carrier || 'Carrier'}</span></div>
-                  <div className="flex items-center gap-3"><span className="text-[#936B34] font-medium">TRACKING #{currentOrder.trackingNumber}</span>{currentOrder.shipment?.trackingUrl && <a href={currentOrder.shipment.trackingUrl} target="_blank" rel="noreferrer" className="underline text-[#936B34]">TRACK SHIPMENT</a>}</div>
+            {(() => {
+              const carrier = currentOrder.carrier || currentOrder.shipment?.carrier || (currentOrder as any)?.shippingInfo?.carrier || 'Atelier White-Glove Courier';
+              const trackingId = currentOrder.trackingNumber || currentOrder.shipment?.trackingId;
+              const directTrackingUrl = currentOrder.trackingUrl || currentOrder.shipment?.trackingUrl || 
+                (trackingId ? (
+                  carrier.toLowerCase().includes('fedex') ? `https://www.fedex.com/fedextrack/?trknbr=${trackingId}` :
+                  carrier.toLowerCase().includes('ups') ? `https://www.ups.com/track?tracknum=${trackingId}` :
+                  carrier.toLowerCase().includes('dhl') ? `https://www.dhl.com/en/express/tracking.html?AWB=${trackingId}` :
+                  carrier.toLowerCase().includes('usps') ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingId}` :
+                  undefined
+                ) : undefined);
+
+              return (
+                <div className="p-6 bg-white border border-gray-200 text-xs font-mono shadow-md space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                    <div className="flex items-center gap-2.5">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] text-white text-[11px] font-semibold tracking-wider uppercase shadow-xs">
+                        <Truck className="w-3.5 h-3.5 text-[#936B34]" />
+                        <span>{carrier}</span>
+                      </span>
+                      {currentOrder.shipment?.status && (
+                        <span className="px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200 text-[10px] font-semibold uppercase tracking-wider">
+                          {currentOrder.shipment.status}
+                        </span>
+                      )}
+                    </div>
+
+                    {trackingId ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 text-[11px] uppercase tracking-wider">Tracking Number:</span>
+                        <span className="font-semibold text-[#111827] text-sm tabular-nums bg-gray-50 px-3 py-1 border border-gray-200">
+                          {trackingId}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">Tracking ID will be assigned upon packaging</span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                    <div className="text-gray-600 text-xs">
+                      {currentOrder.shipment?.notes && (
+                        <p className="mb-1 text-gray-700">
+                          <strong className="text-[#111827]">Dispatch Note:</strong> {currentOrder.shipment.notes}
+                        </p>
+                      )}
+                      {currentOrder.shipment?.estimatedDelivery && (
+                        <p className="text-gray-500 text-[11px]">
+                          Estimated Delivery: <strong className="text-[#936B34]">{currentOrder.shipment.estimatedDelivery}</strong>
+                        </p>
+                      )}
+                      {!currentOrder.shipment?.notes && !currentOrder.shipment?.estimatedDelivery && (
+                        <span>Consignment is protected in breathable garment covers with signature release required upon delivery.</span>
+                      )}
+                    </div>
+
+                    {directTrackingUrl && (
+                      <a
+                        href={directTrackingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#936B34] hover:bg-[#7A5726] text-white text-xs font-semibold uppercase tracking-wider transition-colors shadow-xs shrink-0 cursor-pointer"
+                      >
+                        <span>Track with {carrier}</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
                 </div>
-              ) : <span className="text-gray-500">Tracking information will be available once your order has been dispatched.</span>}
-            </div>
+              );
+            })()}
           </div>
         ) : (
           <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-2xl">

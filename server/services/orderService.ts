@@ -61,16 +61,23 @@ export const orderService = {
     let subtotal = 0;
 
     for (const item of input.items) {
-      const product = await ProductModel.findOne({ productId: item.productId, isActive: true });
+      const product = await ProductModel.findOne({
+        $or: [
+          { productId: item.productId },
+          { sku: item.productId }
+        ],
+        isActive: { $ne: false }
+      }) || (item.productId?.match(/^[0-9a-fA-F]{24}$/) ? await ProductModel.findById(item.productId) : null);
+
       if (!product) {
         throw new Error(`Garment ID "${item.productId}" is not available.`);
       }
 
       const variant = product.variants.find((v: IProductVariant) => 
         (item.variantId && v.id === item.variantId) ||
-        (v.size.toLowerCase() === item.size.toLowerCase() && v.color.toLowerCase() === item.color.toLowerCase()) ||
-        (v.size.toLowerCase() === item.size.toLowerCase())
-      );
+        (v.size.toLowerCase() === (item.size || '').toLowerCase() && v.color.toLowerCase() === (item.color || '').toLowerCase()) ||
+        (v.size.toLowerCase() === (item.size || '').toLowerCase())
+      ) || product.variants[0];
 
       const availableStock = variant ? variant.stock : product.stockQuantity;
       if (item.quantity > availableStock) {
@@ -333,12 +340,20 @@ export const orderService = {
     let subtotal = 0;
     for (const item of input.items) {
       if (!Number.isInteger(item.quantity) || item.quantity < 1) throw new Error('Invalid quantity.');
-      const product = await ProductModel.findOne({ productId:item.productId, isActive:true });
+      const product = await ProductModel.findOne({
+        $or: [
+          { productId: item.productId },
+          { sku: item.productId }
+        ],
+        isActive: { $ne: false }
+      }) || (item.productId?.match(/^[0-9a-fA-F]{24}$/) ? await ProductModel.findById(item.productId) : null);
+
       if (!product) throw new Error(`Garment ${item.productId} is unavailable.`);
       const variant = product.variants.find((v:IProductVariant) =>
         (item.variantId && v.id === item.variantId) ||
-        (v.size.toLowerCase() === item.size.toLowerCase() && v.color.toLowerCase() === item.color.toLowerCase())
-      );
+        (v.size.toLowerCase() === (item.size || '').toLowerCase() && v.color.toLowerCase() === (item.color || '').toLowerCase()) ||
+        (v.size.toLowerCase() === (item.size || '').toLowerCase())
+      ) || product.variants[0];
       const availableStock = variant ? variant.stock : product.stockQuantity;
       if (item.quantity > availableStock) throw new Error(`Insufficient inventory for ${product.name}.`);
       const price = product.salePrice && product.salePrice > 0 ? product.salePrice : product.price;
@@ -358,6 +373,9 @@ export const orderService = {
     if (!data.trackingId.trim()) throw new Error('Tracking ID is required.');
     const previousStatus = order.orderStatus;
     order.trackingNumber = data.trackingId.trim();
+    if (data.trackingUrl?.trim()) {
+      order.trackingUrl = data.trackingUrl.trim();
+    }
     if (order.shippingInfo) {
       order.shippingInfo.carrier = data.carrier.trim();
       order.shippingInfo.estimatedDelivery = data.estimatedDelivery?.trim();

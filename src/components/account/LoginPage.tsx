@@ -78,7 +78,12 @@ export const LoginPage: React.FC = () => {
     try {
       const res = await login(identifier, loginPassword);
       if (res.success) {
-        if (res.role === 'admin' || res.role === 'staff') {
+        const isCheckoutReturn = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pa_checkout_return') === '1';
+        if (isCheckoutReturn) {
+          sessionStorage.removeItem('pa_checkout_return');
+          showToast('Welcome back! Continuing to secure checkout...', 'success');
+          setActiveView('checkout');
+        } else if (res.role === 'admin' || res.role === 'staff') {
           setActiveView('admin');
         } else {
           setActiveView('account');
@@ -151,7 +156,13 @@ export const LoginPage: React.FC = () => {
 
       if (res.success) {
         showToast('Account created successfully! Welcome to Park Avenue Mens Wear.', 'success');
-        setActiveView('account');
+        const isCheckoutReturn = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pa_checkout_return') === '1';
+        if (isCheckoutReturn) {
+          sessionStorage.removeItem('pa_checkout_return');
+          setActiveView('checkout');
+        } else {
+          setActiveView('account');
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         setErrorMessage(res.message || 'Registration could not be completed.');
@@ -188,6 +199,17 @@ export const LoginPage: React.FC = () => {
         {/* Main Card */}
         <div className="bg-white border border-gray-200 p-6 sm:p-8 shadow-sm">
           
+          {/* Checkout Return Prompt */}
+          {typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pa_checkout_return') === '1' && (
+            <div className="mb-6 p-4 bg-[#FBF9F5] border border-[#936B34]/40 text-xs font-mono flex items-start gap-3">
+              <Lock className="w-4 h-4 text-[#936B34] shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold text-[#111827] block uppercase tracking-wider">Authentication Required</span>
+                <span className="text-gray-600">Please sign in or create an account to proceed to checkout. Your garments in your shopping bag are securely preserved.</span>
+              </div>
+            </div>
+          )}
+
           {/* Error Banner */}
           {errorMessage && (
             <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 text-xs font-mono space-y-2">
