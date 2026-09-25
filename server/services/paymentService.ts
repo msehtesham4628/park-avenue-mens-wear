@@ -146,6 +146,34 @@ export const paymentService = {
     };
   },
 
+  async createCheckoutSession(orderId:string, customerEmail:string) {
+    if (!stripeClient) throw new Error('Stripe is not configured. Set STRIPE_SECRET_KEY in the deployment environment.');
+    const order = await OrderModel.findOne({ orderId });
+    if (!order) throw new Error(`Order ${orderId} not found.`);
+    if (order.paymentStatus === 'Paid') throw new Error('Order is already paid.');
+    const session = await stripeClient.checkout.sessions.create({
+      mode:'payment',
+      customer_email:customerEmail,
+      line_items:order.items.map(item => ({
+        price_data:{
+          currency:'usd',
+          product_data:{ name:item.name, description:`${item.size} / ${item.color}` },
+          unit_amount:Math.round(item.priceAtPurchase * 100)
+        },
+        quantity:item.quantity
+      })).concat([
+        ...(order.shipping > 0 ? [{ price_data:{currency:'usd',product_data:{name:order.shippingInfo.shippingMethod || 'Shipping'},unit_amount:Math.round(order.shipping*100)},quantity:1 }] : []),
+        ...(order.tax > 0 ? [{ price_data:{currency:'usd',product_data:{name:`Sales tax — ${order.taxDetails?.state || order.shippingInfo.state}`},unit_amount:Math.round(order.tax*100)},quantity:1 }] : [])
+      ]),
+      metadata:{ orderId:order.orderId, customerId:order.customerId || '', taxState:order.taxDetails?.state || '' },
+      success_url:`${ENV.FRONTEND_URL.replace(/\/$/,'')}/checkout?payment=success&orderId=${encodeURIComponent(order.orderId)}`,
+      cancel_url:`${ENV.FRONTEND_URL.replace(/\/$/,'')}/checkout?payment=cancelled&orderId=${encodeURIComponent(order.orderId)}`
+    });
+    order.stripeSessionId = session.id;
+    await order.save();
+    return session;
+  },
+
   /**
    * Manually confirm or settle order payment (e.g. following client-side tokenization)
    */
@@ -214,10 +242,10 @@ export const paymentService = {
 
     const eventType = event.type || event.event;
     const eventData = event.data?.object || event;
-    const orderId = eventData.metadata?.orderId || eventData.orderId;
+    const orderId = eventData.metadata?.orderId || eventData.orderId || eventData.client_reference_id;
 
     let paymentStatus: PaymentStatus = 'Pending';
-    if (eventType === 'payment_intent.succeeded' || eventType === 'charge.succeeded') {
+    if (eventType === 'checkout.session.completed' || eventType === 'payment_intent.succeeded' || eventType === 'charge.succeeded') {
       paymentStatus = 'Paid';
     } else if (eventType === 'payment_intent.payment_failed' || eventType === 'charge.failed') {
       paymentStatus = 'Failed';
