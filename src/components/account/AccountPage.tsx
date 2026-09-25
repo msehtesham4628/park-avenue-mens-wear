@@ -231,8 +231,9 @@ export const AccountPage: React.FC = () => {
                     ))}
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between text-xs font-mono">
-                    <span className="text-gray-500">Tracking: {order.trackingNumber || 'Awaiting dispatch'}</span>
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                    <span className="text-gray-500">Tracking: {order.trackingNumber ? <><span className="text-[#111827] font-semibold">{order.carrier || order.shipment?.carrier || 'Carrier'}</span> · {order.trackingNumber}</> : 'Tracking information will be available once your order has been dispatched.'}</span>
+                    {order.shipment?.trackingUrl && <a href={order.shipment.trackingUrl} target="_blank" rel="noreferrer" className="text-[#936B34] underline">TRACK SHIPMENT</a>}
                     <button
                       onClick={() => handleTrackOrder(order)}
                       className="text-[#936B34] hover:text-[#111827] flex items-center gap-1 font-medium uppercase cursor-pointer transition-colors"
