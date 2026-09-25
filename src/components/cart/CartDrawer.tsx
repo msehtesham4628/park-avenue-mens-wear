@@ -17,9 +17,6 @@ export const CartDrawer: React.FC = () => {
 
   if (!isCartOpen) return null;
 
-  const FREE_SHIPPING_THRESHOLD = 250;
-  const progressPercent = Math.min(100, (cartSubtotal / FREE_SHIPPING_THRESHOLD) * 100);
-  const remainingForFree = Math.max(0, FREE_SHIPPING_THRESHOLD - cartSubtotal);
   const handleCheckoutClick = () => {
     setIsCartOpen(false);
     setActiveView('checkout');
@@ -196,7 +193,7 @@ export const CartDrawer: React.FC = () => {
                 <div className="flex justify-between text-gray-500">
                   <span>EXPRESS DELIVERY</span>
                   <span className="text-[#936B34] font-medium">
-                    {shippingFee === 0 ? 'COMPLIMENTARY' : `$${shippingFee}`}
+                    Calculated at checkout
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-500">
@@ -204,8 +201,8 @@ export const CartDrawer: React.FC = () => {
                   <span className="text-[#111827]">Calculated at checkout</span>
                 </div>
                 <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold text-[#111827]">
-                  <span>ESTIMATED TOTAL</span>
-                  <span className="text-[#936B34] tabular-nums">${grandTotal.toFixed(2)}</span>
+                  <span>CART SUBTOTAL</span>
+                  <span className="text-[#936B34] tabular-nums">${cartSubtotal.toFixed(2)}</span>
                 </div>
               </div>
 
