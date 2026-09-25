@@ -29,7 +29,7 @@ export const US_STATE_TAX_RATES: Record<string, StateTaxInfo> = {
   MT:{code:'MT',name:'Montana',rate:0}, NE:{code:'NE',name:'Nebraska',rate:0.055},
   NV:{code:'NV',name:'Nevada',rate:0.0685}, NH:{code:'NH',name:'New Hampshire',rate:0},
   NJ:{code:'NJ',name:'New Jersey',rate:0.06625,clothingExempt:true}, NM:{code:'NM',name:'New Mexico',rate:0.04875},
-  NY:{code:'NY',name:'New York',rate:0.04,clothingExempt:true},
+  NY:{code:'NY',name:'New York',rate:0.04,clothingThreshold:110},
   NC:{code:'NC',name:'North Carolina',rate:0.0475}, ND:{code:'ND',name:'North Dakota',rate:0.05},
   OH:{code:'OH',name:'Ohio',rate:0.0575}, OK:{code:'OK',name:'Oklahoma',rate:0.045},
   OR:{code:'OR',name:'Oregon',rate:0}, PA:{code:'PA',name:'Pennsylvania',rate:0.06,clothingExempt:true},
