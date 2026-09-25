@@ -1,54 +1,45 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
+const HERO_IMAGES = ['/Hero_image_0.png','/Hero_image_1.png','/Hero_image_2.png','/Hero_image_3.png','/Hero_image_4.png'];
+
 export const Hero: React.FC = () => {
+  const [activeImage, setActiveImage] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setActiveImage((current) => (current + 1) % HERO_IMAGES.length), 5000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const scrollToNext = () => {
     const el = document.getElementById('category-showcase');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      window.scrollBy({ top: window.innerHeight * 0.75, behavior: 'smooth' });
-    }
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    else window.scrollBy({ top: window.innerHeight * 0.75, behavior: 'smooth' });
   };
 
   return (
-    <section className="relative min-h-[90vh] lg:min-h-[96vh] flex flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#FAF8F5] via-[#FFFFFF] to-[#F8F9FA] pt-28 sm:pt-36 lg:pt-40 pb-16 sm:pb-20">
-      {/* Subtle atelier background — no hero card/container */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              'linear-gradient(to right, rgba(0,0,0,0.5) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.5) 1px, transparent 1px)',
-            backgroundSize: '48px 48px'
-          }}
-        />
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[850px] h-[480px] bg-[#FAF3E8]/80 rounded-full blur-[140px]" />
-        <div className="absolute bottom-0 right-10 w-[600px] h-[380px] bg-[#936B34]/5 rounded-full blur-[130px]" />
-        <div className="absolute inset-0 max-w-7xl mx-auto border-x border-black/[0.04]" />
+    <section className="relative min-h-[90vh] lg:min-h-[96vh] flex flex-col items-center justify-center overflow-hidden bg-[#FAF8F5] pt-28 sm:pt-36 lg:pt-40 pb-16 sm:pb-20">
+      <div className="absolute inset-0">
+        {HERO_IMAGES.map((image, index) => (
+          <img key={image} src={image} alt="Park Avenue Menswear"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${index === activeImage ? 'opacity-100' : 'opacity-0'}`}
+            fetchPriority={index === 0 ? 'high' : 'auto'} loading={index === 0 ? 'eager' : 'lazy'} />
+        ))}
+        <div className="absolute inset-0 bg-white/25" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#FAF8F5]/45 via-transparent to-[#FAF8F5]/55" />
       </div>
-
-      {/* Official supplied logo only — no PA square, no fake logo, no bordered hero container */}
-      <div className="relative z-10 w-full flex items-center justify-center px-6 sm:px-8">
-        <img
-          src="/Park_Avenue_Logo.png"
-          alt="Park Avenue Menswear"
-          className="w-[210px] sm:w-[280px] md:w-[340px] lg:w-[390px] max-h-[46vh] object-contain"
-          fetchPriority="high"
-        />
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 text-center">
+        <img src="/Park_Avenue_Logo.png" alt="Park Avenue Menswear" className="w-[180px] sm:w-[230px] md:w-[280px] lg:w-[330px] max-h-[36vh] object-contain drop-shadow-sm" fetchPriority="high" />
       </div>
-
-      <div className="relative z-10 mt-12 flex flex-col items-center justify-center">
-        <button
-          onClick={scrollToNext}
-          aria-label="Scroll to collection"
-          className="w-10 h-10 rounded-full border border-gray-300 hover:border-[#936B34] bg-white text-[#936B34] hover:text-black transition-all flex items-center justify-center shadow-sm cursor-pointer group"
-        >
-          <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
-        </button>
+      <div className="absolute bottom-16 z-10 flex items-center gap-2">
+        {HERO_IMAGES.map((image, index) => (
+          <button key={image} type="button" aria-label={`Show hero image ${index + 1}`} onClick={() => setActiveImage(index)}
+            className={`h-1.5 transition-all duration-300 ${index === activeImage ? 'w-8 bg-[#936B34]' : 'w-2 bg-white/80'}`} />
+        ))}
       </div>
-
-      <div className="absolute bottom-0 inset-x-0 border-b border-gray-200" />
+      <button onClick={scrollToNext} aria-label="Scroll to collection"
+        className="absolute bottom-4 z-10 w-10 h-10 rounded-full border border-gray-300 hover:border-[#936B34] bg-white/90 text-[#936B34] hover:text-black transition-all flex items-center justify-center shadow-sm cursor-pointer">
+        <ChevronDown className="w-4 h-4" />
+      </button>
     </section>
   );
 };
