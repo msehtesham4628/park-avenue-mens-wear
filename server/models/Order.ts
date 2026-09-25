@@ -43,7 +43,11 @@ export interface IOrderStatusHistory {
   timestamp: Date;
 }
 
-export interface IShipment { carrier?: string; trackingId?: string; trackingUrl?: string; status: 'Pending'|'Shipped'|'In Transit'|'Out for Delivery'|'Delivered'; estimatedDelivery?: string; notes?: string; shippedAt?: Date; deliveredAt?: Date; }\n\nexport interface ITaxSnapshot { state:string; rate:number; taxableAmount:number; amount:number; calculationVersion:string; details?:string; }\n\nexport interface IShippingInfo {
+export interface IShipment { carrier?: string; trackingId?: string; trackingUrl?: string; status: 'Pending'|'Shipped'|'In Transit'|'Out for Delivery'|'Delivered'; estimatedDelivery?: string; notes?: string; shippedAt?: Date; deliveredAt?: Date; }
+
+export interface ITaxSnapshot { state:string; rate:number; taxableAmount:number; amount:number; calculationVersion:string; details?:string; }
+
+export interface IShippingInfo {
   recipientName: string;
   email: string;
   phone: string;
@@ -108,7 +112,10 @@ const OrderStatusHistorySchema = new Schema<IOrderStatusHistory>({
   timestamp: { type: Date, default: Date.now }
 }, { _id: false });
 
-const ShipmentSchema = new Schema<IShipment>({ carrier: String, trackingId: String, trackingUrl: String, status: { type:String, enum:['Pending','Shipped','In Transit','Out for Delivery','Delivered'], default:'Pending' }, estimatedDelivery:String, notes:String, shippedAt:Date, deliveredAt:Date }, { _id:false });\nconst TaxSnapshotSchema = new Schema<ITaxSnapshot>({ state:String, rate:Number, taxableAmount:Number, amount:Number, calculationVersion:String, details:String }, { _id:false });\n\nconst ShippingInfoSchema = new Schema<IShippingInfo>({
+const ShipmentSchema = new Schema<IShipment>({ carrier: String, trackingId: String, trackingUrl: String, status: { type:String, enum:['Pending','Shipped','In Transit','Out for Delivery','Delivered'], default:'Pending' }, estimatedDelivery:String, notes:String, shippedAt:Date, deliveredAt:Date }, { _id:false });
+const TaxSnapshotSchema = new Schema<ITaxSnapshot>({ state:String, rate:Number, taxableAmount:Number, amount:Number, calculationVersion:String, details:String }, { _id:false });
+
+const ShippingInfoSchema = new Schema<IShippingInfo>({
   recipientName: { type: String, required: true },
   email: { type: String, required: true },
   phone: { type: String, required: true },
