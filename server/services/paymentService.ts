@@ -180,7 +180,7 @@ export const paymentService = {
    */
   async confirmPayment(orderId: string, transactionId: string, paymentMethodDetails?: string) {
     throw new Error('Payment confirmation is webhook-controlled. Complete payment through Stripe Checkout.');
-  }
+  },
 
   /**
    * Handle secure webhook from Stripe
