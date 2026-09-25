@@ -7,7 +7,7 @@ export const orderController = {
   /**
    * POST /api/orders (Storefront order submission)
    */
-  async createOrder(req: Request, res: Response) {
+  async createOrder(req: AuthenticatedRequest, res: Response) {
     try {
       const {
         customerId,
