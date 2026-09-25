@@ -329,6 +329,31 @@ export const orderService = {
     return order;
   },
 
+  async calculateCheckout(input: { items:Array<{productId:string; variantId?:string; size:string; color:string; quantity:number}>; state:string; shippingMethod:string }) {
+    if (!input.items?.length) throw new Error('Your shopping bag is empty.');
+    const pricedItems:any[] = [];
+    let subtotal = 0;
+    for (const item of input.items) {
+      if (!Number.isInteger(item.quantity) || item.quantity < 1) throw new Error('Invalid quantity.');
+      const product = await ProductModel.findOne({ productId:item.productId, isActive:true });
+      if (!product) throw new Error(`Garment ${item.productId} is unavailable.`);
+      const variant = product.variants.find((v:IProductVariant) =>
+        (item.variantId && v.id === item.variantId) ||
+        (v.size.toLowerCase() === item.size.toLowerCase() && v.color.toLowerCase() === item.color.toLowerCase())
+      );
+      const availableStock = variant ? variant.stock : product.stockQuantity;
+      if (item.quantity > availableStock) throw new Error(`Insufficient inventory for ${product.name}.`);
+      const price = product.salePrice && product.salePrice > 0 ? product.salePrice : product.price;
+      const lineTotal = price * item.quantity;
+      subtotal += lineTotal;
+      pricedItems.push({ productId:product.productId, variantId:variant?.id || `var-${product.productId}-std`, size:item.size, color:item.color, quantity:item.quantity, price, name:product.name, sku:variant?.sku || product.sku });
+    }
+    const shippingCalc = shippingService.calculate(input.shippingMethod, subtotal, input.state);
+    const taxCalc = taxService.calculateTax(input.state, pricedItems.map(i=>({price:i.price,quantity:i.quantity})), subtotal, shippingCalc.amount);
+    const total = Math.round((subtotal + shippingCalc.amount + taxCalc.taxAmount) * 100) / 100;
+    return { items:pricedItems, subtotal, shipping:shippingCalc, tax:taxCalc, total };
+  },
+
   async updateShipment(orderId: string, adminUser: { id:string; name:string; email:string; role:string }, data: { carrier:string; trackingId:string; trackingUrl?:string; status:'Shipped'|'In Transit'|'Out for Delivery'|'Delivered'; estimatedDelivery?:string; notes?:string }) {
     const order = await OrderModel.findOne({ orderId });
     if (!order) throw new Error(`Order ${orderId} not found.`);
