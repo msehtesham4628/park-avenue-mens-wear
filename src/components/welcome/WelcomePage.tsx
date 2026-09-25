@@ -2,7 +2,7 @@ import React from 'react';
 import { useShop } from '../../context/ShopContext';
 
 export const WelcomePage: React.FC = () => {
-  const { setActiveView } = useShop();
+  const { continueFromWelcome } = useShop();
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] text-[#111827] flex items-center justify-center px-6 py-12">
@@ -41,7 +41,7 @@ export const WelcomePage: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => setActiveView('shop')}
+          onClick={continueFromWelcome}
           className="mt-12 border border-[#111827] px-8 py-4 text-sm uppercase tracking-[0.25em] hover:bg-[#111827] hover:text-white transition-colors"
         >
           Enter Website →
