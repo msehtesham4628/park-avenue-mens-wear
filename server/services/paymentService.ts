@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 import { OrderModel, PaymentStatus } from '../models/Order.js';
 import { ENV } from '../config/env.js';
 import { auditService } from './auditService.js';
+import { inventoryService } from './inventoryService.js';
 import crypto from 'crypto';
 
 // Initialize official Stripe SDK instance if secret key is configured
@@ -229,6 +230,26 @@ export const paymentService = {
           order.paymentTransactionId = eventData.id;
         }
 
+        if (paymentStatus === 'Paid' && previousStatus !== 'Paid') {
+          for (const item of order.items) {
+            await inventoryService.adjustStock({
+              productId:item.productId, variantId:item.variantId, size:item.size, color:item.color,
+              adjustmentType:'remove', quantity:item.quantity, reason:'purchase',
+              notes:`Captured by Stripe for order ${order.orderId}`,
+              adminUser:{ id:'STRIPE_GATEWAY', name:'Stripe Payment Processor', email:'stripe@parkavenuemenswear.com' }
+            });
+          }
+          order.orderStatus = order.orderStatus === 'Pending' ? 'Confirmed' : order.orderStatus;
+        }
+        if (paymentStatus === 'Paid') {
+          order.statusHistory.push({
+            previousStatus: order.orderStatus,
+            newStatus: order.orderStatus,
+            changedBy:{id:'STRIPE_GATEWAY',name:'Stripe Payment Processor',role:'system'},
+            note:`Stripe payment settled: ${eventData.id || 'N/A'}`,
+            timestamp:new Date()
+          });
+        }
         if (paymentStatus === 'Paid') {
           order.timeline.push({
             status: 'Processing',
