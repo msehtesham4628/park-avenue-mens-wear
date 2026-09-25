@@ -99,6 +99,9 @@ export const AdminDashboard: React.FC = () => {
   const [adjustingInventory, setAdjustingInventory] = useState<{ productId: string; variantId: string; size: string; currentStock: number } | null>(null);
   const [isCreateAlterationOpen, setIsCreateAlterationOpen] = useState(false);
   const [isSendNotificationOpen, setIsSendNotificationOpen] = useState(false);
+  const [shipmentOrder, setShipmentOrder] = useState<Order | null>(null);
+  const [shipmentForm, setShipmentForm] = useState({ carrier:'FedEx', trackingId:'', trackingUrl:'', status:'Shipped', estimatedDelivery:'', notes:'' });
+  const [isSavingShipment, setIsSavingShipment] = useState(false);
 
   // Excel & ERP Modals state
   const [isExcelUploadOpen, setIsExcelUploadOpen] = useState(false);
@@ -927,6 +930,7 @@ export const AdminDashboard: React.FC = () => {
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
+                          <button onClick={() => { setShipmentOrder(ord); setShipmentForm({ carrier:(ord as any).carrier || 'FedEx', trackingId:(ord as any).trackingNumber || '', trackingUrl:(ord as any).shipment?.trackingUrl || '', status:(ord as any).shipment?.status || 'Shipped', estimatedDelivery:(ord as any).estimatedDelivery || '', notes:'' }); }} className="ml-2 px-2.5 py-1 text-[9px] border border-[#936B34] text-[#936B34] uppercase hover:bg-[#936B34] hover:text-white">TRACKING</button>
                         </td>
                       </tr>
                     ))}
@@ -1091,7 +1095,7 @@ export const AdminDashboard: React.FC = () => {
                       <th className="p-4">ITEMS</th>
                       <th className="p-4">TOTAL</th>
                       <th className="p-4">STATUS</th>
-                      <th className="p-4 text-right">UPDATE STATUS</th>
+                      <th className="p-4 text-right">UPDATE STATUS / SHIPMENT</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -1160,6 +1164,23 @@ export const AdminDashboard: React.FC = () => {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {shipmentOrder && (
+          <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
+            <div className="w-full max-w-lg bg-white border border-gray-200 shadow-2xl p-6">
+              <div className="flex items-center justify-between mb-5"><div><h3 className="font-serif text-2xl">Shipment & Tracking</h3><p className="text-xs font-mono text-gray-500 mt-1">{shipmentOrder.id}</p></div><button onClick={()=>setShipmentOrder(null)}><X className="w-5 h-5"/></button></div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <label className="text-[10px] font-mono uppercase">Carrier<select value={shipmentForm.carrier} onChange={e=>setShipmentForm({...shipmentForm,carrier:e.target.value})} className="mt-1 w-full border p-2.5 text-sm"><option>FedEx</option><option>UPS</option><option>DHL</option><option>USPS</option><option>Private Courier</option></select></label>
+                <label className="text-[10px] font-mono uppercase">Shipment Status<select value={shipmentForm.status} onChange={e=>setShipmentForm({...shipmentForm,status:e.target.value})} className="mt-1 w-full border p-2.5 text-sm"><option>Shipped</option><option>In Transit</option><option>Out for Delivery</option><option>Delivered</option></select></label>
+                <label className="text-[10px] font-mono uppercase sm:col-span-2">Tracking Number<input value={shipmentForm.trackingId} onChange={e=>setShipmentForm({...shipmentForm,trackingId:e.target.value})} className="mt-1 w-full border p-2.5 text-sm" placeholder="Enter real carrier tracking ID"/></label>
+                <label className="text-[10px] font-mono uppercase sm:col-span-2">Carrier Tracking Link<input value={shipmentForm.trackingUrl} onChange={e=>setShipmentForm({...shipmentForm,trackingUrl:e.target.value})} className="mt-1 w-full border p-2.5 text-sm" placeholder="https://..."/></label>
+                <label className="text-[10px] font-mono uppercase">Estimated Delivery<input type="date" value={shipmentForm.estimatedDelivery} onChange={e=>setShipmentForm({...shipmentForm,estimatedDelivery:e.target.value})} className="mt-1 w-full border p-2.5 text-sm"/></label>
+                <label className="text-[10px] font-mono uppercase">Dispatch Notes<textarea value={shipmentForm.notes} onChange={e=>setShipmentForm({...shipmentForm,notes:e.target.value})} className="mt-1 w-full border p-2.5 text-sm" rows={2}/></label>
+              </div>
+              <div className="flex justify-end gap-2 mt-6"><button onClick={()=>setShipmentOrder(null)} className="px-4 py-2 border text-xs uppercase">Cancel</button><button disabled={isSavingShipment} onClick={async()=>{try{setIsSavingShipment(true);await OrderService.updateShipment(shipmentOrder.id,shipmentForm);showToast('Shipment tracking updated.','success');setShipmentOrder(null);await loadAllData();}catch(e:any){showToast(e.message||'Failed to update shipment.','error');}finally{setIsSavingShipment(false);}}} className="px-5 py-2 bg-[#111827] text-white text-xs uppercase">{isSavingShipment?'Saving…':'Save Shipment'}</button></div>
+            </div>
           </div>
         )}
 
