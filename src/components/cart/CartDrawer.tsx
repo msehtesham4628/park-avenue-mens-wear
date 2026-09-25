@@ -19,6 +19,10 @@ export const CartDrawer: React.FC = () => {
 
   if (!isCartOpen) return null;
 
+  const FREE_SHIPPING_THRESHOLD = 250;
+  const progressPercent = Math.min(100, (cartSubtotal / FREE_SHIPPING_THRESHOLD) * 100);
+  const remainingForFree = Math.max(0, FREE_SHIPPING_THRESHOLD - cartSubtotal);
+
   const handleCheckoutClick = () => {
     if (!currentCustomer) { setIsCartOpen(false); sessionStorage.setItem('pa_checkout_return','1'); showToast('Please sign in or create an account to proceed to checkout.', 'info'); setActiveView('login'); return; }
     setIsCartOpen(false);
