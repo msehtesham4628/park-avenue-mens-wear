@@ -641,6 +641,20 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const filteredAuditLogs = auditLogsList.filter(log => {
+    const role = String(log.adminUser?.role || '').toLowerCase();
+    const matchesRole = logsRoleFilter === 'all' || role === logsRoleFilter;
+    const term = logsSearchQuery.trim().toLowerCase();
+    const matchesSearch = !term || [
+      log.auditId, log.action, log.entity, log.entityId,
+      log.adminUser?.name, log.adminUser?.email, log.notes
+    ].some(value => String(value || '').toLowerCase().includes(term));
+    const matchesEntity = logsEntityFilter === 'all' || String(log.entity || '') === logsEntityFilter;
+    return matchesRole && matchesSearch && matchesEntity;
+  });
+
+  const auditLogEntities = Array.from(new Set(auditLogsList.map(log => String(log.entity || '')).filter(Boolean)));
+
   // Calculations for cards (Strictly no fake numbers! If list is empty, show '--')
   const totalSalesDisplay = ordersList.length > 0 
     ? `$${ordersList.reduce((acc, o) => acc + (o.total || 0), 0).toLocaleString()}` 
@@ -2704,6 +2718,145 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* TAB: ADMIN & STAFF LOGS */}
+        {activeTab === 'logs' && (
+          <div className="mt-8 space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#936B34]">SECURITY &amp; OPERATIONS LEDGER</p>
+                <h2 className="font-serif text-2xl text-[#111827] font-light mt-1">Admin &amp; Staff Activity Logs</h2>
+                <p className="text-xs text-gray-500 mt-1">Review operational actions recorded by authorized administrators and staff.</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleExportAuditLogs} className="px-3 py-2 border border-gray-300 text-xs font-mono uppercase tracking-wider hover:border-[#936B34] hover:text-[#936B34] cursor-pointer">
+                  <Download className="w-3.5 h-3.5 inline mr-1.5" /> Export
+                </button>
+                <button onClick={() => setIsRecordLogModalOpen(true)} className="px-3 py-2 bg-[#111827] text-white text-xs font-mono uppercase tracking-wider hover:bg-[#936B34] cursor-pointer">
+                  <Plus className="w-3.5 h-3.5 inline mr-1.5" /> Record Log
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                ['TOTAL', auditLogsList.length],
+                ['ADMIN', auditLogsList.filter(l => String(l.adminUser?.role).toLowerCase() === 'admin').length],
+                ['STAFF', auditLogsList.filter(l => String(l.adminUser?.role).toLowerCase() === 'staff').length],
+                ['VISIBLE', filteredAuditLogs.length]
+              ].map(([label, count]) => (
+                <div key={String(label)} className="border border-gray-200 bg-[#F9F9F8] p-4">
+                  <div className="text-[9px] font-mono uppercase tracking-widest text-gray-500">{label}</div>
+                  <div className="font-serif text-2xl text-[#111827] mt-1">{count}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="border border-gray-200 bg-white p-4 flex flex-col md:flex-row gap-3">
+              <input
+                value={logsSearchQuery}
+                onChange={e => setLogsSearchQuery(e.target.value)}
+                placeholder="Search operator, action, entity or ID..."
+                className="flex-1 border border-gray-200 px-3 py-2 text-xs font-mono outline-none focus:border-[#936B34]"
+              />
+              <select value={logsRoleFilter} onChange={e => setLogsRoleFilter(e.target.value as 'all' | 'admin' | 'staff')} className="border border-gray-200 px-3 py-2 text-xs font-mono bg-white">
+                <option value="all">All Operators</option>
+                <option value="admin">Admin Logs</option>
+                <option value="staff">Staff Logs</option>
+              </select>
+              <select value={logsEntityFilter} onChange={e => setLogsEntityFilter(e.target.value)} className="border border-gray-200 px-3 py-2 text-xs font-mono bg-white">
+                <option value="all">All Entities</option>
+                {auditLogEntities.map(entity => <option key={entity} value={entity}>{entity}</option>)}
+              </select>
+            </div>
+
+            <div className="border border-gray-200 bg-white overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] text-left">
+                  <thead className="bg-[#F9F9F8] border-b border-gray-200">
+                    <tr className="text-[9px] font-mono uppercase tracking-widest text-gray-500">
+                      <th className="px-4 py-3">Timestamp</th>
+                      <th className="px-4 py-3">Operator</th>
+                      <th className="px-4 py-3">Role</th>
+                      <th className="px-4 py-3">Action</th>
+                      <th className="px-4 py-3">Entity</th>
+                      <th className="px-4 py-3">Reference</th>
+                      <th className="px-4 py-3">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredAuditLogs.length === 0 ? (
+                      <tr><td colSpan={7} className="px-4 py-12 text-center text-xs text-gray-500 font-mono">No matching admin or staff activity logs.</td></tr>
+                    ) : filteredAuditLogs.map(log => (
+                      <tr key={log.id || log.auditId} className="hover:bg-[#FAF8F5]">
+                        <td className="px-4 py-3 text-[10px] font-mono text-gray-500 whitespace-nowrap">{new Date(log.createdAt).toLocaleString()}</td>
+                        <td className="px-4 py-3">
+                          <div className="text-xs font-medium text-[#111827]">{log.adminUser?.name || 'Unknown operator'}</div>
+                          <div className="text-[9px] text-gray-400">{log.adminUser?.email || '—'}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 text-[9px] font-mono uppercase tracking-wider ${String(log.adminUser?.role).toLowerCase() === 'admin' ? 'bg-[#111827] text-white' : 'bg-[#936B34]/10 text-[#936B34]'}`}>
+                            {String(log.adminUser?.role || 'staff').toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-[10px] font-mono text-[#111827]">{log.action}</td>
+                        <td className="px-4 py-3 text-[10px] text-gray-600">{log.entity}</td>
+                        <td className="px-4 py-3 text-[10px] font-mono text-gray-500">{log.entityId}</td>
+                        <td className="px-4 py-3 text-[10px] text-gray-600 max-w-xs">{log.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {isRecordLogModalOpen && (
+              <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
+                <div className="w-full max-w-lg bg-white shadow-2xl border border-gray-200">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                    <div>
+                      <p className="text-[9px] font-mono uppercase tracking-widest text-[#936B34]">AUDIT LEDGER</p>
+                      <h3 className="font-serif text-xl text-[#111827]">Record Activity</h3>
+                    </div>
+                    <button onClick={() => setIsRecordLogModalOpen(false)} className="p-2 hover:bg-gray-100 cursor-pointer"><X className="w-4 h-4" /></button>
+                  </div>
+                  <form onSubmit={handleCreateManualLogEntry} className="p-5 space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Operator Role
+                        <select value={newLogOperatorRole} onChange={e => setNewLogOperatorRole(e.target.value as 'admin' | 'staff')} className="mt-1 w-full border border-gray-200 px-3 py-2 text-xs font-sans bg-white">
+                          <option value="admin">Admin</option><option value="staff">Staff</option>
+                        </select>
+                      </label>
+                      <label className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Operator Name
+                        <input value={newLogOperatorName} onChange={e => setNewLogOperatorName(e.target.value)} className="mt-1 w-full border border-gray-200 px-3 py-2 text-xs" required />
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Action
+                        <input value={newLogAction} onChange={e => setNewLogAction(e.target.value)} className="mt-1 w-full border border-gray-200 px-3 py-2 text-xs font-mono" required />
+                      </label>
+                      <label className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Entity
+                        <input value={newLogEntity} onChange={e => setNewLogEntity(e.target.value)} className="mt-1 w-full border border-gray-200 px-3 py-2 text-xs" required />
+                      </label>
+                    </div>
+                    <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-500">Entity / Order ID
+                      <input value={newLogEntityId} onChange={e => setNewLogEntityId(e.target.value)} className="mt-1 w-full border border-gray-200 px-3 py-2 text-xs font-mono" placeholder="Optional reference" />
+                    </label>
+                    <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-500">Operational Notes
+                      <textarea value={newLogNotes} onChange={e => setNewLogNotes(e.target.value)} className="mt-1 w-full border border-gray-200 px-3 py-2 text-xs min-h-24" placeholder="Describe the action or handover..." required />
+                    </label>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button type="button" onClick={() => setIsRecordLogModalOpen(false)} className="px-4 py-2 border border-gray-300 text-xs uppercase cursor-pointer">Cancel</button>
+                      <button type="submit" disabled={isSavingLogEntry} className="px-4 py-2 bg-[#111827] text-white text-xs uppercase cursor-pointer disabled:opacity-50">
+                        {isSavingLogEntry ? 'Saving...' : 'Save Log'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
