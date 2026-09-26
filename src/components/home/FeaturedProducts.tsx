@@ -14,7 +14,7 @@ export const FeaturedProducts: React.FC = () => {
     { label: 'ALL COLLECTIONS', value: 'All' },
     { label: 'SUITS', value: 'Suits' },
     { label: 'DRESS SHIRTS', value: 'Dress Shirts' },
-    { label: 'SHOES & LOOFERS', value: 'Shoe' },
+    { label: 'SHOES & LOAFERS', value: 'Shoe' },
     { label: 'COATS & JACKETS', value: 'Coats' },
     { label: 'TIES', value: 'Ties' },
     { label: 'NEW ARRIVALS', value: 'New Arrivals' }
@@ -26,7 +26,7 @@ export const FeaturedProducts: React.FC = () => {
     const tabNorm = activeTab.toLowerCase();
     const catNorm = (p.category || '').toLowerCase();
     if (tabNorm === 'shoe') {
-      return catNorm.includes('shoe') || catNorm.includes('loof') || catNorm.includes('boot');
+      return catNorm.includes('shoe') || catNorm.includes('loof') || catNorm.includes('loaf') || catNorm.includes('boot');
     }
     if (tabNorm === 'coats') {
       return catNorm.includes('coat') || catNorm.includes('jacket');
@@ -57,20 +57,24 @@ export const FeaturedProducts: React.FC = () => {
           </div>
 
           {/* Interactive filter tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
-            {tabs.map(tab => (
-              <button
-                key={tab.value}
-                onClick={() => setActiveTab(tab.value)}
-                className={`px-3.5 py-1.5 text-[10px] font-mono tracking-widest uppercase transition-colors whitespace-nowrap border cursor-pointer ${
-                  activeTab === tab.value
-                    ? 'bg-[#111827] text-white border-[#111827] font-semibold'
-                    : 'bg-[#F9F9F8] text-gray-700 border-gray-200 hover:border-gray-400 hover:text-black'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 scrollbar-none">
+            {tabs.map(tab => {
+              const isActive = activeTab === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setActiveTab(tab.value)}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-mono tracking-widest uppercase transition-all whitespace-nowrap border cursor-pointer rounded-xs ${
+                    isActive
+                      ? 'bg-[#111827] text-white border-[#111827] shadow-xs font-semibold'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-[#936B34] hover:text-[#111827]'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full transition-colors ${isActive ? 'bg-[#E5C384]' : 'bg-transparent border border-gray-300'}`} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

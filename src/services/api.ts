@@ -16,7 +16,8 @@ import {
   CustomerNotification,
   OrderStatus,
   AlterationStatus,
-  NotificationChannel
+  NotificationChannel,
+  ReturnRequest
 } from '../types';
 import {
   INITIAL_PRODUCTS,
@@ -43,6 +44,7 @@ const STORAGE_KEYS = {
   ALTERATIONS: 'pa_clean_alterations_v3',
   CUSTOMERS: 'pa_clean_customers_v3',
   NOTIFICATIONS: 'pa_clean_notifications_v3',
+  RETURNS: 'pa_clean_returns_v3',
   TOKEN: 'pa_auth_token',
   USER: 'pa_auth_user'
 };
@@ -105,6 +107,7 @@ let ordersCache: Order[] = loadStorage(STORAGE_KEYS.ORDERS, INITIAL_ORDERS);
 let alterationsCache: AlterationRecord[] = loadStorage(STORAGE_KEYS.ALTERATIONS, INITIAL_ALTERATIONS);
 let customersCache: Customer[] = loadStorage(STORAGE_KEYS.CUSTOMERS, INITIAL_CUSTOMERS);
 let notificationsCache: CustomerNotification[] = loadStorage(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
+let returnsCache: ReturnRequest[] = loadStorage(STORAGE_KEYS.RETURNS, []);
 
 function mapBackendProductToFrontend(bp: any): Product {
   const variants = (bp.variants || []).map((v: any) => ({
@@ -1097,6 +1100,179 @@ export const AlterationService = {
 };
 
 /* =========================================================================
+   RETURNS & EXCHANGES SERVICE
+   ========================================================================= */
+
+function mapBackendReturnToFrontend(br: any): ReturnRequest {
+  const returnId = br.returnId || br.id || br._id || `RET-${Math.floor(1000 + Math.random() * 9000)}`;
+  const rawDate = br.createdAt || new Date().toISOString();
+  const dateStr = typeof rawDate === 'string' ? rawDate.split('T')[0] : new Date(rawDate).toISOString().split('T')[0];
+
+  return {
+    id: returnId,
+    orderId: br.orderId || '',
+    customerId: br.customerId,
+    customerName: br.customerName || 'Client Patron',
+    customerEmail: br.customerEmail || '',
+    customerPhone: br.customerPhone || '',
+    itemNames: Array.isArray(br.itemNames) && br.itemNames.length > 0 ? br.itemNames : ['Sartorial Garment'],
+    actionType: br.actionType || 'Size / Fit Exchange',
+    reason: br.reason || 'Size/fit exchange requested',
+    status: br.status || 'Pending Review',
+    currentStep: br.currentStep !== undefined ? br.currentStep : 1,
+    createdAt: dateStr,
+    trackingReturnNumber: br.trackingReturnNumber,
+    replacementItem: br.replacementItem,
+    refundAmount: br.refundAmount,
+    adminNotes: br.adminNotes
+  };
+}
+
+export const ReturnService = {
+  async getAll(statusFilter?: string, actionTypeFilter?: string): Promise<ReturnRequest[]> {
+    let url = '/returns';
+    const params = new URLSearchParams();
+    if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+    if (actionTypeFilter && actionTypeFilter !== 'all') params.append('actionType', actionTypeFilter);
+    if (params.toString()) url += `?${params.toString()}`;
+
+    const remote = await fetchRemote<any[]>(url);
+    if (remote && Array.isArray(remote)) {
+      const mapped = remote.map(mapBackendReturnToFrontend);
+      returnsCache = mapped;
+      saveStorage(STORAGE_KEYS.RETURNS, returnsCache);
+      return mapped;
+    }
+    await delay(150);
+    return [...returnsCache];
+  },
+
+  async getMyReturns(): Promise<ReturnRequest[]> {
+    const remote = await fetchRemote<any[]>('/returns/my-returns');
+    if (remote && Array.isArray(remote)) {
+      const mapped = remote.map(mapBackendReturnToFrontend);
+      return mapped;
+    }
+    await delay(100);
+    return [...returnsCache];
+  },
+
+  async getById(searchQuery: string): Promise<ReturnRequest | null> {
+    const clean = (searchQuery || '').trim();
+    if (!clean) return null;
+    let remote = await fetchRemote<any>(`/returns/${encodeURIComponent(clean)}`);
+    if (!remote) {
+      remote = await fetchRemote<any>(`/returns/lookup/${encodeURIComponent(clean)}`);
+    }
+    if (remote) {
+      return mapBackendReturnToFrontend(remote);
+    }
+    await delay(120);
+    const upper = clean.toUpperCase();
+    const found = returnsCache.find(r => 
+      (r.id && r.id.toUpperCase() === upper) ||
+      (r.orderId && r.orderId.toUpperCase() === upper) ||
+      (r.trackingReturnNumber && r.trackingReturnNumber.toUpperCase() === upper)
+    );
+    return found ? { ...found } : null;
+  },
+
+  async create(data: {
+    orderId: string;
+    customerId?: string;
+    customerName?: string;
+    customerEmail?: string;
+    customerPhone?: string;
+    itemNames?: string[];
+    actionType: ReturnRequest['actionType'];
+    reason: string;
+    preferredReplacement?: string;
+  }): Promise<ReturnRequest> {
+    const remote = await fetchRemote<any>('/returns', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+
+    if (remote) {
+      const mapped = mapBackendReturnToFrontend(remote);
+      returnsCache = [mapped, ...returnsCache];
+      saveStorage(STORAGE_KEYS.RETURNS, returnsCache);
+      return mapped;
+    }
+
+    // Local fallback
+    await delay(150);
+    const newId = `RET-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newRecord: ReturnRequest = {
+      id: newId,
+      orderId: data.orderId.trim().toUpperCase(),
+      customerId: data.customerId,
+      customerName: data.customerName || 'Valued Patron',
+      customerEmail: data.customerEmail || '',
+      customerPhone: data.customerPhone || '',
+      itemNames: data.itemNames && data.itemNames.length > 0 ? data.itemNames : ['Custom Garment'],
+      actionType: data.actionType,
+      reason: data.reason,
+      status: 'Approved - Return Label Sent',
+      currentStep: 2,
+      createdAt: new Date().toISOString().split('T')[0],
+      trackingReturnNumber: `FEDEX-RET-${Math.floor(100000 + Math.random() * 900000)}`,
+      replacementItem: data.preferredReplacement || (data.actionType === 'Size / Fit Exchange' ? 'Direct Replacement' : undefined)
+    };
+
+    returnsCache = [newRecord, ...returnsCache];
+    saveStorage(STORAGE_KEYS.RETURNS, returnsCache);
+    return newRecord;
+  },
+
+  async updateStatus(
+    id: string,
+    updateData: {
+      status?: ReturnRequest['status'];
+      currentStep?: number;
+      trackingReturnNumber?: string;
+      replacementItem?: string;
+      refundAmount?: number;
+      adminNotes?: string;
+    }
+  ): Promise<ReturnRequest> {
+    const cleanId = String(id || '').trim();
+    if (!cleanId) throw new Error('Return ID is required');
+
+    const remote = await fetchRemote<any>(`/returns/${encodeURIComponent(cleanId)}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData)
+    });
+
+    if (remote) {
+      const mapped = mapBackendReturnToFrontend(remote);
+      const idx = returnsCache.findIndex(r => r.id === cleanId || r.id === mapped.id);
+      if (idx >= 0) returnsCache[idx] = mapped;
+      else returnsCache.unshift(mapped);
+      saveStorage(STORAGE_KEYS.RETURNS, returnsCache);
+      return mapped;
+    }
+
+    // Local fallback
+    await delay(120);
+    const idx = returnsCache.findIndex(r => r.id === cleanId);
+    if (idx === -1) {
+      throw new Error(`Return record #${cleanId} not found`);
+    }
+    const current = returnsCache[idx];
+    const updated: ReturnRequest = {
+      ...current,
+      ...updateData,
+      status: updateData.status || current.status,
+      currentStep: updateData.currentStep !== undefined ? updateData.currentStep : current.currentStep
+    };
+    returnsCache[idx] = updated;
+    saveStorage(STORAGE_KEYS.RETURNS, returnsCache);
+    return updated;
+  }
+};
+
+/* =========================================================================
    CUSTOMERS & ACCOUNTS SERVICE
    ========================================================================= */
 
@@ -1478,13 +1654,14 @@ export const AuthService = {
     }
   },
 
-  async getMe(): Promise<{ customer: any; orders: Order[]; alterations: AlterationRecord[] } | null> {
+  async getMe(): Promise<{ customer: any; orders: Order[]; alterations: AlterationRecord[]; returns: ReturnRequest[] } | null> {
     const remote = await fetchRemote<any>('/auth/me');
     if (!remote) return null;
     return {
       customer: remote.customer || remote,
       orders: Array.isArray(remote.orders) ? remote.orders.map(mapBackendOrderToFrontend) : [],
-      alterations: Array.isArray(remote.alterations) ? remote.alterations.map(mapBackendAlterationToFrontend) : []
+      alterations: Array.isArray(remote.alterations) ? remote.alterations.map(mapBackendAlterationToFrontend) : [],
+      returns: Array.isArray(remote.returns) ? remote.returns.map(mapBackendReturnToFrontend) : []
     };
   },
 

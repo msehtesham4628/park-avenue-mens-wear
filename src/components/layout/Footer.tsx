@@ -4,7 +4,7 @@ import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { OFFICIAL_CATEGORIES } from '../../types';
 
 export const Footer: React.FC = () => {
-  const { setActiveView, setSelectedCategory } = useShop();
+  const { setActiveView, setSelectedCategory, isAdminLoggedIn } = useShop();
 
   const handleNavCategory = (cat: string) => {
     setSelectedCategory(cat);
@@ -27,11 +27,7 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* 3 Columns:
-            SHOP
-            SERVICES
-            COMPANY
-        */}
+        {/* 3 Columns */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 py-12 border-b border-gray-200">
           
           {/* Column 1: SHOP (All 13 Categories) */}
@@ -83,12 +79,12 @@ export const Footer: React.FC = () => {
               <li>
                 <button 
                   onClick={() => {
-                    setActiveView('account');
+                    setActiveView('track-return');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }} 
                   className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
-                  CLIENT CARE
+                  RETURNS &amp; EXCHANGES
                 </button>
               </li>
             </ul>
@@ -111,30 +107,38 @@ export const Footer: React.FC = () => {
                   }} 
                   className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
-                  ABOUT
+                  ABOUT ATELIER
                 </button>
-              </li>
-              <li>
-                <span className="text-gray-600 hover:text-[#936B34] transition-colors cursor-pointer">
-                  SUSTAINABILITY
-                </span>
-              </li>
-              <li>
-                <span className="text-gray-600 hover:text-[#936B34] transition-colors cursor-pointer">
-                  CONTACT
-                </span>
               </li>
               <li>
                 <button 
                   onClick={() => {
-                    setActiveView('admin');
+                    setActiveView('categories');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }} 
-                  className="hover:text-[#936B34] transition-colors cursor-pointer text-[#936B34] font-medium"
+                  className="hover:text-[#936B34] transition-colors cursor-pointer"
                 >
-                  ADMIN / ATELIER PORTAL
+                  DEPARTMENTS
                 </button>
               </li>
+              <li>
+                <span className="text-gray-600 hover:text-[#936B34] transition-colors cursor-pointer">
+                  CLIENT CARE &amp; CONCIERGE
+                </span>
+              </li>
+              {isAdminLoggedIn && (
+                <li>
+                  <button 
+                    onClick={() => {
+                      setActiveView('admin');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }} 
+                    className="hover:text-[#936B34] transition-colors cursor-pointer text-[#936B34] font-medium"
+                  >
+                    ADMIN / ATELIER CONSOLE
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
 
@@ -148,15 +152,17 @@ export const Footer: React.FC = () => {
           <div className="flex items-center gap-6 text-[11px]">
             <span className="hover:text-[#936B34] transition-colors cursor-pointer">PRIVACY</span>
             <span className="hover:text-[#936B34] transition-colors cursor-pointer">TERMS OF COMMISSION</span>
-            <button
-              onClick={() => {
-                setActiveView('admin');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="text-[#936B34] hover:underline cursor-pointer"
-            >
-              ADMIN CONSOLE
-            </button>
+            {isAdminLoggedIn && (
+              <button
+                onClick={() => {
+                  setActiveView('admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-[#936B34] hover:underline cursor-pointer"
+              >
+                ADMIN CONSOLE
+              </button>
+            )}
           </div>
         </div>
 

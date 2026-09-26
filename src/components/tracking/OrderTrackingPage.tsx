@@ -30,11 +30,20 @@ export const OrderTrackingPage: React.FC = () => {
           (o.customerEmail && o.customerEmail.toLowerCase() === currentCustomer.email.toLowerCase()) ||
           (o.customerName && currentCustomer.name && o.customerName.toLowerCase().includes(currentCustomer.name.toLowerCase()))
         );
-        setRecentOrders(userOrders.length > 0 ? userOrders : orders.slice(0, 3));
+        setRecentOrders(userOrders);
       } else {
-        setRecentOrders(orders.slice(0, 3));
+        setRecentOrders([]);
       }
     });
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const queryId = params.get('id') || params.get('orderId');
+      if (queryId) {
+        setOrderId(queryId.toUpperCase());
+        lookupOrder(queryId.toUpperCase()).then(() => setHasSearched(true));
+      }
+    }
   }, [currentCustomer]);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -362,6 +371,34 @@ export const OrderTrackingPage: React.FC = () => {
                 <p className="text-amber-950 font-sans">{displayOrder.alterationNotes}</p>
               </div>
             )}
+
+            {/* Exchange / Return Quick Action */}
+            <div className="p-5 bg-[#FAF8F5] border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold block">
+                  SATISFACTION &amp; SIZING GUARANTEE
+                </span>
+                <h4 className="font-serif text-base text-[#111827]">
+                  Need a size exchange, return, or tailoring adjustment?
+                </h4>
+                <p className="text-xs text-gray-500 font-sans mt-0.5">
+                  Complimentary prepaid return labels available for all Park Avenue consignments.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.history.pushState({}, '', `/track-return?orderId=${encodeURIComponent(displayOrder.id)}`);
+                  }
+                  setActiveView('track-return');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="px-5 py-2.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider transition-colors shrink-0 cursor-pointer"
+              >
+                Start Return / Exchange
+              </button>
+            </div>
           </div>
         ) : (
           <div className="border border-gray-200 bg-[#F9F9F8] py-20 px-6 text-center flex flex-col items-center justify-center shadow-xl">

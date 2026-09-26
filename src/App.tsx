@@ -21,6 +21,10 @@ import { CheckoutPage } from './components/checkout/CheckoutPage';
 import { OrderTrackingPage } from './components/tracking/OrderTrackingPage';
 import { AlterationTrackingPage } from './components/tracking/AlterationTrackingPage';
 import { AccountPage } from './components/account/AccountPage';
+import { CustomerDashboard } from './components/customer/CustomerDashboard';
+import { AccountInfoPage } from './components/customer/AccountInfoPage';
+import { ResetPasswordPage } from './components/customer/ResetPasswordPage';
+import { ReturnTrackingPage } from './components/customer/ReturnTrackingPage';
 import { LoginPage } from './components/account/LoginPage';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { WelcomePage } from './components/welcome/WelcomePage';
@@ -52,7 +56,10 @@ const MainContent: React.FC = () => {
         {activeView === 'checkout' && <CheckoutPage />}
         {activeView === 'track-order' && <OrderTrackingPage />}
         {activeView === 'track-alteration' && <AlterationTrackingPage />}
-        {activeView === 'account' && <AccountPage />}
+        {activeView === 'track-return' && <ReturnTrackingPage />}
+        {activeView === 'account-info' && <AccountInfoPage />}
+        {activeView === 'reset-password' && <ResetPasswordPage />}
+        {(activeView === 'account' || activeView === 'customer-dashboard') && <CustomerDashboard />}
         {activeView === 'login' && <LoginPage />}
         {(activeView === 'admin' || activeView === 'dashboard') && <AdminDashboard />}
       </main>

@@ -11,6 +11,7 @@ import paymentRoutes from './paymentRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
 import categoryRoutes from './categoryRoutes.js';
 import checkoutRoutes from './checkoutRoutes.js';
+import returnRoutes from './returnRoutes.js';
 import { API_DOCUMENTATION } from '../docs/apiDocs.js';
 import { isDbConnected } from '../config/db.js';
 
@@ -44,6 +45,7 @@ apiRouter.use('/categories', categoryRoutes);
 apiRouter.use('/cart', cartRoutes);
 apiRouter.use('/orders', orderRoutes);
 apiRouter.use('/alterations', alterationRoutes);
+apiRouter.use('/returns', returnRoutes);
 apiRouter.use('/payments', paymentRoutes);
 apiRouter.use('/checkout', checkoutRoutes);
 apiRouter.use('/notifications', notificationRoutes);
@@ -60,5 +62,6 @@ apiRouter.use('/admin/notifications', notificationRoutes);
 apiRouter.use('/admin/products', productRoutes);
 apiRouter.use('/admin/orders', orderRoutes);
 apiRouter.use('/admin/alterations', alterationRoutes);
+apiRouter.use('/admin/returns', returnRoutes);
 
 export default apiRouter;

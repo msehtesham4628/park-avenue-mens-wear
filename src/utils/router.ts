@@ -152,8 +152,30 @@ export function parseRoute(pathname?: string): RouteMatch {
     case 'dashboard':
       return { view: 'dashboard' };
 
+    case 'customer-dashboard':
+    case 'client-dashboard':
+    case 'my-dashboard':
+    case 'patron':
+      return { view: 'customer-dashboard' };
+
+    case 'account-info':
+    case 'my-info':
+    case 'profile':
+      return { view: 'account-info' };
+
+    case 'reset-password':
+    case 'change-password':
+    case 'password':
+      return { view: 'reset-password' };
+
+    case 'track-return':
+    case 'returns':
+    case 'exchange':
+    case 'return-tracking':
+      return { view: 'track-return' };
+
     case 'account':
-      return { view: 'account' };
+      return { view: 'customer-dashboard' };
 
     case 'cart':
       return { view: 'cart' };
@@ -276,8 +298,20 @@ export function buildUrl(params: {
     case 'dashboard':
       return '/dashboard';
 
+    case 'customer-dashboard':
+      return '/customer-dashboard';
+
+    case 'account-info':
+      return '/account-info';
+
+    case 'reset-password':
+      return '/reset-password';
+
+    case 'track-return':
+      return '/track-return';
+
     case 'account':
-      return '/account';
+      return '/customer-dashboard';
 
     case 'cart':
       return '/cart';

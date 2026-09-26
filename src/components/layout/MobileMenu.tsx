@@ -20,6 +20,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
     unreadNotificationCount,
     setIsNotificationsOpen,
     currentCustomer,
+    isAdminLoggedIn,
     logout
   } = useShop();
 
@@ -198,7 +199,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                 {currentCustomer ? (
                   <div className="flex items-center justify-between py-1">
                     <button
-                      onClick={() => handleNav('account')}
+                      onClick={() => handleNav('customer-dashboard')}
                       className="hover:text-black transition-colors flex items-center gap-2.5 cursor-pointer text-left"
                     >
                       <User className="w-4 h-4 text-[#936B34]" />
@@ -227,22 +228,28 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
             </ul>
           </div>
 
-          <div className="border-t border-gray-200 pt-4 space-y-2">
-            <button
-              onClick={() => handleNav('account')}
-              className="flex items-center gap-2.5 text-xs text-gray-600 hover:text-[#936B34] transition-colors py-1 w-full text-left font-mono cursor-pointer"
-            >
-              <User className="w-4 h-4 text-[#936B34]" />
-              <span>Patron Dashboard &amp; Orders</span>
-            </button>
-            <button
-              onClick={() => handleNav('admin')}
-              className="flex items-center gap-2.5 text-xs text-[#936B34] hover:text-[#111827] transition-colors py-1.5 w-full text-left font-mono cursor-pointer font-medium"
-            >
-              <ShieldCheck className="w-4 h-4 text-[#936B34]" />
-              <span>Admin Atelier Dashboard</span>
-            </button>
-          </div>
+          {(currentCustomer || isAdminLoggedIn) && (
+            <div className="border-t border-gray-200 pt-4 space-y-2">
+              {currentCustomer && (
+                <button
+                  onClick={() => handleNav('customer-dashboard')}
+                  className="flex items-center gap-2.5 text-xs text-gray-600 hover:text-[#936B34] transition-colors py-1 w-full text-left font-mono cursor-pointer"
+                >
+                  <User className="w-4 h-4 text-[#936B34]" />
+                  <span>Patron Dashboard &amp; Orders</span>
+                </button>
+              )}
+              {isAdminLoggedIn && (
+                <button
+                  onClick={() => handleNav('admin')}
+                  className="flex items-center gap-2.5 text-xs text-[#936B34] hover:text-[#111827] transition-colors py-1.5 w-full text-left font-mono cursor-pointer font-medium"
+                >
+                  <ShieldCheck className="w-4 h-4 text-[#936B34]" />
+                  <span>Admin Atelier Dashboard</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer shortcuts */}

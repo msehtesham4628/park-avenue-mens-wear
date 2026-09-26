@@ -305,3 +305,36 @@ export interface FilterOptions {
   sortBy: 'featured' | 'price-low' | 'price-high' | 'newest';
   searchQuery: string;
 }
+
+export type ReturnActionType = 
+  | 'Size / Fit Exchange' 
+  | 'Tailoring Adjustment' 
+  | 'Store Credit' 
+  | 'Refund to Original Payment';
+
+export type ReturnStatus = 
+  | 'Pending Review' 
+  | 'Approved - Return Label Sent' 
+  | 'Received at Warehouse' 
+  | 'Inspection Complete' 
+  | 'Completed / Refunded' 
+  | 'Rejected';
+
+export interface ReturnRequest {
+  id: string;
+  orderId: string;
+  customerId?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  itemNames: string[];
+  actionType: ReturnActionType;
+  reason: string;
+  status: ReturnStatus;
+  currentStep: number; // 1 to 5
+  createdAt: string;
+  trackingReturnNumber?: string;
+  replacementItem?: string;
+  refundAmount?: number;
+  adminNotes?: string;
+}

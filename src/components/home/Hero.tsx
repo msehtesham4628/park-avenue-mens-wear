@@ -212,14 +212,14 @@ export const Hero: React.FC = () => {
               {currentSlide.subtitle}
             </p>
 
-            <div className="pt-1 pointer-events-auto">
+            <div className="pt-1.5 pointer-events-auto">
               <button
                 type="button"
                 onClick={() => handleSlideCta(currentSlide.category)}
-                className="inline-flex items-center gap-2 px-5 py-2 sm:px-6 sm:py-2.5 bg-white/95 hover:bg-[#936B34] text-black hover:text-white text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] transition-all duration-300 shadow-md cursor-pointer rounded-xs active:scale-95"
+                className="group inline-flex items-center gap-2.5 px-6 py-2.5 sm:px-7 sm:py-3 bg-white hover:bg-[#936B34] text-[#111827] hover:text-white border border-white hover:border-[#936B34] text-[11px] sm:text-xs font-mono font-medium uppercase tracking-[0.22em] transition-all duration-300 shadow-lg cursor-pointer rounded-xs active:scale-95"
               >
-                <span>Explore {currentSlide.category}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span>EXPLORE {currentSlide.category.toUpperCase()}</span>
+                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
               </button>
             </div>
           </div>

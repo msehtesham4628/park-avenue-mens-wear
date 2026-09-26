@@ -32,7 +32,8 @@ import {
   Copy,
   ExternalLink,
   Globe,
-  Truck
+  Truck,
+  RotateCcw
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { 
@@ -40,12 +41,13 @@ import {
   OrderService, 
   AlterationService, 
   CustomerService, 
+  ReturnService,
   NotificationService,
   StripePaymentService,
   StripeGatewayConfig,
   API_CONFIG
 } from '../../services/api';
-import { Product, Order, AlterationRecord, Customer, ProductCategory } from '../../types';
+import { Product, Order, AlterationRecord, Customer, ProductCategory, ReturnRequest } from '../../types';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { navigateTo } from '../../utils/router';
 import { 
@@ -70,6 +72,7 @@ type AdminTab =
   | 'products' 
   | 'inventory' 
   | 'orders' 
+  | 'returns'
   | 'customers' 
   | 'alterations' 
   | 'erp-reports'
@@ -96,9 +99,24 @@ export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [productsList, setProductsList] = useState<Product[]>([]);
   const [ordersList, setOrdersList] = useState<Order[]>([]);
+  const [returnsList, setReturnsList] = useState<ReturnRequest[]>([]);
   const [alterationsList, setAlterationsList] = useState<AlterationRecord[]>([]);
   const [customersList, setCustomersList] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Return modal & filter state
+  const [selectedReturn, setSelectedReturn] = useState<ReturnRequest | null>(null);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [returnFilterStatus, setReturnFilterStatus] = useState<string>('all');
+  const [returnFilterAction, setReturnFilterAction] = useState<string>('all');
+  const [returnSearchQuery, setReturnSearchQuery] = useState('');
+  const [editingReturnStatus, setEditingReturnStatus] = useState<ReturnRequest['status']>('Pending Review');
+  const [editingReturnStep, setEditingReturnStep] = useState<number>(1);
+  const [editingReturnTracking, setEditingReturnTracking] = useState<string>('');
+  const [editingReturnReplacement, setEditingReturnReplacement] = useState<string>('');
+  const [editingReturnRefund, setEditingReturnRefund] = useState<number>(0);
+  const [editingReturnNotes, setEditingReturnNotes] = useState<string>('');
+  const [isUpdatingReturn, setIsUpdatingReturn] = useState(false);
 
   // Modals state
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -215,17 +233,19 @@ export const AdminDashboard: React.FC = () => {
   const loadAllData = async () => {
     setIsLoading(true);
     try {
-      const [prods, ords, alts, custs, stripeCfg] = await Promise.all([
+      const [prods, ords, alts, custs, returnsData, stripeCfg] = await Promise.all([
         ProductService.getAll(),
         OrderService.getAll(),
         AlterationService.getAll(),
         CustomerService.getAll(),
+        ReturnService.getAll().catch(() => []),
         StripePaymentService.getConfig().catch(() => null)
       ]);
       setProductsList(prods);
       setOrdersList(ords);
       setAlterationsList(alts);
       setCustomersList(custs);
+      setReturnsList(returnsData || []);
       if (stripeCfg) setStripeConfig(stripeCfg);
     } catch {
       showToast('Could not sync with archive ledger', 'error');
@@ -455,6 +475,72 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleOpenManageReturn = (ret: ReturnRequest) => {
+    setSelectedReturn(ret);
+    setEditingReturnStatus(ret.status);
+    setEditingReturnStep(ret.currentStep || 1);
+    setEditingReturnTracking(ret.trackingReturnNumber || '');
+    setEditingReturnReplacement(ret.replacementItem || '');
+    setEditingReturnRefund(ret.refundAmount || 0);
+    setEditingReturnNotes(ret.adminNotes || '');
+    setIsReturnModalOpen(true);
+  };
+
+  const handleSaveReturnStatus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedReturn) return;
+    setIsUpdatingReturn(true);
+    try {
+      const updated = await ReturnService.updateStatus(selectedReturn.id, {
+        status: editingReturnStatus,
+        currentStep: editingReturnStep,
+        trackingReturnNumber: editingReturnTracking.trim(),
+        replacementItem: editingReturnReplacement.trim(),
+        refundAmount: Number(editingReturnRefund) || 0,
+        adminNotes: editingReturnNotes.trim()
+      });
+
+      setReturnsList(prev => prev.map(r => r.id === updated.id ? updated : r));
+      showToast(`Return Claim #${updated.id} status updated to "${updated.status}" and saved to database.`, 'success');
+      setIsReturnModalOpen(false);
+      setSelectedReturn(null);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update return claim.', 'error');
+    } finally {
+      setIsUpdatingReturn(false);
+    }
+  };
+
+  const handleExportReturns = () => {
+    if (returnsList.length === 0) {
+      showToast('No returns to export', 'info');
+      return;
+    }
+    const headers = ['Return ID', 'Order ID', 'Customer Name', 'Customer Email', 'Customer Phone', 'Action Type', 'Reason', 'Status', 'Current Step', 'Tracking Number', 'Created At'];
+    const rows = returnsList.map(r => [
+      r.id,
+      r.orderId,
+      `"${r.customerName}"`,
+      r.customerEmail,
+      r.customerPhone || '',
+      `"${r.actionType}"`,
+      `"${(r.reason || '').replace(/"/g, '""')}"`,
+      r.status,
+      r.currentStep,
+      r.trackingReturnNumber || '',
+      r.createdAt
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Park_Avenue_Returns_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Returns exported successfully', 'success');
+  };
+
   // Calculations for cards (Strictly no fake numbers! If list is empty, show '--')
   const totalSalesDisplay = ordersList.length > 0 
     ? `$${ordersList.reduce((acc, o) => acc + (o.total || 0), 0).toLocaleString()}` 
@@ -680,6 +766,7 @@ export const AdminDashboard: React.FC = () => {
               { id: 'products', label: 'PRODUCTS' },
               { id: 'inventory', label: 'INVENTORY' },
               { id: 'orders', label: 'ORDERS' },
+              { id: 'returns', label: 'RETURNS & EXCHANGES', badge: returnsList.filter(r => r.status === 'Pending Review' || r.status === 'Approved - Return Label Sent').length },
               { id: 'customers', label: 'CUSTOMERS' },
               { id: 'alterations', label: 'ALTERATIONS' },
               { id: 'erp-reports', label: 'TALLY & ERP' },
@@ -689,13 +776,18 @@ export const AdminDashboard: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as AdminTab)}
-                className={`py-3 relative cursor-pointer transition-colors whitespace-nowrap ${
+                className={`py-3 relative cursor-pointer transition-colors whitespace-nowrap flex items-center gap-1.5 ${
                   activeTab === tab.id
                     ? 'text-[#936B34] font-semibold border-b-2 border-[#936B34]'
                     : 'text-gray-500 hover:text-[#111827]'
                 }`}
               >
-                {tab.label}
+                <span>{tab.label}</span>
+                {Boolean(tab.badge && tab.badge > 0) && (
+                  <span className="px-1.5 py-0.5 bg-[#936B34] text-white text-[9px] rounded-full font-bold">
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -705,7 +797,7 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'dashboard' && (
           <div className="mt-8 space-y-10">
             {/* Dashboard Cards: Placeholders '--' if empty */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               
               <div className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-2 shadow-xs">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block font-medium">
@@ -752,6 +844,22 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <span className="text-[10px] font-mono text-[#936B34] block">
                   {alterationsList.length > 0 ? 'In atelier work' : 'No active tailor queue'}
+                </span>
+              </div>
+
+              <div 
+                onClick={() => setActiveTab('returns')}
+                className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-2 shadow-xs cursor-pointer hover:border-[#936B34] transition-colors"
+              >
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block font-medium flex items-center justify-between">
+                  <span>RETURNS &amp; EXCHANGES</span>
+                  <RotateCcw className="w-3.5 h-3.5 text-[#936B34]" />
+                </span>
+                <div className="font-serif text-3xl sm:text-4xl text-[#111827] tracking-tight font-light">
+                  {returnsList.length}
+                </div>
+                <span className="text-[10px] font-mono text-[#936B34] block">
+                  {returnsList.filter(r => r.status === 'Pending Review').length} pending review · Click to manage
                 </span>
               </div>
 
@@ -1583,6 +1691,256 @@ export const AdminDashboard: React.FC = () => {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB: RETURNS & EXCHANGES */}
+        {activeTab === 'returns' && (
+          <div className="mt-8 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 bg-[#936B34] text-white font-mono text-[9px] uppercase tracking-wider font-semibold">
+                    DATABASE SYNC ACTIVE
+                  </span>
+                  <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">
+                    ATELIER AFTERCARE &amp; SIZING EXCHANGE
+                  </span>
+                </div>
+                <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
+                  RETURNS &amp; EXCHANGES WORKBENCH
+                </h2>
+                <p className="text-xs text-gray-500 font-mono">
+                  Live database records for patron size exchanges, returns, and prepaid courier waybills
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={async () => {
+                    await loadAllData();
+                    showToast('Returns reloaded from database', 'info');
+                  }}
+                  className="px-3.5 py-2 border border-gray-300 text-xs font-mono uppercase text-gray-700 hover:border-[#936B34] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer bg-white"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>REFRESH</span>
+                </button>
+
+                <button
+                  onClick={handleExportReturns}
+                  className="px-4 py-2 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>EXPORT CSV</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Metrics Strip */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="border border-gray-200 bg-[#FAF8F5] p-5">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-gray-500 block">TOTAL CLAIMS</span>
+                <span className="font-serif text-3xl text-[#111827] block mt-1">{returnsList.length}</span>
+                <span className="text-[10px] font-mono text-[#936B34] mt-0.5 block">Stored in database</span>
+              </div>
+              <div className="border border-amber-200 bg-amber-50/50 p-5">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-amber-800 block">PENDING REVIEW</span>
+                <span className="font-serif text-3xl text-amber-900 block mt-1">
+                  {returnsList.filter(r => r.status === 'Pending Review').length}
+                </span>
+                <span className="text-[10px] font-mono text-amber-700 mt-0.5 block">Needs tailor verification</span>
+              </div>
+              <div className="border border-blue-200 bg-blue-50/40 p-5">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-blue-800 block">IN TRANSIT / INSPECTION</span>
+                <span className="font-serif text-3xl text-blue-900 block mt-1">
+                  {returnsList.filter(r => ['Approved - Return Label Sent', 'Received at Warehouse', 'Inspection Complete'].includes(r.status)).length}
+                </span>
+                <span className="text-[10px] font-mono text-blue-700 mt-0.5 block">Active courier tracking</span>
+              </div>
+              <div className="border border-emerald-200 bg-emerald-50/40 p-5">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-800 block">COMPLETED / REFUNDED</span>
+                <span className="font-serif text-3xl text-emerald-900 block mt-1">
+                  {returnsList.filter(r => r.status === 'Completed / Refunded').length}
+                </span>
+                <span className="text-[10px] font-mono text-emerald-700 mt-0.5 block">Closed consignments</span>
+              </div>
+            </div>
+
+            {/* Filter & Search Toolbar */}
+            <div className="bg-white border border-gray-200 p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={returnSearchQuery}
+                  onChange={(e) => setReturnSearchQuery(e.target.value)}
+                  placeholder="Filter by Claim ID (RET-), Order ID (PA-), Patron name, email, or waybill..."
+                  className="w-full bg-[#FAF8F5] border border-gray-300 px-3.5 py-2.5 text-xs font-mono text-[#111827] focus:border-[#936B34] focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={returnFilterStatus}
+                  onChange={(e) => setReturnFilterStatus(e.target.value)}
+                  className="bg-[#FAF8F5] border border-gray-300 px-3 py-2 text-xs font-mono text-[#111827] focus:border-[#936B34] focus:outline-none"
+                >
+                  <option value="all">ALL STATUSES</option>
+                  <option value="Pending Review">Pending Review</option>
+                  <option value="Approved - Return Label Sent">Approved - Label Sent</option>
+                  <option value="Received at Warehouse">Received at Warehouse</option>
+                  <option value="Inspection Complete">Inspection Complete</option>
+                  <option value="Completed / Refunded">Completed / Refunded</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+
+                <select
+                  value={returnFilterAction}
+                  onChange={(e) => setReturnFilterAction(e.target.value)}
+                  className="bg-[#FAF8F5] border border-gray-300 px-3 py-2 text-xs font-mono text-[#111827] focus:border-[#936B34] focus:outline-none"
+                >
+                  <option value="all">ALL ACTIONS</option>
+                  <option value="Size / Fit Exchange">Size / Fit Exchange</option>
+                  <option value="Tailoring Adjustment">Tailoring Adjustment</option>
+                  <option value="Store Credit">Store Credit</option>
+                  <option value="Refund to Original Payment">Refund to Original Payment</option>
+                </select>
+
+                {(returnSearchQuery || returnFilterStatus !== 'all' || returnFilterAction !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setReturnSearchQuery('');
+                      setReturnFilterStatus('all');
+                      setReturnFilterAction('all');
+                    }}
+                    className="text-xs font-mono text-gray-500 hover:text-black uppercase underline cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Returns Table */}
+            {(() => {
+              const filteredReturns = returnsList.filter(ret => {
+                if (returnFilterStatus !== 'all' && ret.status !== returnFilterStatus) return false;
+                if (returnFilterAction !== 'all' && ret.actionType !== returnFilterAction) return false;
+                if (returnSearchQuery.trim()) {
+                  const q = returnSearchQuery.trim().toUpperCase();
+                  const match = 
+                    ret.id.toUpperCase().includes(q) ||
+                    ret.orderId.toUpperCase().includes(q) ||
+                    (ret.customerName && ret.customerName.toUpperCase().includes(q)) ||
+                    (ret.customerEmail && ret.customerEmail.toUpperCase().includes(q)) ||
+                    (ret.trackingReturnNumber && ret.trackingReturnNumber.toUpperCase().includes(q));
+                  if (!match) return false;
+                }
+                return true;
+              });
+
+              if (filteredReturns.length === 0) {
+                return (
+                  <div className="border border-gray-200 bg-[#F9F9F8] py-16 px-6 text-center flex flex-col items-center justify-center shadow-xs">
+                    <RotateCcw className="w-10 h-10 text-gray-300 mb-3" />
+                    <h3 className="font-serif text-xl text-[#111827] uppercase tracking-wide">No Returns / Exchanges Found</h3>
+                    <p className="text-xs text-gray-500 font-mono mt-1 max-w-md">
+                      {returnsList.length === 0
+                        ? 'No return or exchange claims have been registered in the database yet. When patrons submit returns from their frontstore account, they will automatically appear here.'
+                        : 'No claims match your current filter parameters.'}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="border border-gray-200 bg-white overflow-x-auto shadow-xs">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-[#FAF8F5] text-[10px] font-mono uppercase tracking-widest text-gray-600">
+                        <th className="p-4">CLAIM ID</th>
+                        <th className="p-4">ORDER ID</th>
+                        <th className="p-4">PATRON</th>
+                        <th className="p-4">GARMENTS</th>
+                        <th className="p-4">ACTION &amp; REASON</th>
+                        <th className="p-4">WAYBILL</th>
+                        <th className="p-4">STATUS</th>
+                        <th className="p-4">DATE</th>
+                        <th className="p-4 text-right">ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-xs font-mono">
+                      {filteredReturns.map((ret) => {
+                        const statusColors: Record<string, string> = {
+                          'Pending Review': 'bg-amber-50 text-amber-900 border-amber-300',
+                          'Approved - Return Label Sent': 'bg-blue-50 text-blue-900 border-blue-300',
+                          'Received at Warehouse': 'bg-indigo-50 text-indigo-900 border-indigo-300',
+                          'Inspection Complete': 'bg-purple-50 text-purple-900 border-purple-300',
+                          'Completed / Refunded': 'bg-emerald-50 text-emerald-900 border-emerald-300',
+                          'Rejected': 'bg-red-50 text-red-900 border-red-300'
+                        };
+                        const badgeClass = statusColors[ret.status] || 'bg-gray-100 text-gray-800 border-gray-300';
+
+                        return (
+                          <tr key={ret.id} className="hover:bg-gray-50/80 transition-colors">
+                            <td className="p-4 font-bold text-[#111827]">
+                              {ret.id}
+                            </td>
+                            <td className="p-4">
+                              <button
+                                onClick={() => {
+                                  setActiveTab('orders');
+                                  showToast(`Filtered for Order #${ret.orderId}`, 'info');
+                                }}
+                                className="text-[#936B34] hover:underline font-semibold cursor-pointer"
+                              >
+                                {ret.orderId}
+                              </button>
+                            </td>
+                            <td className="p-4">
+                              <div className="font-semibold text-gray-900 font-sans">{ret.customerName}</div>
+                              <div className="text-[11px] text-gray-500 font-mono">{ret.customerEmail}</div>
+                            </td>
+                            <td className="p-4 max-w-[200px] truncate" title={ret.itemNames.join(', ')}>
+                              {ret.itemNames.join(', ')}
+                            </td>
+                            <td className="p-4">
+                              <span className="font-semibold text-gray-800 block">{ret.actionType}</span>
+                              <span className="text-[11px] text-gray-500 font-sans line-clamp-1">{ret.reason}</span>
+                            </td>
+                            <td className="p-4 text-[11px] font-mono text-gray-700">
+                              {ret.trackingReturnNumber ? (
+                                <span className="bg-gray-100 px-1.5 py-0.5 border border-gray-200">
+                                  {ret.trackingReturnNumber}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">None</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              <span className={`px-2.5 py-1 border text-[10px] uppercase font-bold tracking-wider rounded-none inline-block ${badgeClass}`}>
+                                {ret.status}
+                              </span>
+                            </td>
+                            <td className="p-4 text-gray-500 text-[11px]">
+                              {ret.createdAt}
+                            </td>
+                            <td className="p-4 text-right">
+                              <button
+                                onClick={() => handleOpenManageReturn(ret)}
+                                className="px-3 py-1.5 bg-[#111827] text-white hover:bg-[#936B34] text-[10px] font-mono uppercase tracking-wider transition-colors cursor-pointer"
+                              >
+                                Manage Claim
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -3316,6 +3674,202 @@ export const AdminDashboard: React.FC = () => {
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>RECORD CONSIGNMENT ORDER</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: MANAGE RETURN / EXCHANGE CLAIM */}
+      {isReturnModalOpen && selectedReturn && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-200 max-w-2xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold block">
+                  ATELIER AFTERCARE &amp; DB SYNC
+                </span>
+                <h3 className="font-serif text-xl sm:text-2xl text-[#111827]">
+                  Manage Claim #{selectedReturn.id}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsReturnModalOpen(false)}
+                className="text-gray-400 hover:text-gray-900 transition-colors cursor-pointer p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Patron & Order Dossier */}
+            <div className="bg-[#FAF8F5] border border-gray-200 p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+              <div>
+                <span className="text-gray-500 block text-[10px] uppercase">Associated Order:</span>
+                <span className="font-bold text-gray-900">{selectedReturn.orderId}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block text-[10px] uppercase">Patron Name:</span>
+                <span className="font-semibold text-gray-900 font-sans">{selectedReturn.customerName}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block text-[10px] uppercase">Contact Email:</span>
+                <span className="text-gray-700">{selectedReturn.customerEmail}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block text-[10px] uppercase">Action Requested:</span>
+                <span className="font-semibold text-[#936B34]">{selectedReturn.actionType}</span>
+              </div>
+              <div className="sm:col-span-2 pt-2 border-t border-gray-200">
+                <span className="text-gray-500 block text-[10px] uppercase">Garments in Claim:</span>
+                <span className="text-gray-900 font-sans">{selectedReturn.itemNames.join(', ')}</span>
+              </div>
+              <div className="sm:col-span-2">
+                <span className="text-gray-500 block text-[10px] uppercase">Patron Reason:</span>
+                <span className="text-gray-800 font-sans italic">&quot;{selectedReturn.reason}&quot;</span>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveReturnStatus} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-mono uppercase tracking-wider text-gray-700 mb-1.5 font-medium">
+                    Claim Status *
+                  </label>
+                  <select
+                    value={editingReturnStatus}
+                    onChange={(e) => {
+                      const newSt = e.target.value as ReturnRequest['status'];
+                      setEditingReturnStatus(newSt);
+                      if (newSt === 'Pending Review') setEditingReturnStep(1);
+                      else if (newSt === 'Approved - Return Label Sent') setEditingReturnStep(2);
+                      else if (newSt === 'Received at Warehouse') setEditingReturnStep(3);
+                      else if (newSt === 'Inspection Complete') setEditingReturnStep(4);
+                      else if (newSt === 'Completed / Refunded') setEditingReturnStep(5);
+                    }}
+                    className="w-full bg-[#FAF8F5] border border-gray-300 px-3 py-2.5 text-xs font-mono text-[#111827] focus:border-[#936B34] focus:bg-white focus:outline-none"
+                    required
+                  >
+                    <option value="Pending Review">Pending Review</option>
+                    <option value="Approved - Return Label Sent">Approved - Return Label Sent</option>
+                    <option value="Received at Warehouse">Received at Warehouse</option>
+                    <option value="Inspection Complete">Inspection Complete</option>
+                    <option value="Completed / Refunded">Completed / Refunded</option>
+                    <option value="Rejected">Rejected</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono uppercase tracking-wider text-gray-700 mb-1.5 font-medium">
+                    Tracking Progress Step (1 to 5)
+                  </label>
+                  <select
+                    value={editingReturnStep}
+                    onChange={(e) => setEditingReturnStep(parseInt(e.target.value, 10))}
+                    className="w-full bg-[#FAF8F5] border border-gray-300 px-3 py-2.5 text-xs font-mono text-[#111827] focus:border-[#936B34] focus:bg-white focus:outline-none"
+                  >
+                    <option value={1}>Step 1: Request Submitted</option>
+                    <option value={2}>Step 2: Prepaid Return Label Sent</option>
+                    <option value={3}>Step 3: Received at Inspection Facility</option>
+                    <option value={4}>Step 4: Garment Inspection Complete</option>
+                    <option value={5}>Step 5: Completed / Dispatched / Refunded</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-mono uppercase tracking-wider text-gray-700 font-medium">
+                    Prepaid Return Courier Waybill
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newTracking = `FEDEX-RET-${Math.floor(100000 + Math.random() * 900000)}`;
+                      setEditingReturnTracking(newTracking);
+                    }}
+                    className="text-[10px] font-mono text-[#936B34] hover:underline uppercase font-bold cursor-pointer"
+                  >
+                    + Generate New Waybill
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={editingReturnTracking}
+                  onChange={(e) => setEditingReturnTracking(e.target.value)}
+                  placeholder="e.g. FEDEX-RET-849201"
+                  className="w-full bg-[#FAF8F5] border border-gray-300 px-3 py-2.5 text-xs font-mono text-[#111827] focus:border-[#936B34] focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-mono uppercase tracking-wider text-gray-700 mb-1.5 font-medium">
+                    Replacement Garment / Size Note
+                  </label>
+                  <input
+                    type="text"
+                    value={editingReturnReplacement}
+                    onChange={(e) => setEditingReturnReplacement(e.target.value)}
+                    placeholder="e.g. Size 42R Navy Double-Breasted"
+                    className="w-full bg-[#FAF8F5] border border-gray-300 px-3 py-2.5 text-xs font-mono text-[#111827] focus:border-[#936B34] focus:bg-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono uppercase tracking-wider text-gray-700 mb-1.5 font-medium">
+                    Refund Amount ($ USD)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editingReturnRefund}
+                    onChange={(e) => setEditingReturnRefund(parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    className="w-full bg-[#FAF8F5] border border-gray-300 px-3 py-2.5 text-xs font-mono text-[#111827] focus:border-[#936B34] focus:bg-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase tracking-wider text-gray-700 mb-1.5 font-medium">
+                  Atelier Tailor Inspection &amp; Administrative Notes
+                </label>
+                <textarea
+                  rows={3}
+                  value={editingReturnNotes}
+                  onChange={(e) => setEditingReturnNotes(e.target.value)}
+                  placeholder="Notes on garment condition, inspection results, or customer dispatch details..."
+                  className="w-full bg-[#FAF8F5] border border-gray-300 p-3 text-xs font-mono text-[#111827] focus:border-[#936B34] focus:bg-white focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setIsReturnModalOpen(false)}
+                  className="px-4 py-2.5 border border-gray-300 text-gray-600 text-xs font-mono uppercase hover:text-black cursor-pointer"
+                >
+                  CANCEL
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isUpdatingReturn}
+                  className="px-6 py-2.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer shadow-sm flex items-center gap-2"
+                >
+                  {isUpdatingReturn ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>SAVING TO DATABASE...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>SAVE &amp; SYNC WITH DB</span>
                     </>
                   )}
                 </button>

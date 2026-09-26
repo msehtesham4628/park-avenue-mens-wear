@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Sparkles, Compass } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 import { OFFICIAL_CATEGORIES, ProductCategory } from '../../types';
@@ -15,14 +15,14 @@ export const CategoryShowcase: React.FC = () => {
 
   const taglineByCategory: Record<string, string> = {
     'Suits': 'Bespoke Half & Full Canvas',
-    'Blazers & Jackets': 'Tailored Layers & Jackets',
-    'Shirts': 'Premium Egyptian Cotton',
-    'Pants': 'Tailored Trousers & Denim',
-    'Outerwear': 'Italian Wool & Cashmere',
-    'Sweaters & Knitwear': 'Fine Scottish Knitwear',
-    'Footwear': 'Handcrafted Leather Shoes',
-    'Accessories': 'Hand-Finished Sartorial Details',
-    'Shorts': 'Refined Casual Tailoring'
+    'Blazers & Jackets': 'Tailored Layers & Sport Coats',
+    'Shirts': 'Giza Egyptian Cotton & Twill',
+    'Pants': 'Tailored Trousers & Flannel',
+    'Outerwear': 'Italian Wool & Pure Cashmere',
+    'Sweaters & Knitwear': 'Fine Scottish & Mongolian Knitwear',
+    'Footwear': 'Goodyear Welted Handcrafted Leather',
+    'Accessories': 'Hand-Finished Silk Ties & Accents',
+    'Shorts': 'Refined Sartorial Summer Cut'
   };
 
   const categoryCards = OFFICIAL_CATEGORIES
@@ -61,64 +61,86 @@ export const CategoryShowcase: React.FC = () => {
     }
   };
 
+  const departments = OFFICIAL_CATEGORIES.filter(c => c.id !== 'all' && c.id !== 'new-arrivals');
+
   return (
-    <section id="category-showcase" className="py-24 bg-white text-[#111827]">
+    <section id="category-showcase" className="py-20 sm:py-24 bg-white text-[#111827]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 pb-6 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-6 border-b border-gray-200">
           <div>
-            <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] block mb-2 font-semibold">
-              PARK AVENUE MENSWEAR
-            </span>
+            <div className="flex items-center gap-2 mb-2 font-mono text-[10px] uppercase tracking-[0.35em] text-[#936B34] font-semibold">
+              <Compass className="w-3.5 h-3.5" />
+              <span>SARTORIAL DIRECTORY</span>
+            </div>
             <h2 className="font-serif text-3xl sm:text-4xl text-[#111827] uppercase tracking-wide font-light">
-              DEPARTMENTS &amp; CATEGORIES
+              Departments &amp; Categories
             </h2>
           </div>
           <button
             onClick={openCategoriesIndex}
-            className="mt-4 sm:mt-0 text-xs uppercase tracking-[0.25em] text-[#936B34] hover:text-black transition-colors flex items-center gap-2 font-medium cursor-pointer"
+            className="mt-4 sm:mt-0 text-xs font-mono uppercase tracking-[0.22em] text-[#936B34] hover:text-black transition-colors flex items-center gap-2 font-medium cursor-pointer group"
           >
-            <span>VIEW ALL DEPARTMENTS</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>VIEW COMPLETE CATALOG</span>
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </button>
         </div>
 
-        {/* 13 Categories Quick Navigation Pills */}
-        <div className="mb-12 pb-6 border-b border-gray-100">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
-            <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-gray-500 font-semibold">
-              EXPLORE ALL 13 ATELIER DEPARTMENTS
+        {/* Elevated Luxury Department Buttons Bar */}
+        <div className="mb-14 p-5 sm:p-6 bg-[#FAF8F5] border border-gray-200/90 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-200/70">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#936B34]" />
+              <span className="text-[11px] font-mono uppercase tracking-[0.25em] text-gray-800 font-semibold">
+                QUICK DEPARTMENT JUMP
+              </span>
+            </div>
+            <span className="text-[11px] font-mono text-gray-500 uppercase tracking-widest hidden sm:inline">
+              9 Tailoring Departments Available
             </span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {OFFICIAL_CATEGORIES.filter(c => c.id !== 'all' && c.id !== 'new-arrivals').map((cat) => (
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Primary 'All Collections' Button */}
+            <button
+              onClick={openCategoriesIndex}
+              className="group inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 bg-[#111827] hover:bg-[#936B34] border border-[#111827] hover:border-[#936B34] text-white text-xs font-mono uppercase tracking-[0.16em] transition-all duration-300 shadow-xs cursor-pointer font-medium"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#E5C384]" />
+              <span>ALL COLLECTIONS</span>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            </button>
+
+            {/* Individual Atelier Department Buttons (Suits, Blazers, Shirts, etc.) */}
+            {departments.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => handleSelect(cat.queryValue)}
-                className="px-3.5 py-1.5 bg-[#F9F9F8] border border-gray-200 text-xs font-mono uppercase tracking-wider text-gray-700 hover:border-[#936B34] hover:text-[#111827] hover:bg-white transition-all cursor-pointer rounded-xs"
+                className="group inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 bg-white hover:bg-[#111827] border border-gray-300 hover:border-[#111827] text-gray-800 hover:text-white text-xs font-mono uppercase tracking-[0.15em] transition-all duration-200 shadow-xs cursor-pointer rounded-xs"
               >
-                {cat.name}
+                <span className="w-1.5 h-1.5 rounded-full bg-[#936B34] group-hover:bg-[#E5C384] transition-colors" />
+                <span className="font-medium">{cat.name}</span>
+                <ArrowUpRight className="w-3 h-3 text-gray-400 group-hover:text-[#E5C384] transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </button>
             ))}
           </div>
         </div>
 
-        {/* Full-image category cards with content over the image */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+        {/* Full-image category cards with refined interactive styling */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {categoryCards.map((cat) => (
             <button
               key={cat.title}
               type="button"
               onClick={() => handleSelect(cat.title)}
-              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#F5F5F3] border border-gray-200 text-left cursor-pointer"
+              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#F5F5F3] border border-gray-200 hover:border-[#936B34] text-left cursor-pointer transition-colors duration-300 shadow-xs hover:shadow-lg"
             >
               {cat.image ? (
                 <img
                   src={cat.image}
                   alt={cat.displayName}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                   loading="lazy"
                 />
               ) : (
@@ -130,19 +152,25 @@ export const CategoryShowcase: React.FC = () => {
                 />
               )}
 
-              {/* Luxury overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/5 group-hover:from-black/80 transition-all duration-500" />
+              {/* Luxury gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent group-hover:from-black/90 transition-all duration-500" />
 
-              {/* Category content inside image */}
-              <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 text-white">
-                <div className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.28em] text-white/80 mb-2">
-                  {cat.tagline}
+              {/* Category card content */}
+              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 text-white">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#E5C384]" />
+                  <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#E5C384]">
+                    {cat.tagline}
+                  </span>
                 </div>
-                <h3 className="font-serif text-2xl sm:text-3xl uppercase tracking-[0.12em] font-light mb-4">
+
+                <h3 className="font-serif text-2xl sm:text-3xl uppercase tracking-[0.1em] font-light mb-4 text-white group-hover:text-white transition-colors">
                   {cat.displayName}
                 </h3>
-                <span className="inline-flex items-center gap-2 border border-white/70 px-4 py-2.5 text-[10px] uppercase tracking-[0.22em] font-medium group-hover:bg-white group-hover:text-black transition-all duration-300">
-                  SHOP NOW <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+
+                <span className="inline-flex items-center gap-2.5 bg-white/10 backdrop-blur-xs border border-white/60 group-hover:border-[#E5C384] group-hover:bg-white group-hover:text-black px-4 py-2.5 text-[10px] sm:text-xs uppercase tracking-[0.22em] font-medium transition-all duration-300">
+                  <span>DISCOVER COLLECTION</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                 </span>
               </div>
             </button>

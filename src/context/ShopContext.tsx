@@ -20,6 +20,7 @@ import {
   parseRoute, 
   buildUrl, 
   navigateTo, 
+  getCategorySlug,
   CATEGORY_TO_SLUG, 
   CATEGORY_SLUG_MAP 
 } from '../utils/router';
@@ -28,12 +29,18 @@ export type AppView =
   | 'home'
   | 'welcome'
   | 'shop'
+  | 'category'
+  | 'categories'
   | 'pdp'
   | 'cart'
   | 'checkout'
   | 'track-order'
   | 'track-alteration'
   | 'account'
+  | 'customer-dashboard'
+  | 'account-info'
+  | 'reset-password'
+  | 'track-return'
   | 'login'
   | 'admin'
   | 'dashboard';
@@ -54,6 +61,8 @@ interface ShopContextType {
   selectedSubcategory: string;
   setSelectedCategory: (cat: string, subcat?: string) => void;
   setSelectedSubcategory: (subcat: string) => void;
+  openCategoryPage: (category: string, subcategory?: string) => void;
+  openCategoriesIndex: () => void;
   isProductsSubpage: boolean;
   setIsProductsSubpage: (val: boolean) => void;
   navigateToUrl: (url: string) => void;
@@ -160,6 +169,24 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const setSelectedSubcategory = useCallback((subcat: string) => {
     setSelectedSubcategoryState(subcat);
+  }, []);
+
+  const openCategoryPage = useCallback((category: string, subcategory: string = 'All') => {
+    setSelectedCategoryState(category);
+    setSelectedSubcategoryState(subcategory);
+    setIsProductsSubpage(false);
+    setActiveViewState('category');
+    const slug = getCategorySlug(category);
+    const url = (slug && slug !== 'all') ? `/${slug}` : '/categories';
+    navigateTo(url);
+  }, []);
+
+  const openCategoriesIndex = useCallback(() => {
+    setSelectedCategoryState('All');
+    setSelectedSubcategoryState('All');
+    setIsProductsSubpage(false);
+    setActiveViewState('categories');
+    navigateTo('/categories');
   }, []);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -320,17 +347,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       productId: selectedProductId || undefined,
       isProductsSubpage
     });
-    navigateTo(url);
-  };
-
-  const setSelectedCategory = (cat: string) => {
-    setSelectedCategoryState(cat);
-    const url = buildUrl({
-      view: 'shop',
-      category: cat,
-      isProductsSubpage
-    });
-    setActiveViewState('shop');
     navigateTo(url);
   };
 
@@ -559,6 +575,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         selectedSubcategory,
         setSelectedCategory,
         setSelectedSubcategory,
+        openCategoryPage,
+        openCategoriesIndex,
         isProductsSubpage,
         setIsProductsSubpage,
         navigateToUrl,

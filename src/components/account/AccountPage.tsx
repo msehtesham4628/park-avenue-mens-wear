@@ -132,7 +132,7 @@ export const AccountPage: React.FC = () => {
       apartment: addr.apartment || '',
       city: addr.city || '',
       state: addr.state || 'NY',
-      zipCode: addr.zipCode || addr.postalCode || '',
+      zipCode: addr.zipCode || (addr as any).postalCode || '',
       chest: currentCustomer.measurements?.chest || '40 Regular',
       waist: currentCustomer.measurements?.waist || '32 Inches',
       inseam: currentCustomer.measurements?.inseam || '32.5" (Slight Break)',

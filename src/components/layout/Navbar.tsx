@@ -119,22 +119,24 @@ export const Navbar: React.FC = () => {
                 <Scissors className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                 <span>SERVICES</span>
               </button>
-              <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>|</span>
-              <button 
-                onClick={() => {
-                  setActiveView('admin');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className={`transition-colors flex items-center gap-1 cursor-pointer ${
-                  isAdminLoggedIn 
-                    ? (isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold')
-                    : (isTransparent ? 'hover:text-white' : 'hover:text-black')
-                }`}
-                title="Atelier Administration Portal"
-              >
-                <ShieldCheck className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
-                <span>ADMIN</span>
-              </button>
+              {isAdminLoggedIn && (
+                <>
+                  <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>|</span>
+                  <button 
+                    onClick={() => {
+                      setActiveView('admin');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`transition-colors flex items-center gap-1 cursor-pointer ${
+                      isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold'
+                    }`}
+                    title="Atelier Administration Portal"
+                  >
+                    <ShieldCheck className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
+                    <span>ADMIN</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -346,18 +348,18 @@ export const Navbar: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
-                      setActiveView('account');
+                      setActiveView('customer-dashboard');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] cursor-pointer ${
-                      activeView === 'account' 
+                      activeView === 'customer-dashboard' || activeView === 'account'
                         ? (isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold')
                         : (isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]')
                     }`}
-                    aria-label="Customer Account"
+                    aria-label="Customer Dashboard"
                   >
                     <User className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
-                    <span>{currentCustomer.name?.split(' ')[0] || 'PATRON'}</span>
+                    <span>{currentCustomer.name?.split(' ')[0] || 'PATRON'} DASHBOARD</span>
                   </button>
                   <button
                     onClick={() => {
@@ -371,7 +373,7 @@ export const Navbar: React.FC = () => {
                   >
                     (SWITCH)
                   </button>
-                  {(isAdminLoggedIn || currentCustomer?.role === 'admin' || currentCustomer?.role === 'staff') && (
+                  {isAdminLoggedIn && (
                     <button
                       onClick={() => {
                         setActiveView('admin');
@@ -380,7 +382,7 @@ export const Navbar: React.FC = () => {
                       className="ml-1 px-2 py-0.5 bg-[#936B34] text-white hover:bg-[#111827] text-[10px] font-mono tracking-wider uppercase transition-colors shadow-xs cursor-pointer font-medium"
                       title="Atelier Admin Console"
                     >
-                      DASHBOARD
+                      ADMIN
                     </button>
                   )}
                 </div>

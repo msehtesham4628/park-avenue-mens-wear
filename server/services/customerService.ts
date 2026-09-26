@@ -1,6 +1,7 @@
 import { CustomerModel, ICustomer } from '../models/Customer.js';
 import { OrderModel } from '../models/Order.js';
 import { AlterationModel } from '../models/Alteration.js';
+import { ReturnModel } from '../models/Return.js';
 import { auditService } from './auditService.js';
 
 export const customerService = {
@@ -73,7 +74,7 @@ export const customerService = {
 
     if (!customer) return null;
 
-    const [orders, alterations] = await Promise.all([
+    const [orders, alterations, returns] = await Promise.all([
       OrderModel.find({
         $or: [
           { customerId: customer.customerId },
@@ -85,13 +86,20 @@ export const customerService = {
           { customerId: customer.customerId },
           { customerEmail: customer.email }
         ]
+      }).sort({ createdAt: -1 }).lean(),
+      ReturnModel.find({
+        $or: [
+          { customerId: customer.customerId },
+          { customerEmail: customer.email }
+        ]
       }).sort({ createdAt: -1 }).lean()
     ]);
 
     return {
       customer,
       orders,
-      alterations
+      alterations,
+      returns
     };
   },
 

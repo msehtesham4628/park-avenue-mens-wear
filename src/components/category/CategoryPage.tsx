@@ -301,9 +301,9 @@ export const CategoryPage: React.FC = () => {
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
               <button
                 type="button"
-                onClick={() => setSelectedSubcategory(null)}
+                onClick={() => setSelectedSubcategory('All')}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
-                  !selectedSubcategory 
+                  !selectedSubcategory || selectedSubcategory === 'All'
                     ? 'bg-[#111827] text-white shadow-xs' 
                     : 'bg-[#F4F4F3] text-gray-700 hover:bg-gray-200 hover:text-black'
                 }`}
@@ -317,7 +317,7 @@ export const CategoryPage: React.FC = () => {
                   <button
                     key={sub}
                     type="button"
-                    onClick={() => setSelectedSubcategory(isSelected ? null : sub)}
+                    onClick={() => setSelectedSubcategory(isSelected ? 'All' : sub)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                       isSelected 
                         ? 'bg-[#936B34] text-white shadow-xs' 
@@ -397,7 +397,7 @@ export const CategoryPage: React.FC = () => {
             </p>
             <button
               onClick={() => {
-                setSelectedSubcategory(null);
+                setSelectedSubcategory('All');
                 setFilterInStockOnly(false);
                 setSearchQuery('');
               }}
@@ -504,7 +504,6 @@ export const CategoryPage: React.FC = () => {
       {quickViewProduct && (
         <ProductDetailModal
           product={quickViewProduct}
-          isOpen={!!quickViewProduct}
           onClose={() => setQuickViewProduct(null)}
         />
       )}

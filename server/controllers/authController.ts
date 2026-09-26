@@ -181,7 +181,8 @@ export const authController = {
               role: req.user.role
             },
             orders: [],
-            alterations: []
+            alterations: [],
+            returns: []
           },
           message: 'Profile retrieved successfully.'
         });
@@ -195,7 +196,8 @@ export const authController = {
         data: {
           customer: copy,
           orders: profile.orders,
-          alterations: profile.alterations
+          alterations: profile.alterations,
+          returns: profile.returns || []
         },
         message: 'Profile retrieved successfully.'
       });
