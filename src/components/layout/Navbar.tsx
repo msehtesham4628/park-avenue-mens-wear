@@ -10,8 +10,7 @@ import {
   ChevronDown,
   Sparkles,
   LogIn,
-  LogOut
-
+  LogOut,
   RotateCcw
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
