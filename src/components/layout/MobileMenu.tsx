@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Search, Heart, User, Compass, Scissors, Layers, LogIn, LogOut, ChevronDown, ShieldCheck, RotateCcw } from 'lucide-react';
+import { X, Search, Heart, User, Compass, Scissors, Layers, LogIn, LogOut, ChevronDown, RotateCcw } from 'lucide-react';
 import { useShop, AppView } from '../../context/ShopContext';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { OFFICIAL_CATEGORIES } from '../../types';
@@ -20,7 +20,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
     unreadNotificationCount,
     setIsNotificationsOpen,
     currentCustomer,
-    isAdminLoggedIn,
     logout
   } = useShop();
 
@@ -202,15 +201,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                 >
                   <RotateCcw className="w-4 h-4 text-[#936B34]" />
                   <span>Returns &amp; Exchanges</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleNav('admin')}
-                  className="hover:text-black transition-colors flex items-center gap-2.5 py-1 w-full text-left cursor-pointer font-semibold text-[#936B34]"
-                >
-                  <ShieldCheck className="w-4 h-4 text-[#936B34]" />
-                  <span>Atelier Admin Dashboard</span>
                 </button>
               </li>
               <li>
