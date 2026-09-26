@@ -20,6 +20,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
     unreadNotificationCount,
     setIsNotificationsOpen,
     currentCustomer,
+    isAdminLoggedIn,
     logout
   } = useShop();
 
@@ -203,6 +204,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                   <span>Returns &amp; Exchanges</span>
                 </button>
               </li>
+
               <li>
                 {currentCustomer ? (
                   <div className="flex items-center justify-between py-1">
@@ -246,7 +248,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                 <span>Patron Dashboard &amp; Orders</span>
               </button>
             )}
-</div>
+
+          </div>
         </div>
 
         {/* Footer shortcuts */}
