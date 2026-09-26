@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Package, 
   Truck, 
@@ -16,11 +16,16 @@ import {
   Check, 
   ExternalLink,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  MapPin,
+  Edit3,
+  X,
+  Save
 } from 'lucide-react';
 import { Order, OrderItem, Product } from '../../types';
 import { ImageWithFallback } from '../common/ImageWithFallback';
 import { useShop } from '../../context/ShopContext';
+import { OrderService } from '../../services/api';
 
 interface OrderHistorySectionProps {
   orders: Order[];
@@ -44,12 +49,110 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
     setCurrentOrder 
   } = useShop();
 
+  const [localOrders, setLocalOrders] = useState<Order[]>(orders);
+  useEffect(() => {
+    setLocalOrders(orders);
+  }, [orders]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatusFilter>('all');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
   const [selectedReceiptOrder, setSelectedReceiptOrder] = useState<Order | null>(null);
   const [reorderingId, setReorderingId] = useState<string | null>(null);
+
+  // Address editing state for orders
+  const [editingOrderAddress, setEditingOrderAddress] = useState<Order | null>(null);
+  const [addressEditForm, setAddressEditForm] = useState({
+    street: '',
+    apartment: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'United States'
+  });
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+
+  const openEditAddressModal = (order: Order) => {
+    setEditingOrderAddress(order);
+    setAddressEditForm({
+      street: order.shippingAddress?.street || '',
+      apartment: order.shippingAddress?.apartment || '',
+      city: order.shippingAddress?.city || '',
+      state: order.shippingAddress?.state || 'NY',
+      zipCode: order.shippingAddress?.zipCode || order.shippingAddress?.postalCode || '',
+      country: order.shippingAddress?.country || 'United States'
+    });
+  };
+
+  const handleSaveAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrderAddress) return;
+    if (!addressEditForm.street.trim() || !addressEditForm.city.trim() || !addressEditForm.state.trim() || !addressEditForm.zipCode.trim()) {
+      showToast('Please provide a complete street address, city, state, and zip code.', 'error');
+      return;
+    }
+
+    setIsSavingAddress(true);
+    try {
+      await OrderService.updateShippingAddress(editingOrderAddress.id, addressEditForm);
+      setLocalOrders(prev => prev.map(o => o.id === editingOrderAddress.id ? { ...o, shippingAddress: addressEditForm } : o));
+      showToast(`Delivery destination address updated for Commission #${editingOrderAddress.id}`, 'success');
+      setEditingOrderAddress(null);
+    } catch {
+      // Local fallback update
+      setLocalOrders(prev => prev.map(o => o.id === editingOrderAddress.id ? { ...o, shippingAddress: addressEditForm } : o));
+      showToast(`Delivery address recorded for Commission #${editingOrderAddress.id}`, 'success');
+      setEditingOrderAddress(null);
+    } finally {
+      setIsSavingAddress(false);
+    }
+  };
+
+  // Helper for computing individual line item status
+  const getItemStatusBadge = (item: OrderItem, orderStatus: string = '') => {
+    const customStatus = item.itemStatus || '';
+    const s = (customStatus || orderStatus).toLowerCase();
+
+    if (s.includes('delivered') || s.includes('completed')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
+          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+          <span>Delivered</span>
+        </span>
+      );
+    }
+    if (s.includes('shipped') || s.includes('transit') || s.includes('courier')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider bg-indigo-50 text-indigo-800 border border-indigo-200 font-semibold">
+          <Truck className="w-2.5 h-2.5 text-indigo-600 animate-pulse" />
+          <span>In Courier Transit</span>
+        </span>
+      );
+    }
+    if (s.includes('packed') || s.includes('inspect')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider bg-blue-50 text-blue-800 border border-blue-200 font-semibold">
+          <Package className="w-2.5 h-2.5 text-blue-600" />
+          <span>Packed &amp; Inspected</span>
+        </span>
+      );
+    }
+    if (s.includes('processing') || s.includes('craft')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200 font-semibold">
+          <Clock className="w-2.5 h-2.5 text-amber-600" />
+          <span>Atelier Handcrafting</span>
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider bg-[#FAF8F5] text-[#936B34] border border-[#936B34]/30 font-semibold">
+        <Package className="w-2.5 h-2.5 text-[#936B34]" />
+        <span>Sizing &amp; Fabric Reserved</span>
+      </span>
+    );
+  };
 
   // Helper to resolve Product object from line item for addToCart
   const resolveProductFromItem = (item: OrderItem): Product => {
@@ -160,7 +263,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
 
   // Filtered orders list
   const filteredOrders = useMemo(() => {
-    return orders.filter(ord => {
+    return localOrders.filter(ord => {
       // 1. Status Filter
       if (statusFilter === 'in-transit') {
         const s = ord.orderStatus?.toLowerCase() || '';
@@ -173,34 +276,40 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
         if (!s.includes('processing') && !s.includes('confirmed') && !s.includes('packed')) return false;
       }
 
-      // 2. Search Query
+      // 2. Search Query (matches ID, tracking number, product names, SKU, or delivery address)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchesId = ord.id?.toLowerCase().includes(q);
         const matchesTracking = ord.trackingNumber?.toLowerCase().includes(q);
         const matchesItems = ord.items?.some(it => it.productName?.toLowerCase().includes(q) || it.sku?.toLowerCase().includes(q));
-        if (!matchesId && !matchesTracking && !matchesItems) return false;
+        const matchesAddress = ord.shippingAddress && (
+          (ord.shippingAddress.street && ord.shippingAddress.street.toLowerCase().includes(q)) ||
+          (ord.shippingAddress.city && ord.shippingAddress.city.toLowerCase().includes(q)) ||
+          (ord.shippingAddress.state && ord.shippingAddress.state.toLowerCase().includes(q)) ||
+          (ord.shippingAddress.zipCode && ord.shippingAddress.zipCode.toLowerCase().includes(q))
+        );
+        if (!matchesId && !matchesTracking && !matchesItems && !matchesAddress) return false;
       }
 
       return true;
     });
-  }, [orders, statusFilter, searchQuery]);
+  }, [localOrders, statusFilter, searchQuery]);
 
   // Overall Metrics
   const metrics = useMemo(() => {
-    const totalCommissions = orders.length;
-    const totalLifetimeSpend = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-    const inTransitCount = orders.filter(o => {
+    const totalCommissions = localOrders.length;
+    const totalLifetimeSpend = localOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const inTransitCount = localOrders.filter(o => {
       const s = o.orderStatus?.toLowerCase() || '';
       return s.includes('shipped') || s.includes('transit') || s.includes('delivery');
     }).length;
-    const deliveredCount = orders.filter(o => {
+    const deliveredCount = localOrders.filter(o => {
       const s = o.orderStatus?.toLowerCase() || '';
       return s.includes('delivered') || s.includes('completed');
     }).length;
 
     return { totalCommissions, totalLifetimeSpend, inTransitCount, deliveredCount };
-  }, [orders]);
+  }, [localOrders]);
 
   // Format Status Badge
   const getStatusBadge = (status: string = 'Order Confirmed') => {
@@ -525,6 +634,78 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                       })}
                     </div>
                   </div>
+
+                  {/* PROMINENT DELIVERY & DISPATCH ADDRESS SECTION */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="p-3.5 bg-[#FAF8F5] border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-7 h-7 rounded-none bg-white border border-[#936B34]/30 flex items-center justify-center shrink-0 text-[#936B34] mt-0.5 sm:mt-0 shadow-2xs">
+                          <MapPin className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-[#936B34]">
+                              DELIVERY DESTINATION ADDRESS
+                            </span>
+                            {order.shippingAddress?.street ? (
+                              <span className="text-[9px] px-1.5 py-0.2 bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold uppercase">
+                                Confirmed Destination
+                              </span>
+                            ) : (
+                              <span className="text-[9px] px-1.5 py-0.2 bg-amber-50 text-amber-900 border border-amber-300 font-semibold uppercase animate-pulse">
+                                Address Required to Dispatch
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="text-gray-900 font-medium text-xs leading-relaxed">
+                            {order.shippingAddress?.street ? (
+                              <div>
+                                <span className="font-bold text-[#111827]">{order.customerName || 'Valued Patron'}:</span>{' '}
+                                <span>{order.shippingAddress.street}</span>
+                                {order.shippingAddress.apartment && <span>, {order.shippingAddress.apartment}</span>}
+                                <span>, {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode || order.shippingAddress.postalCode || ''}</span>
+                                <span className="text-gray-500 uppercase text-[10px]"> ({order.shippingAddress.country || 'USA'})</span>
+                              </div>
+                            ) : (
+                              <p className="text-amber-800 text-[11px]">
+                                No delivery address specified for this order. Please add destination address to enable courier delivery dispatch.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
+                        {order.shippingAddress?.street && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const fullAddr = `${order.customerName || 'Patron'}\n${order.shippingAddress?.street}${order.shippingAddress?.apartment ? ` ${order.shippingAddress.apartment}` : ''}\n${order.shippingAddress?.city}, ${order.shippingAddress?.state} ${order.shippingAddress?.zipCode || ''}\n${order.shippingAddress?.country || 'USA'}`;
+                              navigator.clipboard?.writeText(fullAddr);
+                              showToast('Delivery address copied to clipboard', 'info');
+                            }}
+                            className="px-2.5 py-1.5 bg-white border border-gray-200 hover:border-gray-400 text-gray-600 hover:text-black text-[10px] font-mono uppercase tracking-wider transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Copy full delivery address text"
+                          >
+                            <Copy className="w-3 h-3 text-gray-500" />
+                            <span>Copy Address</span>
+                          </button>
+                        )}
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditAddressModal(order);
+                          }}
+                          className="px-3 py-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-gray-800 hover:text-[#936B34] text-[10px] font-mono uppercase tracking-wider transition-colors flex items-center gap-1 cursor-pointer font-semibold shadow-2xs"
+                        >
+                          <Edit3 className="w-3 h-3 text-[#936B34]" />
+                          <span>{order.shippingAddress?.street ? 'Change Address' : 'Add Destination Address'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* LINE ITEMS BREAKDOWN */}
@@ -573,6 +754,12 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                                     SKU: {item.sku}
                                   </span>
                                 )}
+                              </div>
+
+                              {/* Individual Line Item Status */}
+                              <div className="flex items-center gap-1.5 pt-0.5 text-[11px] font-mono">
+                                <span className="text-gray-400 text-[10px] uppercase">Item Status:</span>
+                                {getItemStatusBadge(item, order.orderStatus)}
                               </div>
 
                               <div className="text-xs font-mono text-gray-500">
@@ -874,6 +1061,143 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT DELIVERY DESTINATION ADDRESS */}
+      {editingOrderAddress && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white border border-[#936B34] max-w-lg w-full p-6 sm:p-7 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#936B34] font-semibold block">
+                  DELIVERY DESTINATION
+                </span>
+                <h3 className="font-serif text-xl sm:text-2xl text-[#111827]">
+                  Update Shipping Address
+                </h3>
+                <p className="text-xs font-mono text-gray-500">
+                  Commission #{editingOrderAddress.id} &bull; Recipient: {editingOrderAddress.customerName}
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingOrderAddress(null)}
+                className="text-gray-400 hover:text-black text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAddress} className="space-y-4 text-xs font-mono">
+              <div>
+                <label className="block text-[10px] uppercase text-gray-600 font-semibold mb-1">
+                  Street Address *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. 1048 5th Avenue"
+                  value={addressEditForm.street}
+                  onChange={e => setAddressEditForm({ ...addressEditForm, street: e.target.value })}
+                  className="w-full bg-[#FAF8F5] border border-gray-300 p-2.5 text-[#111827] focus:bg-white focus:border-[#936B34] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase text-gray-600 font-semibold mb-1">
+                  Apartment, Suite, Unit, Penthouse (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Penthouse B, Suite 402"
+                  value={addressEditForm.apartment}
+                  onChange={e => setAddressEditForm({ ...addressEditForm, apartment: e.target.value })}
+                  className="w-full bg-[#FAF8F5] border border-gray-300 p-2.5 text-[#111827] focus:bg-white focus:border-[#936B34] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase text-gray-600 font-semibold mb-1">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="New York"
+                    value={addressEditForm.city}
+                    onChange={e => setAddressEditForm({ ...addressEditForm, city: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-gray-300 p-2.5 text-[#111827] focus:bg-white focus:border-[#936B34] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase text-gray-600 font-semibold mb-1">
+                    State / Province *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="NY"
+                    value={addressEditForm.state}
+                    onChange={e => setAddressEditForm({ ...addressEditForm, state: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-gray-300 p-2.5 text-[#111827] focus:bg-white focus:border-[#936B34] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase text-gray-600 font-semibold mb-1">
+                    ZIP / Postal Code *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="10028"
+                    value={addressEditForm.zipCode}
+                    onChange={e => setAddressEditForm({ ...addressEditForm, zipCode: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-gray-300 p-2.5 text-[#111827] focus:bg-white focus:border-[#936B34] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase text-gray-600 font-semibold mb-1">
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={addressEditForm.country}
+                    onChange={e => setAddressEditForm({ ...addressEditForm, country: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-gray-300 p-2.5 text-[#111827] focus:bg-white focus:border-[#936B34] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
+                Courier Note: Destination address will be updated across active atelier consignment manifests and delivery routing slips.
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setEditingOrderAddress(null)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 hover:text-black uppercase tracking-wider text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingAddress}
+                  className="px-6 py-2 bg-[#111827] hover:bg-[#936B34] text-white uppercase tracking-wider text-xs font-semibold cursor-pointer transition-colors shadow-xs disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSavingAddress ? 'Saving Address...' : 'Save Delivery Address'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

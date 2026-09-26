@@ -608,6 +608,42 @@ export const OrderService = {
     return mapBackendOrderToFrontend(remote);
   },
 
+  async updateShippingAddress(orderId: string, address: { street: string; apartment?: string; city: string; state: string; zipCode: string; country: string }): Promise<Order> {
+    const cleanId = String(orderId || '').trim();
+    if (!cleanId) throw new Error('Order ID is required to update shipping address');
+
+    let remote = await fetchRemote<any>(`/orders/admin/${encodeURIComponent(cleanId)}/shipping-address`, {
+      method: 'PUT',
+      body: JSON.stringify({ shippingAddress: address })
+    });
+    if (!remote) {
+      remote = await fetchRemote<any>(`/orders/${encodeURIComponent(cleanId)}/shipping-address`, {
+        method: 'PUT',
+        body: JSON.stringify({ shippingAddress: address })
+      });
+    }
+
+    if (remote) {
+      const mapped = mapBackendOrderToFrontend(remote);
+      const index = ordersCache.findIndex(o => o.id === cleanId || o.id === mapped.id);
+      if (index >= 0) ordersCache[index] = mapped;
+      saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
+      return mapped;
+    }
+
+    const index = ordersCache.findIndex(o => o.id === cleanId);
+    if (index >= 0) {
+      ordersCache[index] = {
+        ...ordersCache[index],
+        shippingAddress: address
+      };
+      saveStorage(STORAGE_KEYS.ORDERS, ordersCache);
+      return ordersCache[index];
+    }
+
+    throw new Error('Order not found');
+  },
+
   async createManualOrder(manualPayload: Partial<Order> & {
     customerName: string;
     items: Order['items'];
@@ -623,6 +659,7 @@ export const OrderService = {
       customerName: manualPayload.customerName,
       customerEmail: manualPayload.customerEmail || 'patron@parkavenuemenswear.com',
       customerPhone: manualPayload.customerPhone || '+1 (800) 555-7275',
+      shippingAddress: manualPayload.shippingAddress,
       shippingMethod: manualPayload.shippingMethod || 'White-Glove Private Courier',
       orderStatus: manualPayload.orderStatus || 'Order Confirmed',
       paymentStatus: manualPayload.paymentStatus || 'Paid',

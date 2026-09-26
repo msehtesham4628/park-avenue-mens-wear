@@ -11,7 +11,10 @@ import {
   LogIn, 
   Search,
   ExternalLink,
-  ShoppingBag
+  ShoppingBag,
+  MapPin,
+  ShieldCheck,
+  CheckCircle2
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { AuthService, ReturnService, OrderService } from '../../services/api';
@@ -85,7 +88,8 @@ export const CustomerDashboard: React.FC = () => {
                 quantity: 1,
                 price: 1250,
                 image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=600',
-                sku: 'PA-BLAZER-01-40R'
+                sku: 'PA-BLAZER-01-40R',
+                itemStatus: 'Delivered'
               },
               {
                 productId: 'prod-trousers-flannel',
@@ -96,7 +100,8 @@ export const CustomerDashboard: React.FC = () => {
                 quantity: 1,
                 price: 380,
                 image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=600',
-                sku: 'PA-PANT-02-32W'
+                sku: 'PA-PANT-02-32W',
+                itemStatus: 'Delivered'
               },
               {
                 productId: 'prod-shirt-white',
@@ -107,7 +112,8 @@ export const CustomerDashboard: React.FC = () => {
                 quantity: 2,
                 price: 185,
                 image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&q=80&w=600',
-                sku: 'PA-SHIRT-03-15.5'
+                sku: 'PA-SHIRT-03-15.5',
+                itemStatus: 'Delivered'
               }
             ],
             subtotal: 2000,
@@ -127,7 +133,44 @@ export const CustomerDashboard: React.FC = () => {
               state: 'NY',
               zipCode: '10028',
               country: 'United States'
-            }
+            },
+            timeline: [
+              {
+                status: 'Order Confirmed',
+                timestamp: '2026-09-18 09:15 AM',
+                location: 'Park Avenue Flagship Atelier',
+                description: 'Commission registered and bespoke fabric allocated.',
+                completed: true
+              },
+              {
+                status: 'Processing',
+                timestamp: '2026-09-19 11:30 AM',
+                location: 'Atelier Workshop',
+                description: 'Hand pressing and master sartorial tailoring.',
+                completed: true
+              },
+              {
+                status: 'Packed',
+                timestamp: '2026-09-20 03:00 PM',
+                location: 'Atelier White-Glove Suite',
+                description: 'Garments boxed in cedar lining with suit hanger.',
+                completed: true
+              },
+              {
+                status: 'Shipped',
+                timestamp: '2026-09-21 08:30 AM',
+                location: 'FedEx Air Hub NY',
+                description: 'Priority courier dispatch with insurance.',
+                completed: true
+              },
+              {
+                status: 'Delivered',
+                timestamp: '2026-09-22 02:15 PM',
+                location: '1048 5th Ave, Penthouse B, NY',
+                description: 'Handed directly to patron. Signed receipt verified.',
+                completed: true
+              }
+            ]
           },
           {
             id: 'PA-2026-000002',
@@ -145,7 +188,8 @@ export const CustomerDashboard: React.FC = () => {
                 quantity: 1,
                 price: 1850,
                 image: 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&q=80&w=600',
-                sku: 'PA-SUIT-04-42R'
+                sku: 'PA-SUIT-04-42R',
+                itemStatus: 'Shipped'
               },
               {
                 productId: 'prod-tie-grenadine',
@@ -156,7 +200,8 @@ export const CustomerDashboard: React.FC = () => {
                 quantity: 1,
                 price: 145,
                 image: 'https://images.unsplash.com/photo-1589756823695-278bc923f962?auto=format&fit=crop&q=80&w=600',
-                sku: 'PA-TIE-05'
+                sku: 'PA-TIE-05',
+                itemStatus: 'Shipped'
               }
             ],
             subtotal: 1995,
@@ -176,7 +221,37 @@ export const CustomerDashboard: React.FC = () => {
               state: 'NY',
               zipCode: '10028',
               country: 'United States'
-            }
+            },
+            timeline: [
+              {
+                status: 'Order Confirmed',
+                timestamp: '2026-09-24 10:00 AM',
+                location: 'Park Avenue Flagship Atelier',
+                description: 'Payment authorized and items reserved from private vault.',
+                completed: true
+              },
+              {
+                status: 'Processing',
+                timestamp: '2026-09-24 02:45 PM',
+                location: 'Atelier Workshop',
+                description: 'Inspection and master pressing.',
+                completed: true
+              },
+              {
+                status: 'Packed',
+                timestamp: '2026-09-25 09:10 AM',
+                location: 'Packaging Suite',
+                description: 'Garment box sealing.',
+                completed: true
+              },
+              {
+                status: 'Shipped',
+                timestamp: '2026-09-25 04:30 PM',
+                location: 'Atelier Courier Dispatch',
+                description: 'White-glove private courier in transit.',
+                completed: true
+              }
+            ]
           }
         ];
       }
@@ -368,6 +443,72 @@ export const CustomerDashboard: React.FC = () => {
               TRACK NOW
             </button>
           </form>
+        </div>
+
+        {/* Primary Delivery Destination Address Section */}
+        <div className="border border-gray-200 bg-white p-6 sm:p-7 shadow-xs relative overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#936B34] font-semibold block">
+                  DELIVERY DESTINATION
+                </span>
+                <span className="text-[9px] font-mono px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold uppercase">
+                  Verified Dispatch Address
+                </span>
+              </div>
+              <h2 className="font-serif text-xl sm:text-2xl text-[#111827] font-light">
+                Registered Shipping &amp; White-Glove Dispatch Address
+              </h2>
+              <p className="text-xs text-gray-600 font-sans max-w-2xl leading-relaxed">
+                All bespoke sartorial commissions, tailoring alterations, and size exchanges are dispatched directly to your designated destination below via insured private courier.
+              </p>
+              
+              <div className="pt-2 flex items-start gap-3 text-xs font-mono text-gray-800">
+                <div className="w-8 h-8 bg-[#FAF8F5] border border-[#936B34]/30 flex items-center justify-center shrink-0 text-[#936B34]">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-[#111827] flex items-center gap-2">
+                    <span>{currentCustomer.name || 'Valued Patron'}</span>
+                    <span className="text-gray-400 font-normal">|</span>
+                    <span className="text-gray-500 font-normal">{currentCustomer.phone || '+1 (555) 234-5678'}</span>
+                  </div>
+                  <div className="text-gray-700 mt-0.5">
+                    {currentCustomer.addresses?.[0]?.street || '1048 5th Avenue'}
+                    {currentCustomer.addresses?.[0]?.apartment && `, ${currentCustomer.addresses[0].apartment}`}
+                    , {currentCustomer.addresses?.[0]?.city || 'New York'}, {currentCustomer.addresses?.[0]?.state || 'NY'} {currentCustomer.addresses?.[0]?.zipCode || (currentCustomer.addresses?.[0] as any)?.postalCode || '10028'}
+                  </div>
+                  <div className="text-gray-400 text-[10px] uppercase mt-0.5">
+                    {currentCustomer.addresses?.[0]?.country || 'United States'} &bull; Contact: {currentCustomer.email}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
+              <button
+                onClick={() => {
+                  setActiveView('account-info');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="px-5 py-2.5 bg-[#111827] text-white hover:bg-[#936B34] text-xs font-mono uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer font-medium shadow-xs"
+              >
+                <MapPin className="w-3.5 h-3.5 text-[#E5C384]" />
+                <span>Manage Delivery Address</span>
+              </button>
+              <button
+                onClick={() => {
+                  const el = document.getElementById('order-history-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-5 py-2.5 bg-white border border-gray-300 hover:border-[#936B34] text-gray-700 hover:text-[#936B34] text-xs font-mono uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer font-medium"
+              >
+                <span>View Orders at this Address</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Customer Account Services Grid */}

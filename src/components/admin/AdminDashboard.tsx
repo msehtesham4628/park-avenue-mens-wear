@@ -33,7 +33,8 @@ import {
   ExternalLink,
   Globe,
   Truck,
-  RotateCcw
+  RotateCcw,
+  MapPin
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { 
@@ -145,6 +146,12 @@ export const AdminDashboard: React.FC = () => {
   const [manualOrderCustomer, setManualOrderCustomer] = useState('');
   const [manualOrderEmail, setManualOrderEmail] = useState('');
   const [manualOrderPhone, setManualOrderPhone] = useState('');
+  const [manualOrderStreet, setManualOrderStreet] = useState('');
+  const [manualOrderApartment, setManualOrderApartment] = useState('');
+  const [manualOrderCity, setManualOrderCity] = useState('');
+  const [manualOrderState, setManualOrderState] = useState('NY');
+  const [manualOrderZip, setManualOrderZip] = useState('');
+  const [manualOrderCountry, setManualOrderCountry] = useState('United States');
   const [manualOrderItems, setManualOrderItems] = useState<{
     productId: string;
     productName: string;
@@ -1295,6 +1302,7 @@ export const AdminDashboard: React.FC = () => {
                     <tr>
                       <th className="p-4">ORDER ID</th>
                       <th className="p-4">CUSTOMER</th>
+                      <th className="p-4">SHIPPING ADDRESS</th>
                       <th className="p-4">ITEMS</th>
                       <th className="p-4">TOTAL</th>
                       <th className="p-4">STATUS</th>
@@ -1313,7 +1321,33 @@ export const AdminDashboard: React.FC = () => {
                         <tr key={ord.id ? `ord-${ord.id}-${ordIdx}` : `ord-${ordIdx}`} className="hover:bg-black/[0.02]">
                           <td className="p-4 text-[#936B34] font-medium">{ord.id}</td>
                           <td className="p-4 text-[#111827]">
-                            {(ord.shippingAddress as any)?.fullName || ord.customerEmail || 'Client'}
+                            <div className="font-semibold text-gray-900">{ord.customerName || (ord.shippingAddress as any)?.fullName || 'Client'}</div>
+                            <div className="text-gray-500 text-[10px]">{ord.customerEmail || 'No email on record'}</div>
+                            {ord.customerPhone && <div className="text-gray-400 text-[9px]">{ord.customerPhone}</div>}
+                          </td>
+                          <td className="p-4 text-[#111827] max-w-[240px]">
+                            {ord.shippingAddress?.street ? (
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-1 font-semibold text-[11px] text-[#111827]">
+                                  <MapPin className="w-3 h-3 text-[#936B34] shrink-0" />
+                                  <span className="truncate">{ord.shippingAddress.street}</span>
+                                </div>
+                                {ord.shippingAddress.apartment && (
+                                  <div className="text-gray-500 pl-4 text-[10px] truncate">{ord.shippingAddress.apartment}</div>
+                                )}
+                                <div className="text-gray-600 pl-4 text-[10px]">
+                                  {[ord.shippingAddress.city, ord.shippingAddress.state, ord.shippingAddress.zipCode || (ord.shippingAddress as any).postalCode].filter(Boolean).join(', ')}
+                                </div>
+                                <div className="text-gray-400 pl-4 text-[9px] uppercase">
+                                  {ord.shippingAddress.country || 'USA'}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono bg-amber-50 text-amber-800 border border-amber-200">
+                                <AlertCircle className="w-2.5 h-2.5" />
+                                <span>Address Pending</span>
+                              </span>
+                            )}
                           </td>
                           <td className="p-4 text-gray-500">
                             {ord.items?.map(it => `${it.productName} (${it.quantity})`).join(', ') || 'N/A'}
@@ -1429,14 +1463,34 @@ export const AdminDashboard: React.FC = () => {
         {shipmentOrder && (
           <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
             <div className="w-full max-w-lg bg-white border border-gray-200 shadow-2xl p-6">
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="font-serif text-2xl text-[#111827]">Shipment &amp; Tracking Dispatch</h3>
-                  <p className="text-xs font-mono text-[#936B34] mt-1 font-semibold">Order ID: {shipmentOrder.id}</p>
+                  <p className="text-xs font-mono text-[#936B34] mt-0.5 font-semibold">Order ID: {shipmentOrder.id}</p>
                 </div>
                 <button onClick={() => setShipmentOrder(null)} className="p-1 text-gray-400 hover:text-black cursor-pointer">
                   <X className="w-5 h-5"/>
                 </button>
+              </div>
+
+              {/* Destination Address Info */}
+              <div className="mb-4 p-3 bg-[#FAF8F5] border border-gray-200 text-xs font-mono">
+                <div className="flex items-center gap-1.5 text-[#936B34] font-semibold text-[10px] uppercase tracking-wider mb-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>Destination Shipping Address</span>
+                </div>
+                <p className="font-bold text-[#111827]">{shipmentOrder.customerName || (shipmentOrder.shippingAddress as any)?.fullName || 'Client'}</p>
+                <p className="text-gray-700">
+                  {shipmentOrder.shippingAddress?.street 
+                    ? `${shipmentOrder.shippingAddress.street}${shipmentOrder.shippingAddress.apartment ? `, ${shipmentOrder.shippingAddress.apartment}` : ''}`
+                    : 'Address not recorded for this order'}
+                </p>
+                <p className="text-gray-600">
+                  {[shipmentOrder.shippingAddress?.city, shipmentOrder.shippingAddress?.state, shipmentOrder.shippingAddress?.zipCode || (shipmentOrder.shippingAddress as any)?.postalCode, shipmentOrder.shippingAddress?.country || 'USA'].filter(Boolean).join(', ')}
+                </p>
+                {shipmentOrder.customerPhone && (
+                  <p className="text-gray-500 text-[10px] mt-1">Contact: {shipmentOrder.customerPhone} &bull; {shipmentOrder.customerEmail}</p>
+                )}
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
@@ -3392,6 +3446,14 @@ export const AdminDashboard: React.FC = () => {
                     customerName: manualOrderCustomer.trim(),
                     customerEmail: manualOrderEmail.trim() || undefined,
                     customerPhone: manualOrderPhone.trim() || undefined,
+                    shippingAddress: manualOrderStreet.trim() ? {
+                      street: manualOrderStreet.trim(),
+                      apartment: manualOrderApartment.trim() || undefined,
+                      city: manualOrderCity.trim() || 'New York',
+                      state: manualOrderState.trim() || 'NY',
+                      zipCode: manualOrderZip.trim() || '10028',
+                      country: manualOrderCountry.trim() || 'United States'
+                    } : undefined,
                     shippingMethod: 'White-Glove Private Courier',
                     orderStatus: manualOrderStatus,
                     paymentStatus: manualPaymentStatus,
@@ -3417,6 +3479,12 @@ export const AdminDashboard: React.FC = () => {
                   setManualOrderCustomer('');
                   setManualOrderEmail('');
                   setManualOrderPhone('');
+                  setManualOrderStreet('');
+                  setManualOrderApartment('');
+                  setManualOrderCity('');
+                  setManualOrderState('NY');
+                  setManualOrderZip('');
+                  setManualOrderCountry('United States');
                   setManualOrderItems([]);
                   setManualAlterationReq(false);
                   setManualAlterationNotes('');
@@ -3468,6 +3536,83 @@ export const AdminDashboard: React.FC = () => {
                     onChange={(e) => setManualOrderPhone(e.target.value)}
                     className="w-full bg-white border border-gray-300 p-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                   />
+                </div>
+              </div>
+
+              {/* Delivery Address Section */}
+              <div className="p-4 bg-[#FAF8F5] border border-gray-200 space-y-3">
+                <div className="flex items-center gap-1.5 text-[#936B34] font-semibold text-[10px] font-mono uppercase tracking-wider">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>DELIVERY DESTINATION ADDRESS</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[9px] font-mono uppercase text-gray-500 mb-1">
+                      STREET ADDRESS
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 1048 5th Avenue"
+                      value={manualOrderStreet}
+                      onChange={(e) => setManualOrderStreet(e.target.value)}
+                      className="w-full bg-white border border-gray-300 p-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-mono uppercase text-gray-500 mb-1">
+                      APARTMENT / SUITE / UNIT
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Penthouse B"
+                      value={manualOrderApartment}
+                      onChange={(e) => setManualOrderApartment(e.target.value)}
+                      className="w-full bg-white border border-gray-300 p-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[9px] font-mono uppercase text-gray-500 mb-1">
+                      CITY
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="New York"
+                      value={manualOrderCity}
+                      onChange={(e) => setManualOrderCity(e.target.value)}
+                      className="w-full bg-white border border-gray-300 p-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-mono uppercase text-gray-500 mb-1">
+                      STATE (2-LETTER CODE)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="NY"
+                      value={manualOrderState}
+                      onChange={(e) => setManualOrderState(e.target.value)}
+                      className="w-full bg-white border border-gray-300 p-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-mono uppercase text-gray-500 mb-1">
+                      ZIP / POSTAL CODE
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="10028"
+                      value={manualOrderZip}
+                      onChange={(e) => setManualOrderZip(e.target.value)}
+                      className="w-full bg-white border border-gray-300 p-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
                 </div>
               </div>
 

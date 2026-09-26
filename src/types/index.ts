@@ -154,6 +154,7 @@ export interface OrderItem {
   price: number;
   image?: string;
   sku?: string;
+  itemStatus?: 'Confirmed' | 'Crafting' | 'Inspected' | 'Shipped' | 'Delivered' | string;
 }
 
 export interface OrderTimelineEvent {
@@ -196,7 +197,7 @@ export interface Order {
   carrier?: string;
   estimatedDelivery?: string;
   shipment?: { carrier?: string; trackingId?: string; trackingUrl?: string; status?: string; estimatedDelivery?: string; notes?: string };
-  timeline: OrderTimelineEvent[];
+  timeline?: OrderTimelineEvent[];
   alterationRequested?: boolean;
   alterationNotes?: string;
 }
