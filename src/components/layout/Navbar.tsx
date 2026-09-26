@@ -11,7 +11,6 @@ import {
   Sparkles,
   LogIn,
   LogOut,
-  ShieldCheck,
   RotateCcw
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
@@ -32,7 +31,6 @@ export const Navbar: React.FC = () => {
     cartCount,
     wishlist,
     currentCustomer,
-    isAdminLoggedIn,
     logout
   } = useShop();
 
@@ -133,19 +131,6 @@ export const Navbar: React.FC = () => {
                 <span>RETURNS</span>
               </button>
               <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>|</span>
-              <button 
-                onClick={() => {
-                  setActiveView('admin');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className={`transition-colors flex items-center gap-1 cursor-pointer font-semibold ${
-                  isTransparent ? 'text-[#E5C384] hover:text-white' : 'text-[#936B34] hover:text-black'
-                }`}
-                title="Atelier Administration Portal & Database Dashboard"
-              >
-                <ShieldCheck className="w-3 h-3" />
-                <span>DASHBOARD</span>
-              </button>
             </div>
           </div>
         </div>
