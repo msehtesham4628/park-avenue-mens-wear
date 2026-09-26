@@ -1273,6 +1273,53 @@ export const ReturnService = {
 };
 
 /* =========================================================================
+   DASHBOARD STATS & DB METRICS SERVICE
+   ========================================================================= */
+
+export interface DashboardStats {
+  totalProducts: number;
+  totalInventory: number;
+  lowStockCount: number;
+  outOfStockCount: number;
+  totalOrders: number;
+  pendingOrders: number;
+  shippedOrders: number;
+  deliveredOrders: number;
+  totalCustomers: number;
+  pendingAlterations: number;
+  totalReturns: number;
+  pendingReturns: number;
+  activeReturns: number;
+  completedReturns: number;
+  grossRevenue: number;
+}
+
+export const DashboardService = {
+  async getStats(): Promise<DashboardStats | null> {
+    const remote = await fetchRemote<DashboardStats>('/admin/dashboard/stats');
+    if (remote) return remote;
+    // Fallback computed from local caches if offline
+    return {
+      totalProducts: productsCache.length,
+      totalInventory: productsCache.reduce((sum, p) => sum + (p.totalStock || 0), 0),
+      lowStockCount: productsCache.filter(p => p.totalStock > 0 && p.totalStock <= 5).length,
+      outOfStockCount: productsCache.filter(p => p.totalStock <= 0).length,
+      totalOrders: ordersCache.length,
+      pendingOrders: ordersCache.filter(o => ['Order Confirmed', 'Processing'].includes(o.orderStatus)).length,
+      shippedOrders: ordersCache.filter(o => ['Shipped', 'Out for Delivery'].includes(o.orderStatus)).length,
+      deliveredOrders: ordersCache.filter(o => o.orderStatus === 'Delivered').length,
+      totalCustomers: customersCache.length,
+      pendingAlterations: alterationsCache.filter(a => a.status !== 'Completed' && a.status !== 'Cancelled').length,
+      totalReturns: returnsCache.length,
+      pendingReturns: returnsCache.filter(r => r.status === 'Pending Review').length,
+      activeReturns: returnsCache.filter(r => ['Approved - Return Label Sent', 'Received at Warehouse', 'Inspection Complete'].includes(r.status)).length,
+      completedReturns: returnsCache.filter(r => r.status === 'Completed / Refunded').length,
+      grossRevenue: ordersCache.reduce((sum, o) => sum + (o.total || 0), 0)
+    };
+  }
+};
+
+/* =========================================================================
    CUSTOMERS & ACCOUNTS SERVICE
    ========================================================================= */
 

@@ -3,6 +3,7 @@ import { ProductModel } from '../models/Product.js';
 import { OrderModel } from '../models/Order.js';
 import { CustomerModel } from '../models/Customer.js';
 import { AlterationModel } from '../models/Alteration.js';
+import { ReturnModel } from '../models/Return.js';
 
 export const dashboardController = {
   /**
@@ -20,7 +21,11 @@ export const dashboardController = {
         totalCustomers,
         pendingAlterations,
         lowStockItems,
-        outOfStockItems
+        outOfStockItems,
+        totalReturns,
+        pendingReturns,
+        activeReturns,
+        completedReturns
       ] = await Promise.all([
         ProductModel.countDocuments(),
         ProductModel.find({ isActive: true }).select('stockQuantity variants lowStockThreshold').lean(),
@@ -34,7 +39,11 @@ export const dashboardController = {
           isActive: true,
           $expr: { $and: [{ $gt: ['$stockQuantity', 0] }, { $lte: ['$stockQuantity', '$lowStockThreshold'] }] }
         }),
-        ProductModel.countDocuments({ isActive: true, stockQuantity: { $lte: 0 } })
+        ProductModel.countDocuments({ isActive: true, stockQuantity: { $lte: 0 } }),
+        ReturnModel.countDocuments(),
+        ReturnModel.countDocuments({ status: 'Pending Review' }),
+        ReturnModel.countDocuments({ status: { $in: ['Approved - Return Label Sent', 'Received at Warehouse', 'Inspection Complete'] } }),
+        ReturnModel.countDocuments({ status: 'Completed / Refunded' })
       ]);
 
       const totalInventory = activeProducts.reduce((sum, p) => sum + (p.stockQuantity || 0), 0);
@@ -56,6 +65,10 @@ export const dashboardController = {
           deliveredOrders,
           totalCustomers,
           pendingAlterations,
+          totalReturns,
+          pendingReturns,
+          activeReturns,
+          completedReturns,
           grossRevenue
         },
         message: 'Dashboard metrics calculated.'

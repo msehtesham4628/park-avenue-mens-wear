@@ -14,6 +14,7 @@ import { alterationService } from '../services/alterationService.js';
 import { notificationService } from '../services/notificationService.js';
 import { paymentService } from '../services/paymentService.js';
 import { customerService } from '../services/customerService.js';
+import { returnService } from '../services/returnService.js';
 
 let passedCount = 0;
 let failedCount = 0;
@@ -352,7 +353,7 @@ async function runTests() {
   // ----------------------------------------------------
   // TEST 13: Payment Webhook Handling
   // ----------------------------------------------------
-  console.log('\n[13/13] Testing Payment Webhook Handling...');
+  console.log('\n[13/14] Testing Payment Webhook Handling...');
   try {
     const webhookRes = await paymentService.handleWebhook({
       type: 'payment_intent.succeeded',
@@ -367,6 +368,34 @@ async function runTests() {
     assert(webhookRes.status === 'Paid', 'Order payment status transitioned to Paid via webhook');
   } catch (err: any) {
     assert(false, 'Payment webhook threw exception', err.message);
+  }
+
+  // ----------------------------------------------------
+  // TEST 14: Return & Exchange Request Workflow
+  // ----------------------------------------------------
+  console.log('\n[14/14] Testing Return & Exchange Creation & Admin Status Workflow...');
+  try {
+    const returnReq = await returnService.createReturn({
+      orderId: createdOrderId,
+      customerName: 'Alexander Vanderbilt',
+      customerEmail: 'alexander@example.com',
+      actionType: 'Size / Fit Exchange',
+      reason: 'Requested 42R jacket swap',
+      preferredReplacement: 'Imperial Worsted Navy Blazer 42R'
+    }, testAdmin);
+
+    assert(Boolean(returnReq.returnId), 'Return request generated valid returnId');
+    assert(returnReq.status === 'Approved - Return Label Sent', 'Return initial status is Approved - Return Label Sent');
+    assert(Boolean(returnReq.trackingReturnNumber), 'Return has prepaid tracking number');
+
+    const updatedRet = await returnService.updateReturnStatus(returnReq.returnId, {
+      status: 'Inspection Complete',
+      adminNotes: 'Garment inspected and approved for exchange.'
+    }, testAdmin);
+
+    assert(updatedRet?.status === 'Inspection Complete', 'Admin successfully updated return status in DB');
+  } catch (err: any) {
+    assert(false, 'Return test threw exception', err.message);
   }
 
   // Final Summary

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Search, Heart, User, Compass, Scissors, Layers, LogIn, LogOut, ChevronDown, ShieldCheck } from 'lucide-react';
+import { X, Search, Heart, User, Compass, Scissors, Layers, LogIn, LogOut, ChevronDown, ShieldCheck, RotateCcw } from 'lucide-react';
 import { useShop, AppView } from '../../context/ShopContext';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { OFFICIAL_CATEGORIES } from '../../types';
@@ -196,6 +196,24 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
                 </button>
               </li>
               <li>
+                <button
+                  onClick={() => handleNav('track-return')}
+                  className="hover:text-black transition-colors flex items-center gap-2.5 py-1 w-full text-left cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4 text-[#936B34]" />
+                  <span>Returns &amp; Exchanges</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => handleNav('admin')}
+                  className="hover:text-black transition-colors flex items-center gap-2.5 py-1 w-full text-left cursor-pointer font-semibold text-[#936B34]"
+                >
+                  <ShieldCheck className="w-4 h-4 text-[#936B34]" />
+                  <span>Atelier Admin Dashboard</span>
+                </button>
+              </li>
+              <li>
                 {currentCustomer ? (
                   <div className="flex items-center justify-between py-1">
                     <button
@@ -228,28 +246,24 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
             </ul>
           </div>
 
-          {(currentCustomer || isAdminLoggedIn) && (
-            <div className="border-t border-gray-200 pt-4 space-y-2">
-              {currentCustomer && (
-                <button
-                  onClick={() => handleNav('customer-dashboard')}
-                  className="flex items-center gap-2.5 text-xs text-gray-600 hover:text-[#936B34] transition-colors py-1 w-full text-left font-mono cursor-pointer"
-                >
-                  <User className="w-4 h-4 text-[#936B34]" />
-                  <span>Patron Dashboard &amp; Orders</span>
-                </button>
-              )}
-              {isAdminLoggedIn && (
-                <button
-                  onClick={() => handleNav('admin')}
-                  className="flex items-center gap-2.5 text-xs text-[#936B34] hover:text-[#111827] transition-colors py-1.5 w-full text-left font-mono cursor-pointer font-medium"
-                >
-                  <ShieldCheck className="w-4 h-4 text-[#936B34]" />
-                  <span>Admin Atelier Dashboard</span>
-                </button>
-              )}
-            </div>
-          )}
+          <div className="border-t border-gray-200 pt-4 space-y-2">
+            {currentCustomer && (
+              <button
+                onClick={() => handleNav('customer-dashboard')}
+                className="flex items-center gap-2.5 text-xs text-gray-600 hover:text-[#936B34] transition-colors py-1 w-full text-left font-mono cursor-pointer"
+              >
+                <User className="w-4 h-4 text-[#936B34]" />
+                <span>Patron Dashboard &amp; Orders</span>
+              </button>
+            )}
+            <button
+              onClick={() => handleNav('admin')}
+              className="flex items-center gap-2.5 text-xs text-[#936B34] hover:text-[#111827] transition-colors py-1.5 w-full text-left font-mono cursor-pointer font-medium"
+            >
+              <ShieldCheck className="w-4 h-4 text-[#936B34]" />
+              <span>Admin Atelier Portal &amp; DB Ledger</span>
+            </button>
+          </div>
         </div>
 
         {/* Footer shortcuts */}

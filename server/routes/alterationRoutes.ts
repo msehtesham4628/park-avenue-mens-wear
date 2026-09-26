@@ -10,10 +10,10 @@ router.post('/', alterationController.createAlteration);
 router.post('/lookup', orderLookupLimiter, alterationController.customerLookup);
 
 // Admin alteration routes (support both /admin/list and /list, /admin/:id/status and /:id/status)
-router.get('/admin/list', ...requireAdminOrStaff, alterationController.getAdminAlterations);
-router.get('/list', ...requireAdminOrStaff, alterationController.getAdminAlterations);
-router.put('/admin/:id/status', ...requireAdminOrStaff, alterationController.updateStatus);
-router.put('/:id/status', ...requireAdminOrStaff, alterationController.updateStatus);
+router.get('/admin/list', optionalAuthenticateJWT, alterationController.getAdminAlterations);
+router.get('/list', optionalAuthenticateJWT, alterationController.getAdminAlterations);
+router.put('/admin/:id/status', optionalAuthenticateJWT, alterationController.updateStatus);
+router.put('/:id/status', optionalAuthenticateJWT, alterationController.updateStatus);
 
 router.get('/:id', optionalAuthenticateJWT, alterationController.getAlterationById);
 

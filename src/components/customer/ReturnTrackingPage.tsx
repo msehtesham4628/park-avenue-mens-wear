@@ -19,7 +19,7 @@ import { ReturnService } from '../../services/api';
 import { ReturnRequest } from '../../types';
 
 export const ReturnTrackingPage: React.FC = () => {
-  const { currentCustomer, showToast } = useShop();
+  const { currentCustomer, currentOrder, showToast } = useShop();
 
   const [returnRequests, setReturnRequests] = useState<ReturnRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,8 +32,12 @@ export const ReturnTrackingPage: React.FC = () => {
   const [isNewReturnModalOpen, setIsNewReturnModalOpen] = useState(false);
   const [newForm, setNewForm] = useState({
     orderId: '',
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
     itemNames: '',
     actionType: 'Size / Fit Exchange' as ReturnRequest['actionType'],
+    preferredReplacement: '',
     reason: ''
   });
 
@@ -53,10 +57,20 @@ export const ReturnTrackingPage: React.FC = () => {
     // Check URL parameters for prefill (e.g. ?orderId=PA-ORD-88210 or ?returnId=RET-8842)
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const prefillOrderId = params.get('orderId');
+      const prefillOrderId = params.get('orderId') || (currentOrder?.id ? currentOrder.id : '');
       if (prefillOrderId) {
-        setNewForm(prev => ({ ...prev, orderId: prefillOrderId.toUpperCase() }));
-        setIsNewReturnModalOpen(true);
+        const itemDesc = currentOrder?.items?.map(i => `${i.productName} (${i.size}, ${i.color || 'Standard'})`).join(', ') || '';
+        setNewForm(prev => ({
+          ...prev,
+          orderId: prefillOrderId.toUpperCase(),
+          customerName: prev.customerName || currentOrder?.customerName || currentCustomer?.name || '',
+          customerEmail: prev.customerEmail || currentOrder?.customerEmail || currentCustomer?.email || '',
+          customerPhone: prev.customerPhone || currentOrder?.customerPhone || currentCustomer?.phone || '',
+          itemNames: prev.itemNames || itemDesc
+        }));
+        if (params.get('orderId')) {
+          setIsNewReturnModalOpen(true);
+        }
       }
       const prefillReturnId = params.get('returnId');
       if (prefillReturnId) {
@@ -64,7 +78,7 @@ export const ReturnTrackingPage: React.FC = () => {
         handleSearch(null as any, prefillReturnId.toUpperCase());
       }
     }
-  }, []);
+  }, [currentCustomer, currentOrder]);
 
   const loadReturns = async () => {
     setIsLoading(true);
@@ -138,13 +152,13 @@ export const ReturnTrackingPage: React.FC = () => {
       const created = await ReturnService.create({
         orderId: newForm.orderId.trim().toUpperCase(),
         customerId: currentCustomer?.id,
-        customerName: currentCustomer?.name,
-        customerEmail: currentCustomer?.email,
-        customerPhone: currentCustomer?.phone,
+        customerName: newForm.customerName.trim() || currentOrder?.customerName || currentCustomer?.name || 'Valued Patron',
+        customerEmail: newForm.customerEmail.trim() || currentOrder?.customerEmail || currentCustomer?.email || '',
+        customerPhone: newForm.customerPhone.trim() || currentOrder?.customerPhone || currentCustomer?.phone || '',
         itemNames: newForm.itemNames.trim() ? [newForm.itemNames.trim()] : ['Custom Garment'],
         actionType: newForm.actionType,
         reason: newForm.reason.trim() || 'Size/fit exchange requested',
-        preferredReplacement: newForm.actionType === 'Size / Fit Exchange' ? 'Direct Replacement Size' : undefined
+        preferredReplacement: newForm.preferredReplacement.trim() || (newForm.actionType === 'Size / Fit Exchange' ? 'Direct Replacement Size' : undefined)
       });
 
       setReturnRequests(prev => [created, ...prev.filter(r => r.id !== created.id)]);
@@ -159,8 +173,12 @@ export const ReturnTrackingPage: React.FC = () => {
       setIsNewReturnModalOpen(false);
       setNewForm({
         orderId: '',
+        customerName: '',
+        customerEmail: '',
+        customerPhone: '',
         itemNames: '',
         actionType: 'Size / Fit Exchange',
+        preferredReplacement: '',
         reason: ''
       });
 
@@ -431,18 +449,61 @@ export const ReturnTrackingPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleCreateReturn} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-mono uppercase text-gray-600 mb-1 font-semibold">
-                  Order ID *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newForm.orderId}
-                  onChange={e => setNewForm({ ...newForm, orderId: e.target.value })}
-                  placeholder="e.g. PA-1001"
-                  className="w-full bg-white border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-gray-600 mb-1 font-semibold">
+                    Order ID *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newForm.orderId}
+                    onChange={e => setNewForm({ ...newForm, orderId: e.target.value })}
+                    placeholder="e.g. PA-2026-000001"
+                    className="w-full bg-white border border-gray-300 px-3.5 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-gray-600 mb-1 font-semibold">
+                    Client Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newForm.customerName}
+                    onChange={e => setNewForm({ ...newForm, customerName: e.target.value })}
+                    placeholder="e.g. Edward Sterling"
+                    className="w-full bg-white border border-gray-300 px-3.5 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-gray-600 mb-1 font-semibold">
+                    Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    value={newForm.customerEmail}
+                    onChange={e => setNewForm({ ...newForm, customerEmail: e.target.value })}
+                    placeholder="e.g. client@example.com"
+                    className="w-full bg-white border border-gray-300 px-3.5 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-gray-600 mb-1 font-semibold">
+                    Contact Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={newForm.customerPhone}
+                    onChange={e => setNewForm({ ...newForm, customerPhone: e.target.value })}
+                    placeholder="e.g. +1 (555) 234-5678"
+                    className="w-full bg-white border border-gray-300 px-3.5 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                  />
+                </div>
               </div>
 
               <div>
@@ -454,8 +515,8 @@ export const ReturnTrackingPage: React.FC = () => {
                   required
                   value={newForm.itemNames}
                   onChange={e => setNewForm({ ...newForm, itemNames: e.target.value })}
-                  placeholder="e.g. Navy Suit Jacket (40R)"
-                  className="w-full bg-white border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
+                  placeholder="e.g. Navy Double-Breasted Suit Jacket (40R)"
+                  className="w-full bg-white border border-gray-300 px-3.5 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
                 />
               </div>
 
@@ -466,25 +527,41 @@ export const ReturnTrackingPage: React.FC = () => {
                 <select
                   value={newForm.actionType}
                   onChange={e => setNewForm({ ...newForm, actionType: e.target.value as any })}
-                  className="w-full bg-white border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
+                  className="w-full bg-white border border-gray-300 px-3.5 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
                 >
-                  <option value="Size / Fit Exchange">Size / Fit Exchange</option>
-                  <option value="Tailoring Adjustment">Tailoring Adjustment</option>
-                  <option value="Store Credit">Store Credit</option>
-                  <option value="Refund to Original Payment">Refund to Original Payment</option>
+                  <option value="Size / Fit Exchange">Size / Fit Exchange (Complimentary Replacement)</option>
+                  <option value="Tailoring Adjustment">Tailoring Adjustment (Atelier Re-alteration)</option>
+                  <option value="Store Credit">Store Credit (Atelier Ledger Balance)</option>
+                  <option value="Refund to Original Payment">Refund to Original Payment (Original Method)</option>
                 </select>
               </div>
 
+              {(newForm.actionType === 'Size / Fit Exchange' || newForm.actionType === 'Tailoring Adjustment') && (
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-[#936B34] mb-1 font-semibold">
+                    Requested Replacement Size / Adjustment Spec
+                  </label>
+                  <input
+                    type="text"
+                    value={newForm.preferredReplacement}
+                    onChange={e => setNewForm({ ...newForm, preferredReplacement: e.target.value })}
+                    placeholder="e.g. Size 42R in Navy, or Trouser waist taken in 1 inch"
+                    className="w-full bg-white border border-[#936B34]/60 px-3.5 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-[10px] font-mono uppercase text-gray-600 mb-1 font-semibold">
-                  Reason for Return / Exchange Details
+                  Reason for Return / Exchange Details *
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
+                  required
                   value={newForm.reason}
                   onChange={e => setNewForm({ ...newForm, reason: e.target.value })}
                   placeholder="Please specify your sizing change or return reason..."
-                  className="w-full bg-white border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
+                  className="w-full bg-white border border-gray-300 px-3.5 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
                 ></textarea>
               </div>
 

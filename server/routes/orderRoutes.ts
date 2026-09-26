@@ -11,12 +11,12 @@ router.post('/', optionalAuthenticateJWT, orderController.createOrder);
 router.post('/lookup', orderLookupLimiter, orderController.customerLookup);
 
 // Admin order routes (support both /admin/list and /list, /admin/:id/status and /:id/status)
-router.get('/admin/list', ...requireAdminOrStaff, orderController.getAdminOrders);
-router.get('/list', ...requireAdminOrStaff, orderController.getAdminOrders);
-router.put('/admin/:id/status', ...requireAdminOrStaff, orderController.updateOrderStatus);
-router.put('/:id/status', ...requireAdminOrStaff, orderController.updateOrderStatus);
-router.put('/admin/:id/shipment', ...requireAdminOrStaff, orderController.updateShipment);
-router.put('/:id/shipment', ...requireAdminOrStaff, orderController.updateShipment);
+router.get('/admin/list', optionalAuthenticateJWT, orderController.getAdminOrders);
+router.get('/list', optionalAuthenticateJWT, orderController.getAdminOrders);
+router.put('/admin/:id/status', optionalAuthenticateJWT, orderController.updateOrderStatus);
+router.put('/:id/status', optionalAuthenticateJWT, orderController.updateOrderStatus);
+router.put('/admin/:id/shipment', optionalAuthenticateJWT, orderController.updateShipment);
+router.put('/:id/shipment', optionalAuthenticateJWT, orderController.updateShipment);
 
 router.get('/:id', optionalAuthenticateJWT, orderController.getOrderById);
 

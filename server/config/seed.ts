@@ -2,6 +2,7 @@ import { ProductModel } from '../models/Product.js';
 import { CustomerModel } from '../models/Customer.js';
 import { OrderModel } from '../models/Order.js';
 import { AlterationModel } from '../models/Alteration.js';
+import { ReturnModel } from '../models/Return.js';
 import { authService } from '../services/authService.js';
 
 export async function seedInitialData() {
@@ -549,6 +550,96 @@ export async function seedInitialData() {
         pickupCode: 'PA-FIT-8821'
       });
       console.info('[Park Avenue DB Seed] Seeded initial alteration: ALT-2026-000001');
+    }
+
+    // 4. Seed Sample Return & Exchange Requests if empty
+    const returnCount = await ReturnModel.countDocuments();
+    if (returnCount === 0) {
+      await ReturnModel.create([
+        {
+          returnId: 'RET-8842',
+          orderId: 'PA-2026-000001',
+          customerId: 'CUST-EDWARD-001',
+          customerName: 'Edward Sterling',
+          customerEmail: 'edward.sterling@example.com',
+          customerPhone: '+1 (555) 234-5678',
+          itemNames: ['The Park Avenue Navy Double-Breasted Suit (40R, Navy)'],
+          actionType: 'Size / Fit Exchange',
+          reason: 'Need size 42R jacket for broader shoulder drape; sleeves in 40R slightly snug.',
+          status: 'Approved - Return Label Sent',
+          currentStep: 2,
+          trackingReturnNumber: 'FEDEX-RET-892104',
+          replacementItem: 'The Park Avenue Navy Double-Breasted Suit (42R, Navy)',
+          refundAmount: 0,
+          adminNotes: 'Prepaid return label dispatched to client. Replacement garment reserved in New York atelier vault.',
+          statusHistory: [
+            {
+              previousStatus: 'None',
+              newStatus: 'Pending Review',
+              changedBy: { id: 'CUST-EDWARD-001', name: 'Edward Sterling', role: 'customer' },
+              note: 'Client initiated online exchange request for larger chest size.',
+              timestamp: new Date(Date.now() - 36 * 60 * 60 * 1000)
+            },
+            {
+              previousStatus: 'Pending Review',
+              newStatus: 'Approved - Return Label Sent',
+              changedBy: { id: 'CUST-ADMIN-001', name: 'Park Avenue Executive Admin', role: 'admin' },
+              note: 'Prepaid FedEx return waybill FEDEX-RET-892104 issued; 42R held in private stock.',
+              timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000)
+            }
+          ]
+        },
+        {
+          returnId: 'RET-8843',
+          orderId: 'PA-ORD-88210',
+          customerName: 'Jonathan Vance',
+          customerEmail: 'jonathan.vance@example.com',
+          customerPhone: '+1 (555) 345-6789',
+          itemNames: ['Pleated Irish Linen Tailored Walk Shorts (32, Sand Dune)'],
+          actionType: 'Tailoring Adjustment',
+          reason: 'Waist fits perfectly, but requesting 1-inch hem taper at thigh.',
+          status: 'Received at Warehouse',
+          currentStep: 3,
+          trackingReturnNumber: 'FEDEX-RET-774321',
+          replacementItem: 'Tailoring Inseam Taper Adjustment',
+          refundAmount: 0,
+          adminNotes: 'Item safely received at Manhattan workshop. Transferred to Giovanni Rossi for hand finishing.',
+          statusHistory: [
+            {
+              previousStatus: 'Approved - Return Label Sent',
+              newStatus: 'Received at Warehouse',
+              changedBy: { id: 'STAFF-01', name: 'Giovanni Rossi', role: 'staff' },
+              note: 'Package signed and inspected at atelier warehouse intake.',
+              timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000)
+            }
+          ]
+        },
+        {
+          returnId: 'RET-8844',
+          orderId: 'PA-ORD-90214',
+          customerName: 'Harrison Ford',
+          customerEmail: 'harrison.ford@example.com',
+          customerPhone: '+1 (555) 456-7890',
+          itemNames: ['Sea Island Knit Silk-Cotton Sartorial Polo (L, Deep Navy)'],
+          actionType: 'Refund to Original Payment',
+          reason: 'Duplicate gift purchase by family member; unworn with tags attached.',
+          status: 'Inspection Complete',
+          currentStep: 4,
+          trackingReturnNumber: 'FEDEX-RET-661209',
+          refundAmount: 325,
+          adminNotes: 'Tags intact, pristine condition confirmed by master inspection. Ready for Stripe refund release.',
+          statusHistory: [
+            {
+              previousStatus: 'Received at Warehouse',
+              newStatus: 'Inspection Complete',
+              changedBy: { id: 'CUST-ADMIN-001', name: 'Park Avenue Executive Admin', role: 'admin' },
+              note: 'Garment condition verified: Mint unworn with original atelier tag seals.',
+              timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
+            }
+          ]
+        }
+      ]);
+      console.info('[Park Avenue DB Seed] Seeded initial Return & Exchange records in MongoDB.');
     }
   } catch (err: any) {
     console.warn(`[Park Avenue DB Seed] Seed warning: ${err.message}`);

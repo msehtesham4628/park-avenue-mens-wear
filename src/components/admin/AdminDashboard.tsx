@@ -42,6 +42,7 @@ import {
   AlterationService, 
   CustomerService, 
   ReturnService,
+  DashboardService,
   NotificationService,
   StripePaymentService,
   StripeGatewayConfig,
@@ -102,6 +103,7 @@ export const AdminDashboard: React.FC = () => {
   const [returnsList, setReturnsList] = useState<ReturnRequest[]>([]);
   const [alterationsList, setAlterationsList] = useState<AlterationRecord[]>([]);
   const [customersList, setCustomersList] = useState<Customer[]>([]);
+  const [dbStats, setDbStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Return modal & filter state
@@ -233,13 +235,14 @@ export const AdminDashboard: React.FC = () => {
   const loadAllData = async () => {
     setIsLoading(true);
     try {
-      const [prods, ords, alts, custs, returnsData, stripeCfg] = await Promise.all([
+      const [prods, ords, alts, custs, returnsData, stripeCfg, statsData] = await Promise.all([
         ProductService.getAll(),
         OrderService.getAll(),
         AlterationService.getAll(),
         CustomerService.getAll(),
         ReturnService.getAll().catch(() => []),
-        StripePaymentService.getConfig().catch(() => null)
+        StripePaymentService.getConfig().catch(() => null),
+        DashboardService.getStats().catch(() => null)
       ]);
       setProductsList(prods);
       setOrdersList(ords);
@@ -247,6 +250,7 @@ export const AdminDashboard: React.FC = () => {
       setCustomersList(custs);
       setReturnsList(returnsData || []);
       if (stripeCfg) setStripeConfig(stripeCfg);
+      if (statsData) setDbStats(statsData);
     } catch {
       showToast('Could not sync with archive ledger', 'error');
     } finally {
@@ -796,6 +800,26 @@ export const AdminDashboard: React.FC = () => {
         {/* TAB: DASHBOARD */}
         {activeTab === 'dashboard' && (
           <div className="mt-8 space-y-10">
+            {/* Live Database Sync Banner */}
+            <div className="bg-[#FAF8F5] border border-[#936B34]/30 px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-mono text-xs uppercase tracking-widest text-[#111827] font-semibold">
+                  MONGODB ATELIER DATABASE CONNECTED
+                </span>
+                <span className="text-[10px] font-mono text-[#936B34] bg-[#936B34]/10 px-2 py-0.5 rounded-xs">
+                  {dbStats ? 'LIVE LEDGER METRICS' : 'LOCAL ENGINE SYNC'}
+                </span>
+              </div>
+              <div className="flex items-center gap-4 text-xs font-mono text-gray-500">
+                <span>Returns/Exchanges: <strong className="text-[#111827]">{dbStats?.totalReturns ?? returnsList.length}</strong></span>
+                <span>·</span>
+                <span>Active Alterations: <strong className="text-[#111827]">{dbStats?.pendingAlterations ?? alterationsList.length}</strong></span>
+                <span>·</span>
+                <span>Total Orders: <strong className="text-[#111827]">{dbStats?.totalOrders ?? ordersList.length}</strong></span>
+              </div>
+            </div>
+
             {/* Dashboard Cards: Placeholders '--' if empty */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               
@@ -804,10 +828,12 @@ export const AdminDashboard: React.FC = () => {
                   TOTAL SALES
                 </span>
                 <div className="font-serif text-3xl sm:text-4xl text-[#111827] tracking-tight font-light">
-                  {totalSalesDisplay}
+                  {dbStats?.grossRevenue !== undefined && dbStats?.grossRevenue > 0
+                    ? '$' + Number(dbStats.grossRevenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : totalSalesDisplay}
                 </div>
                 <span className="text-[10px] font-mono text-[#936B34] block">
-                  {ordersList.length > 0 ? 'Live ledger' : 'Awaiting backend orders'}
+                  {ordersList.length > 0 || (dbStats?.totalOrders ?? 0) > 0 ? 'Live database ledger' : 'Awaiting backend orders'}
                 </span>
               </div>
 
@@ -816,10 +842,10 @@ export const AdminDashboard: React.FC = () => {
                   TOTAL ORDERS
                 </span>
                 <div className="font-serif text-3xl sm:text-4xl text-[#111827] tracking-tight font-light">
-                  {totalOrdersDisplay}
+                  {dbStats?.totalOrders !== undefined ? dbStats.totalOrders : totalOrdersDisplay}
                 </div>
                 <span className="text-[10px] font-mono text-[#936B34] block">
-                  {ordersList.length > 0 ? 'Registered in database' : 'No orders recorded'}
+                  {ordersList.length > 0 || (dbStats?.totalOrders ?? 0) > 0 ? 'Registered in database' : 'No orders recorded'}
                 </span>
               </div>
 
@@ -828,10 +854,10 @@ export const AdminDashboard: React.FC = () => {
                   TOTAL CUSTOMERS
                 </span>
                 <div className="font-serif text-3xl sm:text-4xl text-[#111827] tracking-tight font-light">
-                  {totalCustomersDisplay}
+                  {dbStats?.totalCustomers !== undefined ? dbStats.totalCustomers : totalCustomersDisplay}
                 </div>
                 <span className="text-[10px] font-mono text-[#936B34] block">
-                  {customersList.length > 0 ? 'Active accounts' : 'No customer records'}
+                  {customersList.length > 0 || (dbStats?.totalCustomers ?? 0) > 0 ? 'Active accounts in DB' : 'No customer records'}
                 </span>
               </div>
 
@@ -840,10 +866,10 @@ export const AdminDashboard: React.FC = () => {
                   ACTIVE ALTERATIONS
                 </span>
                 <div className="font-serif text-3xl sm:text-4xl text-[#111827] tracking-tight font-light">
-                  {activeAlterationsDisplay}
+                  {dbStats?.pendingAlterations !== undefined ? dbStats.pendingAlterations : activeAlterationsDisplay}
                 </div>
                 <span className="text-[10px] font-mono text-[#936B34] block">
-                  {alterationsList.length > 0 ? 'In atelier work' : 'No active tailor queue'}
+                  {alterationsList.length > 0 || (dbStats?.pendingAlterations ?? 0) > 0 ? 'In atelier work' : 'No active tailor queue'}
                 </span>
               </div>
 
@@ -856,10 +882,10 @@ export const AdminDashboard: React.FC = () => {
                   <RotateCcw className="w-3.5 h-3.5 text-[#936B34]" />
                 </span>
                 <div className="font-serif text-3xl sm:text-4xl text-[#111827] tracking-tight font-light">
-                  {returnsList.length}
+                  {dbStats?.totalReturns !== undefined ? dbStats.totalReturns : returnsList.length}
                 </div>
                 <span className="text-[10px] font-mono text-[#936B34] block">
-                  {returnsList.filter(r => r.status === 'Pending Review').length} pending review · Click to manage
+                  {(dbStats?.pendingReturns ?? returnsList.filter(r => r.status === 'Pending Review').length)} pending review · Click to manage
                 </span>
               </div>
 

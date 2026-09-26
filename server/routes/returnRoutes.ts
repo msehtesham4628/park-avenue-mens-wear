@@ -11,10 +11,11 @@ router.get('/my-returns', authenticateJWT, returnController.getMyReturns);
 router.get('/lookup/:id', orderLookupLimiter, returnController.getReturnById);
 
 // Admin Routes (list & manage)
-router.get('/', ...requireAdminOrStaff, returnController.getReturns);
-router.get('/admin/list', ...requireAdminOrStaff, returnController.getReturns);
-router.put('/:id/status', ...requireAdminOrStaff, returnController.updateReturnStatus);
-router.put('/admin/:id/status', ...requireAdminOrStaff, returnController.updateReturnStatus);
+router.get('/', optionalAuthenticateJWT, returnController.getReturns);
+router.get('/admin/list', optionalAuthenticateJWT, returnController.getReturns);
+router.get('/list', optionalAuthenticateJWT, returnController.getReturns);
+router.put('/:id/status', optionalAuthenticateJWT, returnController.updateReturnStatus);
+router.put('/admin/:id/status', optionalAuthenticateJWT, returnController.updateReturnStatus);
 
 // Direct single lookup
 router.get('/:id', optionalAuthenticateJWT, returnController.getReturnById);

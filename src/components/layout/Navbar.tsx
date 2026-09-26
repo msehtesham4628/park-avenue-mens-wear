@@ -11,7 +11,8 @@ import {
   Sparkles,
   LogIn,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  RotateCcw
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MobileMenu } from './MobileMenu';
@@ -119,24 +120,32 @@ export const Navbar: React.FC = () => {
                 <Scissors className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                 <span>SERVICES</span>
               </button>
-              {isAdminLoggedIn && (
-                <>
-                  <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>|</span>
-                  <button 
-                    onClick={() => {
-                      setActiveView('admin');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className={`transition-colors flex items-center gap-1 cursor-pointer ${
-                      isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold'
-                    }`}
-                    title="Atelier Administration Portal"
-                  >
-                    <ShieldCheck className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
-                    <span>ADMIN</span>
-                  </button>
-                </>
-              )}
+              <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>|</span>
+              <button 
+                onClick={() => {
+                  setActiveView('track-return');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`transition-colors flex items-center gap-1 cursor-pointer ${isTransparent ? 'hover:text-white' : 'hover:text-black'}`}
+                title="Size Exchange & Return Tracking"
+              >
+                <RotateCcw className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
+                <span>RETURNS</span>
+              </button>
+              <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>|</span>
+              <button 
+                onClick={() => {
+                  setActiveView('admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`transition-colors flex items-center gap-1 cursor-pointer font-semibold ${
+                  isTransparent ? 'text-[#E5C384] hover:text-white' : 'text-[#936B34] hover:text-black'
+                }`}
+                title="Atelier Administration Portal & Database Dashboard"
+              >
+                <ShieldCheck className="w-3 h-3" />
+                <span>DASHBOARD</span>
+              </button>
             </div>
           </div>
         </div>
@@ -437,23 +446,23 @@ export const Navbar: React.FC = () => {
                 </span>
               </button>
 
-              {isAdminLoggedIn && (
-                <button
-                  onClick={() => {
-                    setActiveView('admin');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`px-2.5 py-1 text-[10px] uppercase font-mono tracking-widest transition-all flex items-center gap-1.5 cursor-pointer shadow-xs font-semibold ${
-                    isTransparent 
-                      ? 'bg-black/60 text-[#E5C384] border border-[#E5C384]/60 hover:bg-[#936B34] hover:text-white' 
-                      : 'bg-[#111827] text-[#936B34] border border-[#936B34]/60 hover:bg-[#936B34] hover:text-white'
-                  }`}
-                  title="Open Atelier Admin Console"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>DASHBOARD</span>
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setActiveView('admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`px-2.5 py-1 text-[10px] uppercase font-mono tracking-widest transition-all flex items-center gap-1.5 cursor-pointer shadow-xs font-semibold ${
+                  activeView === 'admin' || activeView === 'dashboard'
+                    ? 'bg-[#936B34] text-white border border-[#936B34]'
+                    : isTransparent 
+                    ? 'bg-black/60 text-[#E5C384] border border-[#E5C384]/60 hover:bg-[#936B34] hover:text-white' 
+                    : 'bg-[#111827] text-[#936B34] border border-[#936B34]/60 hover:bg-[#936B34] hover:text-white'
+                }`}
+                title="Open Atelier Admin Console & Database Dashboard"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>DASHBOARD</span>
+              </button>
             </div>
 
             {/* Mobile Right Controls: SEARCH, ACCOUNT, CART, MENU */}
