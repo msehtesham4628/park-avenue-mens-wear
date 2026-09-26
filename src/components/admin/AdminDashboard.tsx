@@ -34,7 +34,11 @@ import {
   Globe,
   Truck,
   RotateCcw,
-  MapPin
+  MapPin,
+  ClipboardList,
+  History,
+  Shield,
+  Users
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { 
@@ -47,9 +51,10 @@ import {
   NotificationService,
   StripePaymentService,
   StripeGatewayConfig,
+  AuditLogService,
   API_CONFIG
 } from '../../services/api';
-import { Product, Order, AlterationRecord, Customer, ProductCategory, ReturnRequest } from '../../types';
+import { Product, Order, AlterationRecord, Customer, ProductCategory, ReturnRequest, AuditLogEntry } from '../../types';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { navigateTo } from '../../utils/router';
 import { 
@@ -79,6 +84,7 @@ type AdminTab =
   | 'returns'
   | 'customers' 
   | 'alterations' 
+  | 'logs'
   | 'erp-reports'
   | 'notifications' 
   | 'settings';
@@ -122,6 +128,21 @@ export const AdminDashboard: React.FC = () => {
   const [editingReturnRefund, setEditingReturnRefund] = useState<number>(0);
   const [editingReturnNotes, setEditingReturnNotes] = useState<string>('');
   const [isUpdatingReturn, setIsUpdatingReturn] = useState(false);
+
+  // Admin & Staff Activity Logs state
+  const [auditLogsList, setAuditLogsList] = useState<AuditLogEntry[]>([]);
+  const [logsSearchQuery, setLogsSearchQuery] = useState('');
+  const [logsRoleFilter, setLogsRoleFilter] = useState<'all' | 'admin' | 'staff'>('all');
+  const [logsEntityFilter, setLogsEntityFilter] = useState<string>('all');
+  const [isRecordLogModalOpen, setIsRecordLogModalOpen] = useState(false);
+  const [newLogOperatorRole, setNewLogOperatorRole] = useState<'admin' | 'staff'>('staff');
+  const [newLogOperatorName, setNewLogOperatorName] = useState('Giovanni Rossi (Master Tailor)');
+  const [newLogOperatorEmail, setNewLogOperatorEmail] = useState('tailor@parkavenuemenswear.com');
+  const [newLogAction, setNewLogAction] = useState('TAILOR_FIT_CHECK');
+  const [newLogEntity, setNewLogEntity] = useState('Alteration');
+  const [newLogEntityId, setNewLogEntityId] = useState('');
+  const [newLogNotes, setNewLogNotes] = useState('');
+  const [isSavingLogEntry, setIsSavingLogEntry] = useState(false);
 
   // Modals state
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -244,14 +265,15 @@ export const AdminDashboard: React.FC = () => {
   const loadAllData = async () => {
     setIsLoading(true);
     try {
-      const [prods, ords, alts, custs, returnsData, stripeCfg, statsData] = await Promise.all([
+      const [prods, ords, alts, custs, returnsData, stripeCfg, statsData, logsData] = await Promise.all([
         ProductService.getAll(),
         OrderService.getAll(),
         AlterationService.getAll(),
         CustomerService.getAll(),
         ReturnService.getAll().catch(() => []),
         StripePaymentService.getConfig().catch(() => null),
-        DashboardService.getStats().catch(() => null)
+        DashboardService.getStats().catch(() => null),
+        AuditLogService.getAll().catch(() => [])
       ]);
       setProductsList(prods);
       setOrdersList(ords);
@@ -260,6 +282,7 @@ export const AdminDashboard: React.FC = () => {
       setReturnsList(returnsData || []);
       if (stripeCfg) setStripeConfig(stripeCfg);
       if (statsData) setDbStats(statsData);
+      setAuditLogsList(logsData || []);
     } catch {
       showToast('Could not sync with archive ledger', 'error');
     } finally {
@@ -554,6 +577,70 @@ export const AdminDashboard: React.FC = () => {
     showToast('Returns exported successfully', 'success');
   };
 
+  const handleExportAuditLogs = () => {
+    if (auditLogsList.length === 0) {
+      showToast('No audit logs available to export', 'info');
+      return;
+    }
+    const headers = ['Audit ID', 'Timestamp', 'Operator Name', 'Operator Email', 'Role', 'Action', 'Entity', 'Entity ID', 'Operational Notes', 'IP Address'];
+    const rows = auditLogsList.map(log => [
+      log.auditId || log.id,
+      log.createdAt,
+      `"${log.adminUser?.name || 'Staff'}"`,
+      log.adminUser?.email || '',
+      log.adminUser?.role?.toUpperCase() || 'STAFF',
+      log.action,
+      log.entity,
+      log.entityId,
+      `"${(log.notes || '').replace(/"/g, '""')}"`,
+      log.ipAddress || '127.0.0.1'
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Park_Avenue_Admin_Staff_Audit_Logs_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Audit & staff logs exported successfully', 'success');
+  };
+
+  const handleCreateManualLogEntry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLogNotes.trim()) {
+      showToast('Please provide operational notes or reason', 'error');
+      return;
+    }
+
+    setIsSavingLogEntry(true);
+    try {
+      const email = newLogOperatorRole === 'admin' ? 'admin@parkavenuemenswear.com' : 'tailor@parkavenuemenswear.com';
+      const created = await AuditLogService.create({
+        action: newLogAction,
+        entity: newLogEntity,
+        entityId: newLogEntityId.trim() || `REF-${Date.now().toString(36).toUpperCase()}`,
+        notes: newLogNotes.trim(),
+        adminUser: {
+          id: newLogOperatorRole === 'admin' ? 'CUST-ADMIN-001' : 'CUST-STAFF-001',
+          name: newLogOperatorName.trim(),
+          email: newLogOperatorEmail.trim() || email,
+          role: newLogOperatorRole
+        }
+      });
+
+      setAuditLogsList(prev => [created, ...prev]);
+      showToast('Staff audit record logged to ledger', 'success');
+      setIsRecordLogModalOpen(false);
+      setNewLogNotes('');
+      setNewLogEntityId('');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to record audit log', 'error');
+    } finally {
+      setIsSavingLogEntry(false);
+    }
+  };
+
   // Calculations for cards (Strictly no fake numbers! If list is empty, show '--')
   const totalSalesDisplay = ordersList.length > 0 
     ? `$${ordersList.reduce((acc, o) => acc + (o.total || 0), 0).toLocaleString()}` 
@@ -783,6 +870,7 @@ export const AdminDashboard: React.FC = () => {
               { id: 'returns', label: 'RETURNS & EXCHANGES', badge: returnsList.filter(r => r.status === 'Pending Review' || r.status === 'Approved - Return Label Sent').length },
               { id: 'customers', label: 'CUSTOMERS' },
               { id: 'alterations', label: 'ALTERATIONS' },
+              { id: 'logs', label: 'ADMIN & STAFF LOGS', badge: auditLogsList.length },
               { id: 'erp-reports', label: 'TALLY & ERP' },
               { id: 'notifications', label: 'NOTIFICATIONS' },
               { id: 'settings', label: 'SETTINGS' }

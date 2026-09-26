@@ -6,5 +6,8 @@ const router = Router();
 
 router.get('/', ...requireAdminOrStaff, dashboardController.getDashboardStats);
 router.get('/stats', ...requireAdminOrStaff, dashboardController.getDashboardStats);
+router.get('/logs', ...requireAdminOrStaff, dashboardController.getAuditLogs);
+router.post('/logs', ...requireAdminOrStaff, dashboardController.createAuditLog);
 
 export default router;
+

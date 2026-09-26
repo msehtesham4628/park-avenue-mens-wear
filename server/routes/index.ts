@@ -56,6 +56,7 @@ apiRouter.use('/inventory', inventoryRoutes);
 apiRouter.use('/admin/customers', customerRoutes);
 apiRouter.use('/customers', customerRoutes);
 apiRouter.use('/admin/dashboard', dashboardRoutes);
+apiRouter.use('/admin/logs', dashboardRoutes);
 apiRouter.use('/admin/notifications', notificationRoutes);
 
 // Admin aliases to match prompt specification (e.g. POST /api/admin/products, PUT /api/admin/products/:id)

@@ -3,6 +3,7 @@ import { CustomerModel } from '../models/Customer.js';
 import { OrderModel } from '../models/Order.js';
 import { AlterationModel } from '../models/Alteration.js';
 import { ReturnModel } from '../models/Return.js';
+import { AuditLogModel } from '../models/AuditLog.js';
 import { authService } from '../services/authService.js';
 
 export async function seedInitialData() {
@@ -641,7 +642,156 @@ export async function seedInitialData() {
       ]);
       console.info('[Park Avenue DB Seed] Seeded initial Return & Exchange records in MongoDB.');
     }
+
+    // 6. Seed initial Admin & Staff Activity Logs
+    const existingLogsCount = await AuditLogModel.countDocuments();
+    if (existingLogsCount === 0) {
+      await AuditLogModel.create([
+        {
+          auditId: 'AUD-SEED-001',
+          adminUser: {
+            id: 'CUST-ADMIN-001',
+            name: 'Park Avenue Executive Admin',
+            email: 'admin@parkavenuemenswear.com',
+            role: 'admin'
+          },
+          action: 'ADMIN_LOGIN',
+          entity: 'Auth',
+          entityId: 'AUTH-SES-901',
+          newValue: { sessionStatus: 'active', ip: '192.168.1.100' },
+          metadata: { notes: 'Executive administrator secure dashboard session initialized with 256-bit token.' },
+          ipAddress: '192.168.1.100',
+          userAgent: 'Park Avenue Flagship Console (Chrome MacOS)',
+          createdAt: new Date(Date.now() - 35 * 60 * 1000)
+        },
+        {
+          auditId: 'AUD-SEED-002',
+          adminUser: {
+            id: 'CUST-STAFF-001',
+            name: 'Giovanni Rossi',
+            email: 'tailor@parkavenuemenswear.com',
+            role: 'staff'
+          },
+          action: 'ALTERATION_STATUS_UPDATED',
+          entity: 'Alteration',
+          entityId: 'ALT-2041',
+          previousValue: { status: 'Measurement/Review', step: 1 },
+          newValue: { status: 'Alteration In Progress', step: 2, tailorAssigned: 'Giovanni Rossi' },
+          metadata: { notes: 'Trouser hem chalked to 1-inch break and jacket sleeve buttons repositioned.' },
+          ipAddress: '192.168.1.142',
+          userAgent: 'Atelier Tailoring Terminal #2',
+          createdAt: new Date(Date.now() - 55 * 60 * 1000)
+        },
+        {
+          auditId: 'AUD-SEED-003',
+          adminUser: {
+            id: 'CUST-STAFF-001',
+            name: 'Giovanni Rossi',
+            email: 'tailor@parkavenuemenswear.com',
+            role: 'staff'
+          },
+          action: 'INVENTORY_ADJUSTED',
+          entity: 'Inventory',
+          entityId: 'prod-trousers-flannel',
+          previousValue: { stock: 8 },
+          newValue: { stock: 16, adjustment: '+8', reason: 'atelier_reorder' },
+          metadata: { notes: 'Restocked 8 units of Pleated Flannel Dress Trousers (Charcoal / 32W) from master mill.' },
+          ipAddress: '192.168.1.142',
+          userAgent: 'Atelier Tailoring Terminal #2',
+          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
+        },
+        {
+          auditId: 'AUD-SEED-004',
+          adminUser: {
+            id: 'CUST-ADMIN-PARKAMW',
+            name: 'Park Avenue Executive Admin',
+            email: 'parkamw@admin.com',
+            role: 'admin'
+          },
+          action: 'PRODUCT_PRICE_UPDATED',
+          entity: 'Product',
+          entityId: 'prod-suit-db-01',
+          previousValue: { price: 2350 },
+          newValue: { price: 2450, salePrice: 2200 },
+          metadata: { notes: 'Seasonal adjustment for Loro Piana Super 150s Double-Breasted Wool Tuxedo.' },
+          ipAddress: '192.168.1.100',
+          userAgent: 'Park Avenue Flagship Console',
+          createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000)
+        },
+        {
+          auditId: 'AUD-SEED-005',
+          adminUser: {
+            id: 'STAFF-02',
+            name: 'Elena Vance (Atelier Concierge)',
+            email: 'elena.vance@parkavenuemenswear.com',
+            role: 'staff'
+          },
+          action: 'RETURN_INSPECTED',
+          entity: 'Return',
+          entityId: 'RET-8844',
+          previousValue: { status: 'Received at Warehouse', currentStep: 3 },
+          newValue: { status: 'Inspection Complete', currentStep: 4, refundApproved: 325 },
+          metadata: { notes: 'Sea Island polo tags verified pristine; authorized $325 refund via Stripe.' },
+          ipAddress: '192.168.1.105',
+          userAgent: 'Concierge Reception Terminal',
+          createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000)
+        },
+        {
+          auditId: 'AUD-SEED-006',
+          adminUser: {
+            id: 'CUST-ADMIN-001',
+            name: 'Park Avenue Executive Admin',
+            email: 'admin@parkavenuemenswear.com',
+            role: 'admin'
+          },
+          action: 'TAX_RULES_UPDATED',
+          entity: 'Settings',
+          entityId: 'SYS-TAX-RULES',
+          newValue: { jurisdictionsCount: 50, courierDefault: 15 },
+          metadata: { notes: 'Statutory 50-state tax rules and express white-glove shipping rates saved.' },
+          ipAddress: '192.168.1.100',
+          userAgent: 'Park Avenue Flagship Console',
+          createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000)
+        },
+        {
+          auditId: 'AUD-SEED-007',
+          adminUser: {
+            id: 'STAFF-03',
+            name: 'Marcus Sterling (Fulfillment)',
+            email: 'marcus.sterling@parkavenuemenswear.com',
+            role: 'staff'
+          },
+          action: 'ORDER_PACKED',
+          entity: 'Order',
+          entityId: 'PA-2026-000001',
+          newValue: { status: 'Shipped', carrier: 'Atelier Courier', tracking: 'PA-WG-902144' },
+          metadata: { notes: 'Garment bag steamed, boxed in bespoke Park Avenue navy gold-embossed packaging.' },
+          ipAddress: '192.168.1.108',
+          userAgent: 'Fulfillment Dispatch Terminal',
+          createdAt: new Date(Date.now() - 9 * 60 * 60 * 1000)
+        },
+        {
+          auditId: 'AUD-SEED-008',
+          adminUser: {
+            id: 'CUST-ADMIN-001',
+            name: 'Park Avenue Executive Admin',
+            email: 'admin@parkavenuemenswear.com',
+            role: 'admin'
+          },
+          action: 'EXCEL_ERP_EXPORT',
+          entity: 'ERP',
+          entityId: 'ERP-EXP-202609',
+          newValue: { format: 'Tally XML & Excel XLS', recordsExported: 48 },
+          metadata: { notes: 'Exported quarterly ledger and inventory reports for CPA compliance audit.' },
+          ipAddress: '192.168.1.100',
+          userAgent: 'Park Avenue Flagship Console',
+          createdAt: new Date(Date.now() - 14 * 60 * 60 * 1000)
+        }
+      ]);
+      console.info('[Park Avenue DB Seed] Seeded initial Admin & Staff Activity Logs in MongoDB.');
+    }
   } catch (err: any) {
     console.warn(`[Park Avenue DB Seed] Seed warning: ${err.message}`);
   }
 }
+

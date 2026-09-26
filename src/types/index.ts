@@ -339,3 +339,26 @@ export interface ReturnRequest {
   refundAmount?: number;
   adminNotes?: string;
 }
+
+export interface AuditLogUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'staff' | string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  auditId?: string;
+  adminUser: AuditLogUser;
+  action: string;
+  entity: string;
+  entityId: string;
+  previousValue?: any;
+  newValue?: any;
+  metadata?: Record<string, any>;
+  notes?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
