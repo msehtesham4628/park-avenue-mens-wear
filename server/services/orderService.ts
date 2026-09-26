@@ -189,7 +189,7 @@ export const orderService = {
         postalCode: input.shippingInfo?.postalCode || '',
         country: input.shippingInfo?.country || 'United States',
         carrier: input.shippingInfo?.carrier || 'Park Avenue White Glove Courier',
-        shippingMethod: input.shippingInfo?.shippingMethod || input.shippingMethod || 'Complimentary Express',
+        shippingMethod: input.shippingInfo?.shippingMethod || input.shippingMethod || 'Insured Standard Delivery',
         estimatedDelivery: input.shippingInfo?.estimatedDelivery
       },
       statusHistory,

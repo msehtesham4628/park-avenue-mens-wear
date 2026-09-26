@@ -59,6 +59,7 @@ export interface IProduct extends Document {
   isActive: boolean;
   fabric?: string;
   fit?: string;
+  shippingCharge?: number;
   careInstructions?: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -129,6 +130,7 @@ const ProductSchema = new Schema<IProduct>({
   isActive: { type: Boolean, default: true, index: true },
   fabric: { type: String },
   fit: { type: String },
+  shippingCharge: { type: Number, default: 15, min: 0 },
   careInstructions: [{ type: String }]
 }, {
   timestamps: true

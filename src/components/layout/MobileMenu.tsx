@@ -13,6 +13,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
   const {
     setActiveView,
     setSelectedCategory,
+    openCategoryPage,
+    openCategoriesIndex,
     setIsSearchOpen,
     wishlist,
     unreadNotificationCount,
@@ -21,15 +23,25 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
     logout
   } = useShop();
 
-  if (!isOpen) return null;
-
   const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null);
+
+  if (!isOpen) return null;
 
   const handleNav = (view: AppView, category?: string) => {
     if (category) {
       setSelectedCategory(category);
     }
     setActiveView(view);
+    onClose();
+  };
+
+  const handleNavToCategory = (cat: string, sub?: string) => {
+    openCategoryPage(cat, sub);
+    onClose();
+  };
+
+  const handleNavToCategoriesIndex = () => {
+    openCategoriesIndex();
     onClose();
   };
 
@@ -94,40 +106,58 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
             </button>
           </div>
 
-          {/* All 13 Categories */}
+          {/* All Atelier Categories */}
           <div>
-            <div className="flex items-center gap-2 pb-2 mb-2 border-b border-gray-100">
-              <Layers className="w-3 h-3 text-[#936B34]" />
-              <span className="text-[10px] uppercase font-mono tracking-[0.25em] text-[#936B34] font-semibold">
-                DEPARTMENTS &amp; CATEGORIES
-              </span>
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-gray-100">
+              <button
+                onClick={handleNavToCategoriesIndex}
+                className="flex items-center gap-2 text-left cursor-pointer group"
+              >
+                <Layers className="w-3 h-3 text-[#936B34]" />
+                <span className="text-[10px] uppercase font-mono tracking-[0.25em] text-[#936B34] font-semibold group-hover:text-black transition-colors">
+                  DEPARTMENTS &amp; CATEGORIES
+                </span>
+              </button>
+              <button
+                onClick={handleNavToCategoriesIndex}
+                className="text-[9px] font-mono uppercase text-gray-400 hover:text-[#936B34]"
+              >
+                VIEW ALL
+              </button>
             </div>
             <div className="space-y-1">
               {OFFICIAL_CATEGORIES.filter(c => c.id !== 'all' && c.id !== 'new-arrivals').map(cat => {
                 const isExpanded = expandedCategory === cat.id;
                 return (
                   <div key={cat.id}>
-                    <button
-                      onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
-                      className="w-full flex items-center justify-between text-left py-2 px-2 text-xs uppercase font-sans tracking-wider text-gray-700 hover:text-black hover:bg-[#F9F9F8] transition-colors rounded-xs cursor-pointer"
-                      aria-label={"Expand " + cat.name}
-                      aria-expanded={isExpanded}
-                    >
-                      <span className="font-medium">{cat.name}</span>
-                      <ChevronDown className={"w-3.5 h-3.5 transition-transform duration-200 " + (isExpanded ? 'rotate-180 text-[#936B34]' : '')} />
-                    </button>
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => handleNavToCategory(cat.queryValue)}
+                        className="flex-1 text-left py-2 px-2 text-xs uppercase font-sans tracking-wider text-gray-700 hover:text-black hover:bg-[#F9F9F8] transition-colors rounded-xs cursor-pointer font-medium"
+                      >
+                        {cat.name}
+                      </button>
+                      <button
+                        onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
+                        className="p-2 text-gray-400 hover:text-[#936B34] cursor-pointer"
+                        aria-label={"Expand " + cat.name}
+                        aria-expanded={isExpanded}
+                      >
+                        <ChevronDown className={"w-3.5 h-3.5 transition-transform duration-200 " + (isExpanded ? 'rotate-180 text-[#936B34]' : '')} />
+                      </button>
+                    </div>
                     {isExpanded && (
                       <div className="ml-4 mb-1 border-l border-[#936B34]/20 pl-2">
                         <button
-                          onClick={() => handleNav('shop', cat.queryValue)}
+                          onClick={() => handleNavToCategory(cat.queryValue)}
                           className="w-full text-left py-1.5 px-2 text-[10px] uppercase tracking-wider font-semibold text-[#936B34] hover:bg-[#F9F9F8]"
                         >
-                          All {cat.name}
+                          All {cat.name} Department
                         </button>
                         {(cat.subcategories || []).map(sub => (
                           <button
                             key={sub}
-                            onClick={() => handleNav('shop', sub)}
+                            onClick={() => handleNavToCategory(cat.queryValue, sub)}
                             className="w-full text-left py-1.5 px-2 text-[11px] text-gray-600 hover:text-[#936B34] hover:bg-[#F9F9F8] transition-colors"
                           >
                             {sub}

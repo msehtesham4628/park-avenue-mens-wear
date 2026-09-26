@@ -22,7 +22,10 @@ export const Navbar: React.FC = () => {
   const {
     activeView,
     setActiveView,
+    selectedCategory,
     setSelectedCategory,
+    openCategoryPage,
+    openCategoriesIndex,
     setIsSearchOpen,
     setIsCartOpen,
     cartCount,
@@ -56,90 +59,95 @@ export const Navbar: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleNavCategory = (category: string) => {
-    setSelectedCategory(category);
-    setActiveView('shop');
+  const handleNavCategory = (category: string, subcategory?: string) => {
     setIsCategoriesOpen(false);
     setOpenCategoryDropdown(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (category === 'All' || category === 'all') {
+      openCategoriesIndex();
+    } else {
+      openCategoryPage(category, subcategory);
+    }
   };
+
+  const isHome = activeView === 'home';
+  const isTransparent = isHome && !isScrolled;
 
   return (
     <>
-      {/* Fixed Navigation Container - Overlays Hero seamlessly and transitions to solid white on scroll */}
+      {/* Fixed Navigation Container - Sleek reduced height & compact luxury framing */}
       <div 
-        className={`fixed top-0 inset-x-0 z-40 transition-all duration-300 ${
-          isScrolled 
-            ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200 text-[#111827]' 
-            : activeView === 'home'
-              ? 'bg-transparent border-b border-black/5 text-[#111827]'
-              : 'bg-white border-b border-gray-200 shadow-xs text-[#111827]'
+        className={`fixed top-0 inset-x-0 z-40 transition-all duration-500 ${
+          isTransparent
+            ? 'bg-gradient-to-b from-black/85 via-black/45 to-transparent border-b border-white/10 text-white'
+            : isScrolled
+            ? 'bg-white/90 backdrop-blur-md shadow-xs border-b border-gray-200/80 text-[#111827]'
+            : 'bg-white/85 backdrop-blur-md border-b border-gray-200/70 shadow-xs text-[#111827]'
         }`}
       >
-        {/* Top Announcement Bar */}
+        {/* Sleek Ultra-Compact Announcement Bar */}
         <div 
-          className={`transition-colors duration-300 py-2 px-4 text-center text-[10px] sm:text-[11px] tracking-[0.25em] uppercase font-mono ${
-            isScrolled 
-              ? 'bg-[#F9F9F8] border-b border-gray-200 text-[#936B34]' 
-              : activeView === 'home'
-                ? 'bg-black/[0.02] border-b border-black/5 text-[#936B34]'
-                : 'bg-[#F9F9F8] border-b border-gray-200 text-[#936B34]'
+          className={`transition-colors duration-500 py-1 px-4 text-center text-[10px] tracking-[0.2em] uppercase font-mono ${
+            isTransparent
+              ? 'bg-black/40 backdrop-blur-xs border-b border-white/10 text-[#E5C384]'
+              : 'bg-[#F9F9F8]/90 backdrop-blur-xs border-b border-gray-200/70 text-[#936B34]'
           }`}
         >
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="hidden lg:flex items-center gap-3 text-left text-gray-500">
-              <span className="text-[#936B34] font-semibold">PARK AVENUE</span>
-              <span className="text-gray-300">|</span>
-              <span>BESPOKE SUITING ATELIER</span>
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <div className={`hidden md:flex items-center gap-2 text-left ${isTransparent ? 'text-gray-300' : 'text-gray-500'}`}>
+              <span className={isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold'}>PARK AVENUE</span>
+              <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>•</span>
+              <span>ATELIER MENSWEAR</span>
             </div>
 
-            <div className="mx-auto text-center font-medium tracking-[0.2em] text-[#936B34]">
-              PARK AVENUE MENSWEAR — HAND-CANVASSED SUITS &amp; BESPOKE TAILORING —
+            <div className={`mx-auto text-center font-medium tracking-[0.18em] truncate px-2 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
+              COMPLIMENTARY WORLDWIDE DELIVERY &amp; BESPOKE TAILORING
             </div>
 
-            <div className="hidden lg:flex items-center gap-4 text-right text-gray-500 text-[10px]">
+            <div className={`hidden md:flex items-center gap-3 text-right text-[10px] ${isTransparent ? 'text-gray-300' : 'text-gray-500'}`}>
               <button 
                 onClick={() => setActiveView('track-order')}
-                className="hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                className={`transition-colors flex items-center gap-1 cursor-pointer ${isTransparent ? 'hover:text-white' : 'hover:text-black'}`}
               >
-                <Truck className="w-3 h-3 text-[#936B34]" />
-                <span>ORDER TRACKING</span>
+                <Truck className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
+                <span>TRACKING</span>
               </button>
-              <span className="text-gray-300">|</span>
+              <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>|</span>
               <button 
                 onClick={() => setActiveView('track-alteration')}
-                className="hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer"
+                className={`transition-colors flex items-center gap-1 cursor-pointer ${isTransparent ? 'hover:text-white' : 'hover:text-black'}`}
               >
-                <Scissors className="w-3 h-3 text-[#936B34]" />
+                <Scissors className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                 <span>SERVICES</span>
               </button>
-              <span className="text-gray-300">|</span>
+              <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>|</span>
               <button 
                 onClick={() => {
                   setActiveView('admin');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  isAdminLoggedIn ? 'text-[#936B34] font-semibold' : ''
+                className={`transition-colors flex items-center gap-1 cursor-pointer ${
+                  isAdminLoggedIn 
+                    ? (isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold')
+                    : (isTransparent ? 'hover:text-white' : 'hover:text-black')
                 }`}
                 title="Atelier Administration Portal"
               >
-                <ShieldCheck className="w-3 h-3 text-[#936B34]" />
-                <span>{isAdminLoggedIn ? 'ADMIN DASHBOARD' : 'ADMIN'}</span>
+                <ShieldCheck className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
+                <span>ADMIN</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Main Navigation Header */}
+        {/* Main Navigation Header - Reduced length & tight vertical padding */}
         <header 
           className={`w-full transition-all duration-300 ${
             isScrolled 
-              ? 'py-3 sm:py-3.5' 
-              : 'py-4 sm:py-5'
+              ? 'py-1.5 sm:py-2' 
+              : 'py-2 sm:py-2.5'
           }`}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           
             {/* Brand Logo */}
             <div className="flex items-center gap-3">
@@ -154,51 +162,86 @@ export const Navbar: React.FC = () => {
                 <ParkAvenueLogo 
                   variant="horizontal" 
                   size={isScrolled ? 'sm' : 'md'} 
-                  className="text-[#111827] group-hover:text-[#936B34] transition-colors" 
+                  className={`transition-all duration-300 ${
+                    isTransparent 
+                      ? 'brightness-0 invert drop-shadow-md group-hover:brightness-125' 
+                      : 'text-[#111827] group-hover:text-[#936B34]'
+                  }`} 
                 />
               </button>
             </div>
 
-            {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-[11px] tracking-[0.2em] uppercase font-sans font-medium text-gray-700">
+            {/* Desktop Navigation Links - Compact luxury spacing */}
+            <nav className={`hidden lg:flex items-center gap-3 xl:gap-4.5 text-[10px] xl:text-[11px] tracking-[0.18em] uppercase font-sans font-medium ${
+              isTransparent ? 'text-white/90' : 'text-gray-700'
+            }`}>
               <button 
-                onClick={() => handleNavCategory('New Arrivals')} 
-                className={`hover:text-black transition-colors relative py-1 cursor-pointer ${activeView === 'shop' ? 'text-[#936B34] font-semibold' : ''}`}
+                onClick={() => {
+                  setSelectedCategory('New Arrivals');
+                  setActiveView('shop');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }} 
+                className={`transition-colors relative py-1 cursor-pointer ${
+                  activeView === 'shop' && selectedCategory.toLowerCase().includes('new')
+                    ? (isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold')
+                    : (isTransparent ? 'hover:text-white' : 'hover:text-black')
+                }`}
               >
                 NEW ARRIVALS
               </button>
+
               {['suits', 'blazers-jackets', 'shirts', 'pants'].map(categoryId => {
                 const category = OFFICIAL_CATEGORIES.find(c => c.id === categoryId);
                 if (!category) return null;
                 const isOpen = openCategoryDropdown === category.id;
+                const isSelected = activeView === 'category' && (
+                  selectedCategory.toLowerCase() === category.queryValue.toLowerCase() ||
+                  selectedCategory.toLowerCase() === category.name.toLowerCase()
+                );
+
                 return (
                   <div
                     key={category.id}
-                    className="relative"
+                    className="relative flex items-center"
                     onMouseEnter={() => setOpenCategoryDropdown(category.id)}
                     onMouseLeave={() => setOpenCategoryDropdown(null)}
                   >
                     <button
-                      onClick={() => setOpenCategoryDropdown(isOpen ? null : category.id)}
-                      className={"flex items-center gap-1 hover:text-black transition-colors relative py-1 cursor-pointer whitespace-nowrap " + (isOpen ? 'text-[#936B34]' : '')}
-                      aria-expanded={isOpen}
+                      onClick={() => handleNavCategory(category.queryValue)}
+                      className={`transition-colors relative py-1 cursor-pointer whitespace-nowrap ${
+                        isSelected
+                          ? (isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold')
+                          : (isTransparent ? 'hover:text-white' : 'hover:text-black')
+                      }`}
                     >
                       <span>{category.name.toUpperCase()}</span>
-                      <ChevronDown className={"w-3 h-3 transition-transform duration-200 " + (isOpen ? 'rotate-180 text-[#936B34]' : '')} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenCategoryDropdown(isOpen ? null : category.id);
+                      }}
+                      className={`p-1 cursor-pointer transition-colors ${
+                        isTransparent ? 'text-white/60 hover:text-white' : 'text-gray-400 hover:text-[#936B34]'
+                      }`}
+                      aria-label={`Toggle ${category.name} subcategories`}
+                    >
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#936B34]' : ''}`} />
                     </button>
                     {isOpen && (
-                      <div className="absolute top-full left-0 mt-2 min-w-[190px] bg-white border border-gray-200 shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="absolute top-full left-0 mt-2 min-w-[200px] bg-white border border-gray-200 shadow-xl p-2 z-50 text-[#111827] animate-in fade-in slide-in-from-top-2 duration-150">
                         <button
                           onClick={() => handleNavCategory(category.queryValue)}
-                          className="w-full text-left px-3 py-2 text-[10px] uppercase tracking-wider font-semibold text-[#936B34] hover:bg-[#F9F9F8]"
+                          className="w-full text-left px-3 py-2 text-[10px] uppercase tracking-wider font-semibold text-[#936B34] hover:bg-[#F9F9F8] cursor-pointer"
                         >
-                          All {category.name}
+                          All {category.name} Department
                         </button>
                         {(category.subcategories || []).map(subcategory => (
                           <button
                             key={subcategory}
-                            onClick={() => handleNavCategory(subcategory)}
-                            className="w-full text-left px-3 py-2 text-[11px] text-gray-700 hover:bg-[#F9F9F8] hover:text-[#936B34] transition-colors"
+                            onClick={() => handleNavCategory(category.queryValue, subcategory)}
+                            className="w-full text-left px-3 py-2 text-[11px] text-gray-700 hover:bg-[#F9F9F8] hover:text-[#936B34] transition-colors cursor-pointer"
                           >
                             {subcategory}
                           </button>
@@ -208,6 +251,7 @@ export const Navbar: React.FC = () => {
                   </div>
                 );
               })}
+
               {/* All Categories Dropdown Mega Menu */}
               <div 
                 ref={dropdownRef}
@@ -216,19 +260,21 @@ export const Navbar: React.FC = () => {
                 onMouseLeave={() => setIsCategoriesOpen(false)}
               >
                 <button
-                  onClick={() => setIsCategoriesOpen(prev => !prev)}
-                  className={`flex items-center gap-1.5 hover:text-black transition-colors py-1 cursor-pointer ${
-                    isCategoriesOpen ? 'text-[#936B34]' : ''
+                  onClick={() => openCategoriesIndex()}
+                  className={`flex items-center gap-1 transition-colors py-1 cursor-pointer ${
+                    activeView === 'categories' || isCategoriesOpen 
+                      ? (isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]') 
+                      : (isTransparent ? 'hover:text-white' : 'hover:text-black')
                   }`}
                   aria-expanded={isCategoriesOpen}
                 >
                   <span>CATEGORIES</span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180 text-[#936B34]' : ''}`} />
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180 text-[#936B34]' : ''}`} />
                 </button>
 
                 {isCategoriesOpen && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[540px] bg-white border border-gray-200 shadow-2xl p-6 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[520px] bg-white border border-gray-200 shadow-2xl p-5 z-50 text-[#111827] animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-gray-100">
                       <div className="flex items-center gap-2">
                         <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
                         <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#936B34] font-semibold">
@@ -236,25 +282,25 @@ export const Navbar: React.FC = () => {
                         </span>
                       </div>
                       <button 
-                        onClick={() => handleNavCategory('All')} 
-                        className="text-[10px] text-gray-500 hover:text-black underline uppercase tracking-widest"
+                        onClick={openCategoriesIndex} 
+                        className="text-[10px] text-gray-500 hover:text-black underline uppercase tracking-widest cursor-pointer"
                       >
-                        VIEW ALL COLLECTIONS
+                        VIEW ALL DEPARTMENTS
                       </button>
                     </div>
 
-                    {/* Complete category hierarchy */}
+                    {/* Complete category hierarchy with direct category links */}
                     <div className="grid grid-cols-3 gap-2">
                       {OFFICIAL_CATEGORIES.filter(c => c.id !== 'all' && c.id !== 'new-arrivals').map(cat => (
                         <button
                           key={cat.id}
                           onClick={() => handleNavCategory(cat.queryValue)}
-                          className="flex flex-col text-left p-2.5 hover:bg-[#F9F9F8] transition-colors rounded-xs group cursor-pointer"
+                          className="flex flex-col text-left p-2 hover:bg-[#F9F9F8] transition-colors rounded-xs group cursor-pointer"
                         >
                           <span className="text-[11px] font-sans uppercase font-medium tracking-wider text-[#111827] group-hover:text-[#936B34]">
                             {cat.name}
                           </span>
-                          <span className="text-[9px] text-gray-600 line-clamp-1 font-sans normal-case mt-0.5 tracking-normal">
+                          <span className="text-[9px] text-gray-500 line-clamp-1 font-sans normal-case mt-0.5 tracking-normal">
                             {cat.description}
                           </span>
                         </button>
@@ -265,21 +311,33 @@ export const Navbar: React.FC = () => {
               </div>
 
               <button 
-                onClick={() => handleNavCategory('All')} 
-                className="hover:text-black transition-colors relative py-1 cursor-pointer"
+                onClick={() => {
+                  setSelectedCategory('All');
+                  setActiveView('shop');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }} 
+                className={`transition-colors relative py-1 cursor-pointer ${
+                  activeView === 'shop' && selectedCategory === 'All'
+                    ? (isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold')
+                    : (isTransparent ? 'hover:text-white' : 'hover:text-black')
+                }`}
               >
-                ALL COLLECTIONS
+                ALL
               </button>
             </nav>
 
-            {/* Desktop Right Action Utility */}
-            <div className="hidden lg:flex items-center gap-5 text-xs font-mono tracking-wider text-gray-700">
+            {/* Desktop Right Action Utility - Compact */}
+            <div className={`hidden lg:flex items-center gap-3.5 xl:gap-4 text-xs font-mono tracking-wider ${
+              isTransparent ? 'text-white/90' : 'text-gray-700'
+            }`}>
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="flex items-center gap-1.5 hover:text-[#936B34] transition-colors uppercase text-[11px] cursor-pointer"
+                className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] cursor-pointer ${
+                  isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
+                }`}
                 aria-label="Search"
               >
-                <Search className="w-3.5 h-3.5 text-[#936B34]" />
+                <Search className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                 <span>SEARCH</span>
               </button>
 
@@ -291,12 +349,14 @@ export const Navbar: React.FC = () => {
                       setActiveView('account');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className={`flex items-center gap-1.5 hover:text-[#936B34] transition-colors uppercase text-[11px] cursor-pointer ${
-                      activeView === 'account' ? 'text-[#936B34] font-semibold' : ''
+                    className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] cursor-pointer ${
+                      activeView === 'account' 
+                        ? (isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold')
+                        : (isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]')
                     }`}
                     aria-label="Customer Account"
                   >
-                    <User className="w-3.5 h-3.5 text-[#936B34]" />
+                    <User className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                     <span>{currentCustomer.name?.split(' ')[0] || 'PATRON'}</span>
                   </button>
                   <button
@@ -304,7 +364,9 @@ export const Navbar: React.FC = () => {
                       setActiveView('login');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="text-[9px] text-gray-400 hover:text-[#936B34] font-mono cursor-pointer"
+                    className={`text-[9px] font-mono cursor-pointer ${
+                      isTransparent ? 'text-white/50 hover:text-white' : 'text-gray-400 hover:text-[#936B34]'
+                    }`}
                     title="Switch or manage credentials"
                   >
                     (SWITCH)
@@ -328,12 +390,14 @@ export const Navbar: React.FC = () => {
                     setActiveView('login');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className={`flex items-center gap-1.5 hover:text-[#936B34] transition-colors uppercase text-[11px] cursor-pointer font-semibold ${
-                    activeView === 'login' ? 'text-[#936B34]' : 'text-[#111827]'
+                  className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] cursor-pointer font-semibold ${
+                    activeView === 'login' 
+                      ? (isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]')
+                      : (isTransparent ? 'text-white hover:text-[#E5C384]' : 'text-[#111827] hover:text-[#936B34]')
                   }`}
                   aria-label="Sign In"
                 >
-                  <User className="w-3.5 h-3.5 text-[#936B34]" />
+                  <User className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                   <span>SIGN IN</span>
                 </button>
               )}
@@ -343,24 +407,32 @@ export const Navbar: React.FC = () => {
                   setActiveView('account');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="flex items-center gap-1.5 hover:text-[#936B34] transition-colors uppercase text-[11px] relative cursor-pointer"
+                className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] relative cursor-pointer ${
+                  isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
+                }`}
                 aria-label="Wishlist"
               >
-                <Heart className="w-3.5 h-3.5 text-[#936B34]" />
+                <Heart className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                 <span>WISHLIST</span>
                 {wishlist.length > 0 && (
-                  <span className="ml-1 text-[9px] text-[#936B34] font-mono font-semibold">({wishlist.length})</span>
+                  <span className={`ml-1 text-[9px] font-mono font-semibold ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
+                    ({wishlist.length})
+                  </span>
                 )}
               </button>
 
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="flex items-center gap-1.5 hover:text-[#936B34] transition-colors uppercase text-[11px] cursor-pointer"
+                className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] cursor-pointer ${
+                  isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
+                }`}
                 aria-label="Shopping Cart"
               >
-                <ShoppingBag className="w-3.5 h-3.5 text-[#936B34]" />
+                <ShoppingBag className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                 <span>CART</span>
-                <span className="ml-1 text-[9px] text-[#936B34] font-mono font-semibold">({cartCount})</span>
+                <span className={`ml-1 text-[9px] font-mono font-semibold ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
+                  ({cartCount})
+                </span>
               </button>
 
               {isAdminLoggedIn && (
@@ -369,7 +441,11 @@ export const Navbar: React.FC = () => {
                     setActiveView('admin');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="px-2.5 py-1 bg-[#111827] text-[#936B34] border border-[#936B34]/60 text-[10px] uppercase font-mono tracking-widest hover:bg-[#936B34] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs font-semibold"
+                  className={`px-2.5 py-1 text-[10px] uppercase font-mono tracking-widest transition-all flex items-center gap-1.5 cursor-pointer shadow-xs font-semibold ${
+                    isTransparent 
+                      ? 'bg-black/60 text-[#E5C384] border border-[#E5C384]/60 hover:bg-[#936B34] hover:text-white' 
+                      : 'bg-[#111827] text-[#936B34] border border-[#936B34]/60 hover:bg-[#936B34] hover:text-white'
+                  }`}
                   title="Open Atelier Admin Console"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
@@ -382,7 +458,9 @@ export const Navbar: React.FC = () => {
             <div className="flex lg:hidden items-center gap-3">
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="p-1.5 text-gray-700 hover:text-[#936B34] cursor-pointer"
+                className={`p-1.5 cursor-pointer transition-colors ${
+                  isTransparent ? 'text-white hover:text-[#E5C384]' : 'text-gray-700 hover:text-[#936B34]'
+                }`}
                 aria-label="SEARCH"
               >
                 <Search className="w-4 h-4" />
@@ -393,7 +471,9 @@ export const Navbar: React.FC = () => {
                   setActiveView('account');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="p-1.5 text-gray-700 hover:text-[#936B34] cursor-pointer"
+                className={`p-1.5 cursor-pointer transition-colors ${
+                  isTransparent ? 'text-white hover:text-[#E5C384]' : 'text-gray-700 hover:text-[#936B34]'
+                }`}
                 aria-label="ACCOUNT"
               >
                 <User className="w-4 h-4" />
@@ -401,12 +481,14 @@ export const Navbar: React.FC = () => {
 
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="p-1.5 text-gray-700 hover:text-[#936B34] relative cursor-pointer"
+                className={`p-1.5 relative cursor-pointer transition-colors ${
+                  isTransparent ? 'text-white hover:text-[#E5C384]' : 'text-gray-700 hover:text-[#936B34]'
+                }`}
                 aria-label="CART"
               >
                 <ShoppingBag className="w-4 h-4" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#111827] text-white text-[9px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#936B34] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-xs">
                     {cartCount}
                   </span>
                 )}
@@ -414,7 +496,9 @@ export const Navbar: React.FC = () => {
 
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="p-1.5 text-gray-700 hover:text-[#936B34] cursor-pointer"
+                className={`p-1.5 cursor-pointer transition-colors ${
+                  isTransparent ? 'text-white hover:text-[#E5C384]' : 'text-gray-700 hover:text-[#936B34]'
+                }`}
                 aria-label="MENU"
               >
                 <Menu className="w-5 h-5" />

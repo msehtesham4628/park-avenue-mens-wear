@@ -150,7 +150,8 @@ function mapBackendProductToFrontend(bp: any): Product {
     isFeatured: Boolean(bp.isFeatured),
     isNewArrival: Boolean(bp.isNewArrival),
     alterationEligible: true,
-    totalStock
+    totalStock,
+    shippingCharge: bp.shippingCharge !== undefined ? Number(bp.shippingCharge) : (bp.price >= 300 ? 0 : 15)
   };
 }
 
@@ -1493,6 +1494,28 @@ export const AuthService = {
 
   isAuthenticated(): boolean {
     return Boolean(this.getToken());
+  },
+
+  async changePassword(oldPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const base = API_CONFIG.baseUrl || '/api';
+      const token = this.getToken();
+      const res = await fetch(`${base.replace(/\/$/, '')}/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        return { success: false, message: data?.message || 'Failed to update password.' };
+      }
+      return { success: true, message: data.message || 'Password changed successfully.' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Network error while changing password.' };
+    }
   }
 };
 

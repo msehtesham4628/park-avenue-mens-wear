@@ -12,21 +12,27 @@ export interface RouteMatch {
 // Map slugs to standard Category names
 export const CATEGORY_SLUG_MAP: Record<string, ProductCategory> = {
   'suits': 'Suits',
+  'blazers-jackets': 'Blazers & Jackets',
+  'blazers': 'Blazers & Jackets',
+  'shirts': 'Shirts',
   'dress-shirts': 'Dress shirts',
-  'shirts': 'Dress shirts',
   'ties': 'Ties',
-  'shoes': 'Shoe',
+  'shoes': 'Shoes',
   'shoe': 'Shoe',
+  'footwear': 'Footwear',
+  'accessories': 'Accessories',
+  'outerwear': 'Outerwear',
+  'sweaters-knitwear': 'Sweaters & Knitwear',
+  'sweaters': 'Sweaters & Knitwear',
   'boots': 'Boots',
-  'loafers': 'Loofers',
-  'loofers': 'Loofers',
+  'loafers': 'Loafers',
+  'loofers': 'Loafers',
   'pants': 'Pants',
   'trousers': 'Pants',
   'jeans': 'Jeans',
   'denim': 'Jeans',
   'leather-jackets': 'Leather jackets',
   'jackets': 'Leather jackets',
-  'sweaters': 'Sweaters',
   'knitwear': 'Sweaters',
   'coats': 'Coats',
   'overcoats': 'Coats',
@@ -42,27 +48,65 @@ export const CATEGORY_SLUG_MAP: Record<string, ProductCategory> = {
 
 export const CATEGORY_TO_SLUG: Record<string, string> = {
   'Suits': 'suits',
+  'suits': 'suits',
+  'Blazers & Jackets': 'blazers-jackets',
+  'blazers-jackets': 'blazers-jackets',
+  'Blazers': 'blazers-jackets',
+  'Shirts': 'shirts',
+  'shirts': 'shirts',
   'Dress shirts': 'dress-shirts',
   'Dress Shirts': 'dress-shirts',
+  'dress-shirts': 'dress-shirts',
   'Ties': 'ties',
+  'ties': 'ties',
   'Shoe': 'shoes',
   'Shoes': 'shoes',
+  'shoes': 'shoes',
+  'Footwear': 'footwear',
+  'footwear': 'footwear',
+  'Accessories': 'accessories',
+  'accessories': 'accessories',
+  'Outerwear': 'outerwear',
+  'outerwear': 'outerwear',
+  'Sweaters & Knitwear': 'sweaters-knitwear',
+  'sweaters-knitwear': 'sweaters-knitwear',
   'Boots': 'boots',
+  'boots': 'boots',
   'Loofers': 'loafers',
   'Loafers': 'loafers',
+  'loafers': 'loafers',
   'Pants': 'pants',
+  'pants': 'pants',
   'Dress Pants': 'pants',
   'Jeans': 'jeans',
+  'jeans': 'jeans',
   'Leather jackets': 'leather-jackets',
   'Leather Jackets': 'leather-jackets',
-  'Sweaters': 'sweaters',
-  'Coats': 'coats',
+  'leather-jackets': 'leather-jackets',
+  'Sweaters': 'sweaters-knitwear',
+  'sweaters': 'sweaters-knitwear',
+  'Coats': 'outerwear',
+  'coats': 'outerwear',
   'Polo shirts': 'polo-shirts',
   'Polo Shirts': 'polo-shirts',
+  'polo-shirts': 'polo-shirts',
   'Shorts': 'shorts',
+  'shorts': 'shorts',
   'New Arrivals': 'new-arrivals',
-  'All': 'all'
+  'new-arrivals': 'new-arrivals',
+  'new arrivals': 'new-arrivals',
+  'All': 'all',
+  'all': 'all'
 };
+
+export function getCategorySlug(categoryName: string): string {
+  if (!categoryName) return 'all';
+  const clean = categoryName.trim();
+  if (CATEGORY_TO_SLUG[clean]) return CATEGORY_TO_SLUG[clean];
+  const lower = clean.toLowerCase();
+  if (CATEGORY_TO_SLUG[lower]) return CATEGORY_TO_SLUG[lower];
+  return lower.replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
 
 /**
  * Normalizes browser path or hash to clean segment array
@@ -132,6 +176,17 @@ export function parseRoute(pathname?: string): RouteMatch {
     case 'auth':
       return { view: 'login' };
 
+    case 'categories':
+      return { view: 'categories' };
+
+    case 'category':
+      if (segments.length >= 2 && segments[1]) {
+        const catSlug = segments[1];
+        const catName = CATEGORY_SLUG_MAP[catSlug] || catSlug;
+        return { view: 'category', category: catName as ProductCategory, categorySlug: catSlug };
+      }
+      return { view: 'categories' };
+
     case 'shop':
     case 'products':
     case 'catalog':
@@ -184,9 +239,9 @@ export function parseRoute(pathname?: string): RouteMatch {
       };
     }
 
-    // Default /:category (e.g. /suits)
+    // Default /:category (e.g. /suits) -> opens dedicated Category Page!
     return { 
-      view: 'shop', 
+      view: 'category', 
       category: categoryName, 
       categorySlug: firstSeg, 
       isProductsSubpage: false 
@@ -241,18 +296,32 @@ export function buildUrl(params: {
 
     case 'pdp':
       if (productId) {
-        if (category && CATEGORY_TO_SLUG[category]) {
-          const slug = CATEGORY_TO_SLUG[category];
+        if (category && category !== 'All' && category !== 'all') {
+          const slug = getCategorySlug(category);
           return `/${slug}/products/${productId}`;
         }
         return `/product/${productId}`;
       }
       return '/shop';
 
+    case 'categories':
+      return '/categories';
+
+    case 'category':
+      if (category && category !== 'All' && category !== 'all') {
+        const slug = getCategorySlug(category);
+        if (slug && slug !== 'all') {
+          return `/${slug}`;
+        }
+      }
+      return '/categories';
+
     case 'shop':
-      if (category && category !== 'All' && CATEGORY_TO_SLUG[category]) {
-        const slug = CATEGORY_TO_SLUG[category];
-        return isProductsSubpage ? `/${slug}/products` : `/${slug}`;
+      if (category && category !== 'All' && category !== 'all') {
+        const slug = getCategorySlug(category);
+        if (slug && slug !== 'all') {
+          return isProductsSubpage ? `/${slug}/products` : `/${slug}`;
+        }
       }
       return isProductsSubpage ? '/shop/products' : '/shop';
 

@@ -11,7 +11,7 @@ interface FeaturedCategoryCard {
 }
 
 export const CategoryShowcase: React.FC = () => {
-  const { setSelectedCategory, setActiveView, products } = useShop();
+  const { openCategoryPage, openCategoriesIndex, products } = useShop();
 
   const taglineByCategory: Record<string, string> = {
     'Suits': 'Bespoke Half & Full Canvas',
@@ -54,13 +54,15 @@ export const CategoryShowcase: React.FC = () => {
     });
 
   const handleSelect = (category: string) => {
-    setSelectedCategory(category);
-    setActiveView('shop');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (category === 'All') {
+      openCategoriesIndex();
+    } else {
+      openCategoryPage(category);
+    }
   };
 
   return (
-    <section id="category-showcase" className="py-24 bg-white text-[#111827] border-t border-gray-200">
+    <section id="category-showcase" className="py-24 bg-white text-[#111827]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
@@ -74,10 +76,10 @@ export const CategoryShowcase: React.FC = () => {
             </h2>
           </div>
           <button
-            onClick={() => handleSelect('All')}
+            onClick={openCategoriesIndex}
             className="mt-4 sm:mt-0 text-xs uppercase tracking-[0.25em] text-[#936B34] hover:text-black transition-colors flex items-center gap-2 font-medium cursor-pointer"
           >
-            <span>VIEW ALL COLLECTIONS</span>
+            <span>VIEW ALL DEPARTMENTS</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

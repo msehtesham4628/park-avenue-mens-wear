@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Truck } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 
@@ -18,10 +18,6 @@ export const CartDrawer: React.FC = () => {
   } = useShop();
 
   if (!isCartOpen) return null;
-
-  const FREE_SHIPPING_THRESHOLD = 250;
-  const progressPercent = Math.min(100, (cartSubtotal / FREE_SHIPPING_THRESHOLD) * 100);
-  const remainingForFree = Math.max(0, FREE_SHIPPING_THRESHOLD - cartSubtotal);
 
   const handleCheckoutClick = () => {
     if (!currentCustomer) { setIsCartOpen(false); sessionStorage.setItem('pa_checkout_return','1'); showToast('Please sign in or create an account to proceed to checkout.', 'info'); setActiveView('login'); return; }
@@ -57,20 +53,11 @@ export const CartDrawer: React.FC = () => {
             </button>
           </div>
 
-          {/* Complimentary Courier Progress */}
-          <div className="px-6 py-3.5 bg-[#F9F9F8] border-b border-gray-200">
-            <div className="flex items-center justify-between text-[11px] font-mono mb-1.5">
-              <span className="text-[#936B34] font-medium">
-                {cartSubtotal >= FREE_SHIPPING_THRESHOLD
-                  ? '✓ COMPLIMENTARY EXPRESS DELIVERY UNLOCKED'
-                  : `ADD $${remainingForFree.toFixed(0)} FOR COMPLIMENTARY DELIVERY`}
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 h-1.5 overflow-hidden">
-              <div
-                className="bg-[#936B34] h-full transition-all duration-500 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
+          {/* Insured Atelier Delivery Information */}
+          <div className="px-6 py-3 bg-[#F9F9F8] border-b border-gray-200">
+            <div className="flex items-center gap-2 text-[10px] font-mono tracking-wider uppercase text-[#936B34] font-medium">
+              <Truck className="w-3.5 h-3.5 shrink-0" />
+              <span>INSURED ATELIER DISPATCH · CALCULATED AT CHECKOUT</span>
             </div>
           </div>
 
@@ -152,6 +139,12 @@ export const CartDrawer: React.FC = () => {
                           <span>SIZE: {item.selectedSize}</span>
                           <span>·</span>
                           <span>COLOR: {item.selectedColor}</span>
+                        </div>
+                        <div className="text-[10px] font-mono text-gray-500 mt-0.5">
+                          <span>Shipment: </span>
+                          <span className={item.product.shippingCharge === 0 ? 'text-emerald-700 font-semibold' : 'text-gray-700'}>
+                            {item.product.shippingCharge === 0 ? 'Free' : `+$${item.product.shippingCharge !== undefined ? item.product.shippingCharge : 15} Insured`}
+                          </span>
                         </div>
                       </div>
 

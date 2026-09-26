@@ -155,7 +155,7 @@ export const orderController = {
           trackingNumber: order.trackingNumber,
           shipment: order.shipment,
           timeline: order.statusHistory || [],
-          items: (order.items || []).map(item => ({
+          items: (order.items || []).map((item: any) => ({
             productId: item.productId,
             productName: item.productName,
             size: item.size,

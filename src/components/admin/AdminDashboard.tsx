@@ -48,6 +48,12 @@ import {
 import { Product, Order, AlterationRecord, Customer, ProductCategory } from '../../types';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { navigateTo } from '../../utils/router';
+import { 
+  getUsStateTaxRates, 
+  saveUsStateTaxRates, 
+  resetUsStateTaxRates, 
+  StateTaxInfo 
+} from '../../services/taxEngine';
 import {
   downloadProductExcelTemplate,
   parseProductsExcel,
@@ -147,6 +153,36 @@ export const AdminDashboard: React.FC = () => {
   } | null>(null);
   const [copiedWebhookUrl, setCopiedWebhookUrl] = useState(false);
 
+  // US State Tax & Shipping Rates Manager State
+  const [stateRates, setStateRates] = useState<Record<string, StateTaxInfo>>(() => getUsStateTaxRates());
+  const [stateSearchFilter, setStateSearchFilter] = useState('');
+  const [ratesSavedNotice, setRatesSavedNotice] = useState(false);
+
+  const handleUpdateSingleStateRate = (code: string, field: 'rate' | 'standardShippingRate' | 'expressShippingRate', value: number) => {
+    setStateRates(prev => ({
+      ...prev,
+      [code]: {
+        ...prev[code],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSaveAllStateRates = () => {
+    saveUsStateTaxRates(stateRates);
+    setRatesSavedNotice(true);
+    showToast('Statutory US state tax and shipping rates saved successfully!', 'success');
+    setTimeout(() => setRatesSavedNotice(false), 4000);
+  };
+
+  const handleResetStateRates = () => {
+    if (window.confirm('Reset all 50 US state tax and shipping rates to statutory defaults?')) {
+      const reset = resetUsStateTaxRates();
+      setStateRates(reset);
+      showToast('State rates reset to defaults.', 'info');
+    }
+  };
+
   // Form states
   const [productForm, setProductForm] = useState({
     name: '',
@@ -156,6 +192,7 @@ export const AdminDashboard: React.FC = () => {
     description: '',
     fabric: '',
     fit: '',
+    shippingCharge: '15',
     sizeStock: '38R:4, 40R:6, 42R:2'
   });
 
@@ -266,6 +303,7 @@ export const AdminDashboard: React.FC = () => {
           description: productForm.description,
           fabric: productForm.fabric,
           fit: productForm.fit,
+          shippingCharge: productForm.shippingCharge ? parseFloat(productForm.shippingCharge) : 15,
           variants: parsedVariants,
           totalStock
         };
@@ -289,7 +327,8 @@ export const AdminDashboard: React.FC = () => {
           variants: parsedVariants,
           isFeatured: true,
           isNewArrival: true,
-          alterationEligible: true
+          alterationEligible: true,
+          shippingCharge: productForm.shippingCharge ? parseFloat(productForm.shippingCharge) : 15
         });
         showToast(`Product ${productForm.name} created successfully`, 'success');
       }
@@ -304,6 +343,7 @@ export const AdminDashboard: React.FC = () => {
         description: '',
         fabric: '',
         fit: '',
+        shippingCharge: '15',
         sizeStock: '38R:4, 40R:6, 42R:2'
       });
       await loadAllData();
@@ -324,6 +364,7 @@ export const AdminDashboard: React.FC = () => {
       description: p.description,
       fabric: p.fabric,
       fit: p.fit,
+      shippingCharge: p.shippingCharge !== undefined ? p.shippingCharge.toString() : '15',
       sizeStock: sizeStockStr
     });
     setIsAddProductOpen(true);
@@ -881,6 +922,7 @@ export const AdminDashboard: React.FC = () => {
                       description: '',
                       fabric: '',
                       fit: '',
+                      shippingCharge: '15',
                       sizeStock: '38R:4, 40R:6, 42R:2'
                     });
                     setIsAddProductOpen(true);
@@ -2151,6 +2193,151 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* US 50-STATE SALES TAX & SHIPMENT RATES CONFIGURATION */}
+            <div className="border border-gray-200 bg-[#F9F9F8] p-6 sm:p-8 space-y-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-200">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Calculator className="w-4 h-4 text-[#936B34]" />
+                    <h3 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
+                      US 50-STATE TAX &amp; SHIPMENT RATES MANAGER
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-500 font-mono mt-1">
+                    Configure individual statutory sales tax rates (%) and tiered shipping rates ($) for all 50 US States, D.C., and Puerto Rico.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleResetStateRates}
+                    className="px-3.5 py-2 border border-gray-300 hover:border-black text-gray-700 font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer bg-white"
+                  >
+                    Reset Defaults
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveAllStateRates}
+                    className="px-4 py-2 bg-[#936B34] hover:bg-[#7A5726] text-white font-mono text-xs uppercase tracking-wider font-semibold transition-colors cursor-pointer shadow-xs"
+                  >
+                    Save All Rates
+                  </button>
+                </div>
+              </div>
+
+              {ratesSavedNotice && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>All US State Tax and Shipping rates saved and active across website and checkout!</span>
+                </div>
+              )}
+
+              {/* State Filter Search */}
+              <div className="flex items-center justify-between gap-4">
+                <input
+                  type="text"
+                  value={stateSearchFilter}
+                  onChange={(e) => setStateSearchFilter(e.target.value)}
+                  placeholder="Filter by state name or code (e.g. California, NY, Texas, FL)..."
+                  className="w-full max-w-md bg-white border border-gray-300 p-2.5 text-xs font-mono text-[#111827] focus:outline-none focus:border-[#936B34]"
+                />
+                <span className="text-xs font-mono text-gray-500 shrink-0">
+                  {Object.keys(stateRates).length} Jurisdictions Configured
+                </span>
+              </div>
+
+              {/* Editable Rates Table */}
+              <div className="border border-gray-200 bg-white overflow-x-auto shadow-2xs max-h-[500px] overflow-y-auto">
+                <table className="w-full text-left text-xs font-mono">
+                  <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200 sticky top-0 z-10">
+                    <tr>
+                      <th className="p-3">CODE</th>
+                      <th className="p-3">STATE NAME</th>
+                      <th className="p-3">TAX RATE (%)</th>
+                      <th className="p-3">STANDARD SHIP ($)</th>
+                      <th className="p-3">EXPRESS SHIP ($)</th>
+                      <th className="p-3">STATUTORY NOTES</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {Object.values(stateRates)
+                      .filter(s => 
+                        !stateSearchFilter.trim() ||
+                        s.code.toLowerCase().includes(stateSearchFilter.toLowerCase()) ||
+                        s.name.toLowerCase().includes(stateSearchFilter.toLowerCase())
+                      )
+                      .map(st => {
+                        const standardShip = st.standardShippingRate !== undefined ? st.standardShippingRate : 15;
+                        const expressShip = st.expressShippingRate !== undefined ? st.expressShippingRate : 25;
+                        const taxPercent = (st.rate * 100).toFixed(st.rate % 0.01 === 0 ? 1 : 2);
+
+                        return (
+                          <tr key={st.code} className="hover:bg-black/[0.02]">
+                            <td className="p-3 font-semibold text-[#936B34]">{st.code}</td>
+                            <td className="p-3 font-medium text-[#111827]">{st.name}</td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  max="25"
+                                  value={(st.rate * 100).toFixed(2)}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    handleUpdateSingleStateRate(st.code, 'rate', val / 100);
+                                  }}
+                                  className="w-20 bg-[#F9F9F8] border border-gray-300 px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#936B34] text-right font-semibold text-[#111827]"
+                                />
+                                <span className="text-gray-500 font-semibold">%</span>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-500">$</span>
+                                <input
+                                  type="number"
+                                  step="1"
+                                  min="0"
+                                  max="200"
+                                  value={standardShip}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    handleUpdateSingleStateRate(st.code, 'standardShippingRate', val);
+                                  }}
+                                  className="w-16 bg-[#F9F9F8] border border-gray-300 px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#936B34] text-right font-semibold text-[#111827]"
+                                />
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-500">$</span>
+                                <input
+                                  type="number"
+                                  step="1"
+                                  min="0"
+                                  max="300"
+                                  value={expressShip}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    handleUpdateSingleStateRate(st.code, 'expressShippingRate', val);
+                                  }}
+                                  className="w-16 bg-[#F9F9F8] border border-gray-300 px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#936B34] text-right font-semibold text-[#111827]"
+                                />
+                              </div>
+                            </td>
+                            <td className="p-3 text-[11px] text-gray-500 max-w-xs truncate" title={st.notes}>
+                              {st.notes || (st.rate === 0 ? '0% Nomad State' : 'Standard statutory rate')}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
@@ -2158,8 +2345,8 @@ export const AdminDashboard: React.FC = () => {
 
       {/* MODAL: ADD / EDIT PRODUCT */}
       {isAddProductOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs p-4 sm:p-6 flex justify-center items-start">
+          <div className="w-full max-w-xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 sm:my-12 shadow-2xl">
             <button
               onClick={() => setIsAddProductOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-[#111827] cursor-pointer"
@@ -2235,6 +2422,20 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
+                    SHIPMENT CHARGE (USD)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={productForm.shippingCharge}
+                    onChange={(e) => setProductForm({ ...productForm, shippingCharge: e.target.value })}
+                    placeholder="15 (or 0 for Free Shipping)"
+                    className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
                     SKU *
@@ -2348,8 +2549,8 @@ export const AdminDashboard: React.FC = () => {
 
       {/* MODAL: CREATE ALTERATION */}
       {isCreateAlterationOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-lg bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs p-4 sm:p-6 flex justify-center items-start">
+          <div className="w-full max-w-lg bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 sm:my-12 shadow-2xl">
             <button
               onClick={() => setIsCreateAlterationOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-[#111827] cursor-pointer"
@@ -2545,8 +2746,8 @@ export const AdminDashboard: React.FC = () => {
 
       {/* MODAL: EXCEL PRODUCTS UPLOAD */}
       {isExcelUploadOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-3xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs p-4 sm:p-6 flex justify-center items-start">
+          <div className="w-full max-w-3xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 sm:my-12 shadow-2xl">
             <button
               onClick={() => {
                 setIsExcelUploadOpen(false);
@@ -2736,8 +2937,8 @@ export const AdminDashboard: React.FC = () => {
 
       {/* MODAL: MANUAL ORDER ENTRY */}
       {isManualOrderOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-3xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs p-4 sm:p-6 flex justify-center items-start">
+          <div className="w-full max-w-3xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 sm:my-12 shadow-2xl">
             <button
               onClick={() => setIsManualOrderOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-[#111827] cursor-pointer"
@@ -3081,7 +3282,7 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Courier Dispatch:</span>
-                  <span className="text-emerald-700 font-semibold">Complimentary White-Glove</span>
+                  <span className="text-[#936B34] font-semibold">Insured White-Glove Atelier</span>
                 </div>
                 <div className="flex justify-between font-serif text-lg text-[#111827] pt-2 border-t border-gray-100">
                   <span className="uppercase">Total Consignment:</span>

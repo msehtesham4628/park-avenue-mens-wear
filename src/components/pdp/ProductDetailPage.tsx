@@ -5,12 +5,16 @@ import {
   Scissors, 
   Truck, 
   Ruler, 
-  Sparkles
+  Sparkles,
+  Calculator,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { SizeGuideModal } from './SizeGuideModal';
+import { estimateTaxByZip } from '../../services/taxEngine';
 
 export const ProductDetailPage: React.FC = () => {
   const { 
@@ -21,6 +25,7 @@ export const ProductDetailPage: React.FC = () => {
     isInWishlist,
     setActiveView,
     setSelectedCategory,
+    openCategoryPage,
     currentCustomer,
     showToast
   } = useShop();
@@ -83,6 +88,34 @@ export const ProductDetailPage: React.FC = () => {
     );
   }
 
+  const [zipInput, setZipInput] = useState('');
+  const [zipTaxEstimate, setZipTaxEstimate] = useState<{
+    stateCode: string;
+    stateName: string;
+    taxRate: number;
+    taxRateFormatted: string;
+    estimatedTax: number;
+    totalWithTax: number;
+    notes?: string;
+  } | null>(null);
+  const [zipTaxError, setZipTaxError] = useState('');
+
+  const handleCalculateZipTax = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setZipTaxError('');
+    if (!zipInput.trim()) {
+      setZipTaxEstimate(null);
+      return;
+    }
+    const estimate = estimateTaxByZip(zipInput.trim(), product.price);
+    if (!estimate) {
+      setZipTaxError('Please enter a valid 5-digit US ZIP code (e.g. 10021, 90210, 75001).');
+      setZipTaxEstimate(null);
+    } else {
+      setZipTaxEstimate(estimate);
+    }
+  };
+
   const currentSize = selectedSize || product.variants?.[0]?.size || 'Standard';
   const currentColor = selectedColor || product.variants?.[0]?.color || 'Standard';
 
@@ -129,8 +162,7 @@ export const ProductDetailPage: React.FC = () => {
           <span>/</span>
           <button 
             onClick={() => {
-              setSelectedCategory(product.category);
-              setActiveView('shop');
+              openCategoryPage(product.category);
             }} 
             className="hover:text-[#111827] transition-colors cursor-pointer"
           >
@@ -220,7 +252,7 @@ export const ProductDetailPage: React.FC = () => {
             </div>
 
             {/* Price & Inventory Status */}
-            <div className="pb-5 border-b border-gray-200 flex items-baseline justify-between">
+            <div className="pb-4 border-b border-gray-200 flex items-baseline justify-between">
               <div className="flex items-baseline gap-3">
                 <span className="text-2xl font-semibold tabular-nums text-[#111827]">
                   ${product.price.toLocaleString()}
@@ -241,6 +273,22 @@ export const ProductDetailPage: React.FC = () => {
                   <span className="text-emerald-400 font-medium">In Stock — Dispatches in 24h</span>
                 )}
               </div>
+            </div>
+
+            {/* Shipment Charges Banner */}
+            <div className="p-3 bg-[#F9F9F8] border border-gray-200 flex items-center justify-between text-xs font-mono">
+              <div className="flex items-center gap-2.5">
+                <Truck className="w-4 h-4 text-[#936B34]" />
+                <div>
+                  <span className="text-gray-600 uppercase tracking-wider block">Shipment Charge:</span>
+                  <span className="text-[11px] text-gray-500 font-sans">
+                    {product.shippingCharge === 0 ? 'Complimentary atelier insured delivery' : 'UPS Ground / FedEx Insured Delivery (3–5 days)'}
+                  </span>
+                </div>
+              </div>
+              <strong className={product.shippingCharge === 0 ? 'text-emerald-700 font-semibold' : 'text-[#111827] font-semibold'}>
+                {product.shippingCharge === 0 ? 'Free ($0.00)' : `+$${product.shippingCharge !== undefined ? product.shippingCharge : 15}.00`}
+              </strong>
             </div>
 
             {/* Color Selector */}
@@ -367,17 +415,100 @@ export const ProductDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Delivery & Alteration Information Accordions */}
-            <div className="border-t border-gray-200 pt-4 space-y-3">
+            {/* Delivery, Estimated Tax & Atelier Alterations */}
+            <div className="border-t border-gray-200 pt-5 space-y-4">
+              
+              {/* Interactive Sales Tax by ZIP Code Estimator */}
+              <div className="p-4 bg-[#F9F9F8] border border-gray-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-mono uppercase text-[#936B34] font-semibold">
+                    <Calculator className="w-3.5 h-3.5" />
+                    <span>ESTIMATE SALES TAX BY ZIP CODE</span>
+                  </div>
+                  {zipTaxEstimate && (
+                    <span className="text-[10px] font-mono text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-xs font-semibold">
+                      {zipTaxEstimate.stateCode} APPLIED
+                    </span>
+                  )}
+                </div>
+
+                <form onSubmit={handleCalculateZipTax} className="flex gap-2">
+                  <input
+                    type="text"
+                    maxLength={5}
+                    value={zipInput}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, '').slice(0, 5);
+                      setZipInput(v);
+                      if (v.length === 5) {
+                        const est = estimateTaxByZip(v, product.price);
+                        if (est) {
+                          setZipTaxEstimate(est);
+                          setZipTaxError('');
+                        } else {
+                          setZipTaxEstimate(null);
+                        }
+                      } else {
+                        setZipTaxEstimate(null);
+                      }
+                    }}
+                    placeholder="Enter 5-digit US ZIP (e.g. 10021, 90210)"
+                    className="flex-1 bg-white border border-gray-300 px-3 py-2 text-xs font-mono text-[#111827] focus:outline-none focus:border-[#936B34] placeholder:text-gray-400"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-[#111827] hover:bg-[#936B34] text-white text-[11px] font-mono uppercase tracking-wider transition-colors cursor-pointer shrink-0 font-semibold shadow-xs"
+                  >
+                    CALCULATE
+                  </button>
+                </form>
+
+                {zipTaxError && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-red-600 font-mono">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{zipTaxError}</span>
+                  </div>
+                )}
+
+                {zipTaxEstimate && (
+                  <div className="mt-2 p-3 bg-white border border-gray-200 space-y-1.5 text-xs font-mono">
+                    <div className="flex items-center justify-between text-gray-600">
+                      <span>Destination State:</span>
+                      <strong className="text-[#111827]">{zipTaxEstimate.stateName} ({zipTaxEstimate.stateCode})</strong>
+                    </div>
+                    <div className="flex items-center justify-between text-gray-600">
+                      <span>Statutory Tax Rate:</span>
+                      <strong className="text-[#111827]">{zipTaxEstimate.taxRateFormatted}</strong>
+                    </div>
+                    <div className="flex items-center justify-between text-gray-700 pt-1 border-t border-gray-100">
+                      <span>Estimated Tax:</span>
+                      <strong className="text-[#936B34] text-sm tabular-nums">
+                        {zipTaxEstimate.estimatedTax === 0 ? 'Exempt / $0.00' : `+$${zipTaxEstimate.estimatedTax.toFixed(2)}`}
+                      </strong>
+                    </div>
+                    <div className="flex items-center justify-between text-[#111827] font-semibold pt-1 border-t border-gray-100">
+                      <span>Estimated Total (Garment + Tax):</span>
+                      <span className="text-[#111827] text-sm tabular-nums">
+                        ${zipTaxEstimate.totalWithTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    {zipTaxEstimate.notes && (
+                      <p className="text-[10px] text-gray-600 pt-1 italic font-sans leading-normal">
+                        * {zipTaxEstimate.notes}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
               
               {/* Delivery Information */}
               <div className="p-4 bg-[#F9F9F8] border border-gray-200 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-mono uppercase text-[#936B34] font-medium">
                   <Truck className="w-3.5 h-3.5" />
-                  <span>COMPLIMENTARY EXPRESS DELIVERY</span>
+                  <span>INSURED LUXURY COURIER DISPATCH</span>
                 </div>
                 <p className="text-xs text-gray-600 font-light leading-relaxed">
-                  Dispatched via DHL Express Priority. Domestic orders delivered in 1–2 business days. Signature required upon handover.
+                  Dispatched via UPS Ground or FedEx Priority Air. Standard and expedited rates are calculated directly based on destination US state during checkout.
                 </p>
               </div>
 
@@ -385,10 +516,10 @@ export const ProductDetailPage: React.FC = () => {
               <div className="p-4 bg-[#F9F9F8] border border-gray-200 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-mono uppercase text-[#936B34] font-medium">
                   <Scissors className="w-3.5 h-3.5" />
-                  <span>COMPLIMENTARY ATELIER ALTERATIONS</span>
+                  <span>ATELIER MASTER TAILORING SERVICES</span>
                 </div>
                 <p className="text-xs text-gray-600 font-light leading-relaxed">
-                  Every Park Avenue suit and trouser commission includes complimentary hemming and sleeve adjustments. Select your specs during checkout or track your garment with your Alteration ID.
+                  Every Park Avenue suit and trouser commission includes precision master tailoring hemming and sleeve adjustments. Select your specs during checkout or track your garment with your Alteration ID.
                 </p>
               </div>
 

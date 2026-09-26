@@ -28,6 +28,8 @@ export type AppView =
   | 'home'
   | 'welcome'
   | 'shop'
+  | 'category'
+  | 'categories'
   | 'pdp'
   | 'cart'
   | 'checkout'
@@ -52,6 +54,10 @@ interface ShopContextType {
   navigateToProduct: (productId: string, category?: string) => void;
   selectedCategory: string;
   setSelectedCategory: (cat: string) => void;
+  selectedSubcategory: string | null;
+  setSelectedSubcategory: (sub: string | null) => void;
+  openCategoryPage: (category: string, subcategory?: string) => void;
+  openCategoriesIndex: () => void;
   isProductsSubpage: boolean;
   setIsProductsSubpage: (val: boolean) => void;
   navigateToUrl: (url: string) => void;
@@ -148,6 +154,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activeView, setActiveViewState] = useState<AppView>('welcome');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(initialRoute.productId || null);
   const [selectedCategory, setSelectedCategoryState] = useState<string>(initialRoute.category || 'All');
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [isProductsSubpage, setIsProductsSubpage] = useState<boolean>(initialRoute.isProductsSubpage || false);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -320,6 +327,22 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     setActiveViewState('shop');
     navigateTo(url);
+  };
+
+  const openCategoryPage = (category: string, subcategory?: string) => {
+    setSelectedCategoryState(category);
+    setSelectedSubcategory(subcategory || null);
+    setActiveViewState('category');
+    const slug = getCategorySlug(category);
+    const url = (slug && slug !== 'all') ? `/${slug}` : '/categories';
+    navigateTo(url);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openCategoriesIndex = () => {
+    setActiveViewState('categories');
+    navigateTo('/categories');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const navigateToProduct = (productId: string, category?: string) => {
@@ -545,6 +568,10 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         navigateToProduct,
         selectedCategory,
         setSelectedCategory,
+        selectedSubcategory,
+        setSelectedSubcategory,
+        openCategoryPage,
+        openCategoriesIndex,
         isProductsSubpage,
         setIsProductsSubpage,
         navigateToUrl,

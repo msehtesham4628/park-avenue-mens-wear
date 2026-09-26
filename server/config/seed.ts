@@ -506,7 +506,7 @@ export async function seedInitialData() {
           postalCode: '10017',
           country: 'United States',
           carrier: 'White Glove Courier Express',
-          shippingMethod: 'Complimentary Express'
+          shippingMethod: 'Insured Atelier Express'
         },
         trackingNumber: 'PA-TRK-98231',
         statusHistory: [{

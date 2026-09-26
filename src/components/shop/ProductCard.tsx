@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Eye, ShoppingBag } from 'lucide-react';
+import { Heart, Eye, ShoppingBag, Truck } from 'lucide-react';
 import { Product, ProductVariant } from '../../types';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
@@ -224,6 +224,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
 
             <span className="text-[9px] font-mono text-gray-400 uppercase">
               {product.sku}
+            </span>
+          </div>
+
+          {/* Shipment Charges */}
+          <div className="flex items-center justify-between pt-1.5 text-[10px] font-mono text-gray-500 border-t border-gray-100 mt-1.5">
+            <span className="flex items-center gap-1">
+              <Truck className="w-3 h-3 text-[#936B34]" />
+              <span>Shipment:</span>
+            </span>
+            <span className={product.shippingCharge === 0 ? 'text-emerald-700 font-semibold' : 'text-[#111827] font-medium'}>
+              {product.shippingCharge === 0 ? 'Free Shipping' : `+$${product.shippingCharge !== undefined ? product.shippingCharge : 15} Insured`}
             </span>
           </div>
         </div>

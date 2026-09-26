@@ -21,6 +21,8 @@ export const ShopPage: React.FC = () => {
     products, 
     selectedCategory, 
     setSelectedCategory,
+    openCategoryPage,
+    openCategoriesIndex,
     searchFilter,
     setSearchFilter,
     setActiveView,
@@ -108,19 +110,23 @@ export const ShopPage: React.FC = () => {
     const filtered = products
       .filter(product => {
         // Category filter
-        if (selectedCategory !== 'All') {
-          if (selectedCategory === 'New Arrivals') {
+        if (selectedCategory && selectedCategory.toLowerCase() !== 'all') {
+          const selNorm = selectedCategory.trim().toLowerCase();
+          if (selNorm === 'new arrivals' || selNorm === 'new-arrivals' || selNorm.includes('new arrival')) {
             if (!product.isNewArrival) return false;
           } else {
-            const selNorm = selectedCategory.trim().toLowerCase();
             const prodCatNorm = (product.category || '').trim().toLowerCase();
 
             let isCategoryMatch = prodCatNorm === selNorm;
             if (!isCategoryMatch) {
-              if ((selNorm === 'shoe' || selNorm === 'shoes') && prodCatNorm.startsWith('shoe')) isCategoryMatch = true;
-              else if ((selNorm === 'loofers' || selNorm === 'loafers') && (prodCatNorm.includes('loof') || prodCatNorm.includes('loaf'))) isCategoryMatch = true;
-              else if (selNorm === 'pants' && prodCatNorm.includes('pants')) isCategoryMatch = true;
-              else if (selNorm.replace(/\s+/g, '') === prodCatNorm.replace(/\s+/g, '')) isCategoryMatch = true;
+              if (selNorm.includes('suit') && prodCatNorm.includes('suit')) isCategoryMatch = true;
+              else if ((selNorm.includes('shirt') || selNorm.includes('dress shirt')) && prodCatNorm.includes('shirt')) isCategoryMatch = true;
+              else if ((selNorm.includes('blazer') || selNorm.includes('jacket')) && (prodCatNorm.includes('blazer') || prodCatNorm.includes('jacket'))) isCategoryMatch = true;
+              else if ((selNorm.includes('pant') || selNorm.includes('trouser')) && (prodCatNorm.includes('pant') || prodCatNorm.includes('trouser') || prodCatNorm.includes('jean'))) isCategoryMatch = true;
+              else if ((selNorm.includes('footwear') || selNorm.includes('shoe') || selNorm.includes('boot') || selNorm.includes('loaf')) && (prodCatNorm.includes('shoe') || prodCatNorm.includes('boot') || prodCatNorm.includes('loaf') || prodCatNorm.includes('loof') || prodCatNorm.includes('footwear'))) isCategoryMatch = true;
+              else if ((selNorm.includes('accessor') || selNorm.includes('tie')) && (prodCatNorm.includes('tie') || prodCatNorm.includes('accessor') || prodCatNorm.includes('cuff') || prodCatNorm.includes('belt'))) isCategoryMatch = true;
+              else if ((selNorm.includes('outerwear') || selNorm.includes('coat')) && (prodCatNorm.includes('coat') || prodCatNorm.includes('outerwear') || prodCatNorm.includes('jacket'))) isCategoryMatch = true;
+              else if (selNorm.replace(/[^a-z0-9]/g, '') === prodCatNorm.replace(/[^a-z0-9]/g, '')) isCategoryMatch = true;
             }
             if (!isCategoryMatch) return false;
           }
@@ -288,17 +294,11 @@ export const ShopPage: React.FC = () => {
                 <div className="mt-4 flex items-center gap-2 text-xs font-mono">
                   <button
                     onClick={() => {
-                      setIsProductsSubpage(false);
-                      const slug = CATEGORY_TO_SLUG[selectedCategory] || selectedCategory.toLowerCase();
-                      navigateTo(`/${slug}`);
+                      openCategoryPage(selectedCategory);
                     }}
-                    className={`px-3 py-1.5 border transition-all cursor-pointer ${
-                      !isProductsSubpage
-                        ? 'bg-[#111827] text-white border-[#111827] font-semibold'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-black hover:text-black'
-                    }`}
+                    className="px-3 py-1.5 border transition-all cursor-pointer bg-white text-gray-700 border-gray-200 hover:border-[#936B34] hover:text-[#936B34]"
                   >
-                    OVERVIEW
+                    DEDICATED {selectedCategory.toUpperCase()} PAGE
                   </button>
                   <button
                     onClick={() => {

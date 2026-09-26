@@ -202,5 +202,21 @@ export const authController = {
     } catch (err: any) {
       return res.status(500).json({ success: false, message: err.message });
     }
+  },
+
+  async changePassword(req: AuthenticatedRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: 'Not authenticated.' });
+      }
+      const { oldPassword, newPassword } = req.body;
+      if (!newPassword) {
+        return res.status(400).json({ success: false, message: 'New password is required.' });
+      }
+      await authService.changePassword(req.user.customerId, oldPassword || '', newPassword);
+      return res.status(200).json({ success: true, message: 'Password updated successfully.' });
+    } catch (err: any) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
   }
 };

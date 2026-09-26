@@ -13,6 +13,8 @@ import { CategoryShowcase } from './components/home/CategoryShowcase';
 import { FeaturedProducts } from './components/home/FeaturedProducts';
 import { CampaignBanner } from './components/home/CampaignBanner';
 import { ShopPage } from './components/shop/ShopPage';
+import { CategoryPage } from './components/category/CategoryPage';
+import { CategoriesIndexPage } from './components/category/CategoriesIndexPage';
 import { ProductDetailPage } from './components/pdp/ProductDetailPage';
 import { CartPage } from './components/cart/CartPage';
 import { CheckoutPage } from './components/checkout/CheckoutPage';
@@ -30,7 +32,7 @@ const MainContent: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-white text-[#111827] selection:bg-[#936B34] selection:text-white">
       {activeView !== 'welcome' && <Navbar />}
 
-      <main className={`flex-1 ${(activeView !== 'home' && activeView !== 'welcome') ? 'pt-24 sm:pt-28' : ''}`}>
+      <main className={`flex-1 ${activeView === 'home' ? 'pt-0' : (activeView !== 'welcome' ? 'pt-24 sm:pt-28 md:pt-32' : '')}`}>
         {activeView === 'welcome' && <WelcomePage />}
 
         {activeView === 'home' && (
@@ -43,6 +45,8 @@ const MainContent: React.FC = () => {
         )}
 
         {activeView === 'shop' && <ShopPage />}
+        {activeView === 'category' && <CategoryPage />}
+        {activeView === 'categories' && <CategoriesIndexPage />}
         {activeView === 'pdp' && <ProductDetailPage />}
         {activeView === 'cart' && <CartPage />}
         {activeView === 'checkout' && <CheckoutPage />}

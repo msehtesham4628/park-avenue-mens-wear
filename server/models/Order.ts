@@ -128,7 +128,7 @@ const ShippingInfoSchema = new Schema<IShippingInfo>({
   postalCode: { type: String, required: true },
   country: { type: String, required: true, default: 'United States' },
   carrier: { type: String, default: 'Park Avenue White Glove Courier' },
-  shippingMethod: { type: String, default: 'Complimentary Express' },
+  shippingMethod: { type: String, default: 'Insured Standard Delivery' },
   estimatedDelivery: { type: String }
 }, { _id: false });
 

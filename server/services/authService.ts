@@ -177,5 +177,33 @@ export const authService = {
     });
 
     return { customer, token };
+  },
+
+  /**
+   * Change password for authenticated customer
+   */
+  async changePassword(customerId: string, oldPassword: string, newPassword: string): Promise<void> {
+    const customer = await CustomerModel.findOne({ customerId });
+    if (!customer) {
+      throw new Error('Customer account not found.');
+    }
+    if (customer.passwordHash && oldPassword) {
+      const isMatch = await this.verifyPassword(oldPassword, customer.passwordHash);
+      if (!isMatch) {
+        throw new Error('Current password does not match.');
+      }
+    }
+    if (newPassword.length < 5) {
+      throw new Error('New password must be at least 5 characters long.');
+    }
+    customer.passwordHash = await this.hashPassword(newPassword);
+    await customer.save();
+
+    await auditService.record({
+      adminUser: { id: customer.customerId, name: customer.name, email: customer.email, role: customer.role },
+      action: 'PASSWORD_CHANGED',
+      entity: 'Customer',
+      entityId: customer.customerId
+    });
   }
 };

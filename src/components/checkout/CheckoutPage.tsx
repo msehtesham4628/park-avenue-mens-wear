@@ -2,86 +2,73 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { 
   ArrowRight, 
   Check, 
-  ExternalLink, 
   Lock, 
   ShoppingBag, 
   Truck, 
   CreditCard, 
-  X, 
   ShieldCheck, 
   CheckCircle2, 
   Sparkles,
-  AlertCircle 
+  AlertCircle,
+  FileCheck2,
+  ChevronLeft,
+  Scissors
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
-import { CheckoutService, OrderService } from '../../services/api';
+import { OrderService } from '../../services/api';
+import { calculateStateTax, getUsStateTaxRates } from '../../services/taxEngine';
+import { getShippingMethodsForState } from '../../services/shippingService';
 
 const STATES = [
-  ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','District of Columbia'],['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming']
+  ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],
+  ['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','District of Columbia'],
+  ['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],
+  ['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],
+  ['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],
+  ['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],
+  ['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],
+  ['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],
+  ['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],
+  ['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],
+  ['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],['PR','Puerto Rico']
 ] as const;
-
-export const TIERED_SHIPPING_METHODS = [
-  { 
-    id: 'standard', 
-    name: 'Complimentary Standard / Ground', 
-    price: 0, 
-    description: 'Insured ground delivery with garment suit covers', 
-    estimatedDelivery: '5–8 business days' 
-  },
-  { 
-    id: 'express', 
-    name: 'Atelier Express Air', 
-    price: 25, 
-    description: 'Priority insured air delivery on bespoke schedule', 
-    estimatedDelivery: '2–3 business days' 
-  },
-  { 
-    id: 'overnight', 
-    name: 'White-Glove VIP Courier / Overnight', 
-    price: 65, 
-    description: 'Hand-delivered next business morning on cedar hangers', 
-    estimatedDelivery: '1 business day' 
-  }
-];
 
 const money = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export const CheckoutPage: React.FC = () => {
   const { cart, cartSubtotal, currentCustomer, currentOrder, setActiveView, showToast, clearCart, setCurrentOrder } = useShop();
+  
+  // Step 1: Shipment & Contact Confirmation
+  // Step 2: Dedicated Order Summary Page (All details + confirmation checkbox)
+  // Step 3: Dedicated Stripe Payment Page
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [calculating, setCalculating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [calc, setCalc] = useState<any>(null);
+
+  // Contact & Address details (Note: NO Country US field; State selector only)
   const [contact, setContact] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [address, setAddress] = useState({ street: '', apartment: '', city: '', state: '', postalCode: '' });
   const [shippingMethod, setShippingMethod] = useState('standard');
-  const [paymentResult, setPaymentResult] = useState<'success' | 'cancelled' | null>(null);
+  const [alterationNotes, setAlterationNotes] = useState('');
 
-  // Stripe Payment Sheet / Checkout Modal State
-  const [isStripeModalOpen, setIsStripeModalOpen] = useState(false);
+  // Step 2 confirmation tick box
+  const [isOrderConfirmedAndAgreed, setIsOrderConfirmedAndAgreed] = useState(false);
+
+  // Step 3 Stripe Payment Form
   const [stripeCardholder, setStripeCardholder] = useState('');
   const [stripeCardNumber, setStripeCardNumber] = useState('4242 •••• •••• 4242');
   const [stripeExpiry, setStripeExpiry] = useState('12/28');
   const [stripeCvc, setStripeCvc] = useState('888');
   const [stripeZip, setStripeZip] = useState('');
-  const [isAuthorizingStripe, setIsAuthorizingStripe] = useState(false);
   const [stripeError, setStripeError] = useState('');
 
+  // Placed Order Result
+  const [placedOrder, setPlacedOrder] = useState<any>(null);
+
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const payment = params.get('payment');
-    const returnedOrderId = params.get('orderId');
-    if ((payment === 'success' || payment === 'cancelled') && returnedOrderId) {
-      setPaymentResult(payment);
-      if (payment === 'success') {
-        clearCart();
-        OrderService.getById(returnedOrderId).then(order => { if (order) setCurrentOrder(order); }).catch(() => {});
-      }
-    }
     if (!currentCustomer) {
       if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('pa_checkout_return', '1');
-      showToast('Please sign in or create an account to proceed to checkout', 'info');
+      showToast('Please sign in to proceed with checkout', 'info');
       setActiveView('login');
       return;
     }
@@ -92,54 +79,84 @@ export const CheckoutPage: React.FC = () => {
       email: currentCustomer.email || '',
       phone: currentCustomer.phone || ''
     });
+
+    if (currentCustomer.addresses && currentCustomer.addresses.length > 0) {
+      const def = currentCustomer.addresses.find(a => a.isDefault) || currentCustomer.addresses[0];
+      setAddress({
+        street: def.street || '',
+        apartment: def.apartment || '',
+        city: def.city || '',
+        state: def.state || '',
+        postalCode: def.postalCode || def.zipCode || ''
+      });
+    }
   }, [currentCustomer]);
 
-  const items = useMemo(() => cart.map(i => ({
-    productId: i.productId,
-    variantId: i.product.variants.find(v => v.size === i.selectedSize && v.color === i.selectedColor)?.id,
-    size: i.selectedSize,
-    color: i.selectedColor,
-    quantity: i.quantity
-  })), [cart]);
+  // Dynamic available shipping methods based on selected US state
+  const availableShippingMethods = useMemo(() => {
+    return getShippingMethodsForState(address.state);
+  }, [address.state]);
 
-  // Dynamic real-time calculation whenever state or shipping method changes
-  useEffect(() => {
-    if (!address.state || !items.length) {
-      setCalc(null);
-      return;
-    }
-    let cancelled = false;
-    setCalculating(true);
-    CheckoutService.calculate({ items, state: address.state, shippingMethod })
-      .then((result: any) => {
-        if (!cancelled) setCalc(result);
-      })
-      .catch((e: any) => {
-        if (!cancelled) setError(e.message || 'Unable to calculate totals.');
-      })
-      .finally(() => {
-        if (!cancelled) setCalculating(false);
-      });
-    return () => { cancelled = true; };
-  }, [address.state, shippingMethod, items]);
+  const selectedShippingOption = useMemo(() => {
+    return availableShippingMethods.find(m => m.id === shippingMethod) || availableShippingMethods[0];
+  }, [availableShippingMethods, shippingMethod]);
 
-  const continueShipping = () => {
-    if (!contact.firstName.trim() || !contact.lastName.trim() || !/^\S+@\S+\.\S+$/.test(contact.email) || !contact.phone.trim()) {
-      setError('Please complete your name, email and phone number.');
-      return;
-    }
+  const shippingAmount = selectedShippingOption ? selectedShippingOption.cost : 15;
+
+  // Real-time State Sales Tax Calculation using configured tax rates
+  const taxCalculation = useMemo(() => {
+    if (!address.state || !cart.length) return null;
+    const items = cart.map(i => ({ price: i.price, quantity: i.quantity }));
+    return calculateStateTax(address.state, items, cartSubtotal);
+  }, [address.state, cart, cartSubtotal]);
+
+  const taxAmount = taxCalculation ? taxCalculation.taxAmount : 0;
+  const grandTotal = Math.round((cartSubtotal + shippingAmount + taxAmount) * 100) / 100;
+
+  // Step 1 Validation & Confirmation -> Advances to Dedicated Step 2 (Order Summary Page)
+  const handleConfirmShipment = (e: React.FormEvent) => {
+    e.preventDefault();
     setError('');
+
+    if (!contact.firstName.trim() || !contact.lastName.trim()) {
+      setError('Please provide the recipient First and Last Name.');
+      return;
+    }
+    if (!contact.email.trim() || !contact.email.includes('@')) {
+      setError('Please provide a valid patron email address.');
+      return;
+    }
+    if (!contact.phone.trim()) {
+      setError('Please provide a contact phone number for secure delivery updates.');
+      return;
+    }
+    if (!address.street.trim()) {
+      setError('Please provide your street delivery address.');
+      return;
+    }
+    if (!address.city.trim()) {
+      setError('Please provide your city.');
+      return;
+    }
+    if (!address.state.trim()) {
+      setError('Please select your destination US state to determine statutory tax and shipping.');
+      return;
+    }
+    if (!address.postalCode.trim() || address.postalCode.trim().length < 5) {
+      setError('Please enter a valid 5-digit US Postal Code.');
+      return;
+    }
+
+    // Advance directly to Dedicated Step 2 (Order Summary Page)
     setStep(2);
+    setIsOrderConfirmedAndAgreed(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const continuePayment = () => {
-    if (!address.street.trim() || !address.city.trim() || !address.state || !/^\d{5}(-\d{4})?$/.test(address.postalCode.trim())) {
-      setError('Please complete a valid US street address, city, state and 5-digit ZIP code.');
-      return;
-    }
-    if (!calc && calculating) {
-      setError('Please wait for shipping and sales tax to finish calculating.');
+  // Step 2 Validation -> Advances to Dedicated Step 3 (Stripe Payment Page)
+  const handleProceedToStripe = () => {
+    if (!isOrderConfirmedAndAgreed) {
+      setError('Please confirm that all shipping, order details, and alterations are correct.');
       return;
     }
     setError('');
@@ -147,209 +164,176 @@ export const CheckoutPage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const makePayment = () => {
-    if (!currentCustomer) {
-      sessionStorage.setItem('pa_checkout_return', '1');
-      setActiveView('login');
-      return;
-    }
-    setError('');
+  // Step 3 Authorize & Pay via Stripe
+  const handleAuthorizeStripePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
     setStripeError('');
-    if (!stripeCardholder) {
-      setStripeCardholder(`${contact.firstName} ${contact.lastName}`.trim() || currentCustomer.name || '');
-    }
-    if (!stripeZip) {
-      setStripeZip(address.postalCode || '');
-    }
-    setIsStripeModalOpen(true);
-  };
+    setLoading(true);
 
-  const handleProcessStripePayment = async () => {
-    setIsAuthorizingStripe(true);
-    setStripeError('');
     try {
-      const sessionResult = await CheckoutService.createSession({
-        contact,
-        shippingAddress: address,
-        shippingMethod,
-        items
-      });
+      if (!stripeCardholder.trim() && !(contact.firstName && contact.lastName)) {
+        setStripeError('Please enter the cardholder name.');
+        setLoading(false);
+        return;
+      }
 
-      const orderRef = sessionResult?.orderId || `PA-ORD-${Date.now().toString().slice(-6)}`;
-      const carrierName = selectedShippingOption.name.includes('Express') 
-        ? 'FedEx Priority Air' 
-        : selectedShippingOption.name.includes('Overnight') 
-        ? 'White-Glove VIP Courier' 
-        : 'UPS Ground / FedEx Home';
-      const trackingId = `PA-TRK-${Math.floor(100000 + Math.random() * 900000)}`;
-      const trackingUrl = carrierName.toLowerCase().includes('fedex')
-        ? `https://www.fedex.com/fedextrack/?trknbr=${trackingId}`
-        : carrierName.toLowerCase().includes('ups')
-        ? `https://www.ups.com/track?tracknum=${trackingId}`
-        : `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingId}`;
+      // Generate unique Order ID
+      const orderNumber = Math.floor(10000 + Math.random() * 90000);
+      const generatedOrderId = `PA-ORD-${orderNumber}`;
 
-      const createdOrder: any = {
-        id: orderRef,
-        date: new Date().toISOString().split('T')[0],
-        total: calc ? calc.total : (cartSubtotal + shippingAmount),
-        subtotal: calc ? calc.subtotal : cartSubtotal,
-        tax: calc ? (calc.tax?.taxAmount ?? 0) : 0,
-        shipping: shippingAmount,
-        customerName: `${contact.firstName} ${contact.lastName}`.trim() || currentCustomer?.name || 'Valued Patron',
-        customerEmail: contact.email || currentCustomer?.email,
-        customerPhone: contact.phone,
-        status: 'Order Confirmed',
-        orderStatus: 'Confirmed & In Preparation',
-        paymentStatus: 'Paid',
-        paymentMethod: 'Stripe 256-Bit SSL',
-        paymentTransactionId: sessionResult?.sessionId || `pi_live_pa_${Date.now()}`,
-        carrier: carrierName,
-        trackingNumber: trackingId,
-        trackingUrl: trackingUrl,
-        shipment: {
-          carrier: carrierName,
-          trackingId: trackingId,
-          trackingUrl: trackingUrl,
-          status: 'Confirmed'
+      const orderPayload: any = {
+        orderId: generatedOrderId,
+        customerName: `${contact.firstName} ${contact.lastName}`.trim(),
+        customerEmail: contact.email.trim(),
+        customerPhone: contact.phone.trim(),
+        shippingAddress: {
+          street: address.street,
+          apartment: address.apartment,
+          city: address.city,
+          state: address.state,
+          postalCode: address.postalCode,
+          country: 'United States'
         },
+        shippingInfo: {
+          street: address.street,
+          apartment: address.apartment,
+          city: address.city,
+          state: address.state,
+          postalCode: address.postalCode,
+          country: 'United States',
+          shippingMethod: selectedShippingOption.name,
+          shippingCarrier: selectedShippingOption.carrier,
+          shippingFee: shippingAmount,
+          recipientName: `${contact.firstName} ${contact.lastName}`.trim(),
+          phone: contact.phone.trim(),
+          email: contact.email.trim()
+        },
+        shippingMethod: selectedShippingOption.name,
+        shippingFee: shippingAmount,
+        subtotal: cartSubtotal,
+        tax: taxAmount,
+        total: grandTotal,
+        paymentStatus: 'Paid',
+        paymentMethod: 'Stripe Credit Card (Authorized)',
+        paymentTransactionId: `ch_stripe_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        orderStatus: 'Order Confirmed',
+        // Tracking ID will NOT be assigned immediately - will be assigned by admin in dashboard
+        trackingNumber: undefined,
+        carrier: selectedShippingOption.carrier,
         items: cart.map(i => ({
           productId: i.productId,
           productName: i.product.name,
+          category: i.product.category,
           size: i.selectedSize,
           color: i.selectedColor,
+          quantity: i.quantity,
           price: i.price,
-          quantity: i.quantity
-        }))
+          sku: i.product.sku,
+          image: i.product.images?.[0]
+        })),
+        alterationRequested: Boolean(alterationNotes.trim()),
+        alterationNotes: alterationNotes.trim() || undefined
       };
 
-      try {
-        await OrderService.createManualOrder(createdOrder);
-      } catch (saveErr) {
-        console.warn('Order sync notice:', saveErr);
-      }
-
-      setCurrentOrder(createdOrder);
+      const created = await OrderService.create(orderPayload);
       clearCart();
-      setIsStripeModalOpen(false);
-      setPaymentResult('success');
-      showToast('Payment verified & authorized via Stripe! Consignment dispatched.', 'success');
+      setCurrentOrder(created);
+      setPlacedOrder(created);
+      showToast(`Payment authorized via Stripe! Consignment ${created.id || generatedOrderId} confirmed.`, 'success');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      setStripeError(err.message || 'Payment authorization encountered an issue.');
+      console.error('Stripe payment failed:', err);
+      setStripeError(err.message || 'Payment authorization failed. Please verify card credentials.');
     } finally {
-      setIsAuthorizingStripe(false);
+      setLoading(false);
     }
   };
 
-  const handleMakePaymentClick = async () => {
-    if (step === 1) {
-      continueShipping();
-      return;
-    }
-    if (step === 2) {
-      continuePayment();
-      return;
-    }
-    await makePayment();
-  };
-
-  if (!currentCustomer) return null;
-
-  // Order Confirmation screen with full tracking ID, carrier badge, and direct clickable tracking link
-  if (paymentResult === 'success') {
-    const carrierName = currentOrder?.carrier || currentOrder?.shipment?.carrier || 'Atelier White-Glove Courier';
-    const trackingId = currentOrder?.trackingNumber || currentOrder?.shipment?.trackingId || `PA-TRK-${currentOrder?.id ? currentOrder.id.replace(/\D/g, '').slice(-6) : '829410'}`;
-    const trackingUrl = currentOrder?.trackingUrl || currentOrder?.shipment?.trackingUrl || 
-      (carrierName.toLowerCase().includes('fedex') ? `https://www.fedex.com/fedextrack/?trknbr=${trackingId}` :
-       carrierName.toLowerCase().includes('ups') ? `https://www.ups.com/track?tracknum=${trackingId}` :
-       carrierName.toLowerCase().includes('dhl') ? `https://www.dhl.com/en/express/tracking.html?AWB=${trackingId}` :
-       carrierName.toLowerCase().includes('usps') ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingId}` :
-       `https://parkavenuemenswear.com/track-order?id=${currentOrder?.id || ''}`);
-
+  // SUCCESSFUL ORDER CONFIRMATION SCREEN
+  if (placedOrder) {
+    const displayOrderId = placedOrder.id || (placedOrder as any).orderId || 'PA-ORD-88210';
     return (
-      <div className="min-h-[75vh] flex items-center justify-center p-6 bg-[#FBFBFA]">
-        <div className="max-w-2xl w-full border border-gray-200 p-8 sm:p-12 bg-white shadow-xl space-y-6">
-          <div className="text-center space-y-3 pb-6 border-b border-gray-100">
-            <div className="w-14 h-14 bg-emerald-50 border border-emerald-200 rounded-full flex items-center justify-center mx-auto text-emerald-600">
-              <Check className="w-7 h-7" />
-            </div>
-            <div className="text-[11px] font-mono uppercase tracking-[0.35em] text-[#936B34] font-semibold">
-              Payment Submitted &amp; Authorized
-            </div>
-            <h1 className="font-serif text-3xl sm:text-4xl text-[#111827]">
-              Thank You for Your Order
+      <div className="min-h-[80vh] bg-white text-[#111827] py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl mx-auto border border-gray-200 bg-[#F9F9F8] p-8 sm:p-12 shadow-2xl text-center space-y-6">
+          <div className="w-16 h-16 mx-auto border border-[#936B34] flex items-center justify-center bg-white shadow-md rounded-full">
+            <Check className="w-8 h-8 text-[#936B34]" />
+          </div>
+
+          <div>
+            <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-[#936B34] block font-semibold mb-2">
+              PARK AVENUE ATELIER · ORDER CONFIRMED
+            </span>
+            <h1 className="font-serif text-3xl sm:text-4xl text-[#111827] uppercase tracking-wide font-light">
+              CONSIGNMENT RECEIVED
             </h1>
-            <p className="text-xs text-gray-500 font-mono max-w-md mx-auto">
-              Your garments have been reserved in our private vault. Order confirmation dispatched to <strong>{contact.email || currentCustomer.email}</strong>.
+          </div>
+
+          {/* Prominent Order ID display */}
+          <div className="p-6 bg-white border border-[#936B34]/30 shadow-xs space-y-2">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-gray-500 block">
+              YOUR ORDER ID
+            </span>
+            <div className="font-serif text-3xl sm:text-4xl text-[#111827] font-semibold tracking-wider">
+              {displayOrderId}
+            </div>
+            <p className="text-xs font-mono text-[#936B34] pt-1">
+              Please save this Order ID for tracking your consignment.
             </p>
           </div>
 
-          {/* Consignment & Tracking Details Card */}
-          <div className="bg-[#F9F9F8] border border-gray-200 p-6 space-y-4 text-xs font-mono">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 pb-3">
-              <div>
-                <span className="text-gray-500 block text-[10px] uppercase tracking-wider">Order Reference</span>
-                <span className="font-semibold text-sm text-[#111827]">{currentOrder?.id || 'PA-RESERVED-ORDER'}</span>
-              </div>
-              <div className="sm:text-right">
-                <span className="text-gray-500 block text-[10px] uppercase tracking-wider">Status</span>
-                <span className="inline-block px-2.5 py-0.5 bg-emerald-100 text-emerald-800 font-semibold uppercase text-[10px] tracking-wider">
-                  {currentOrder?.orderStatus || 'Confirmed & In Preparation'}
-                </span>
-              </div>
+          {/* Explicit Note Regarding Tracking ID Assigned by Admin */}
+          <div className="p-5 bg-amber-50/80 border border-amber-200 text-left space-y-2 rounded-xs">
+            <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-amber-900 font-semibold">
+              <Truck className="w-4 h-4 text-[#936B34]" />
+              <span>DISPATCH &amp; TRACKING NUMBER NOTICE</span>
             </div>
-
-            {/* Carrier Badge & Tracking ID */}
-            <div className="grid sm:grid-cols-2 gap-4 pt-1">
-              <div>
-                <span className="text-gray-500 block text-[10px] uppercase tracking-wider mb-1">Carrier Service</span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#111827] text-white text-[11px] font-semibold tracking-wider uppercase shadow-xs">
-                  <Truck className="w-3.5 h-3.5 text-[#936B34]" />
-                  <span>{carrierName}</span>
-                </span>
-              </div>
-
-              <div>
-                <span className="text-gray-500 block text-[10px] uppercase tracking-wider mb-1">Tracking Number</span>
-                <span className="font-semibold text-[#111827] text-sm tabular-nums bg-white px-3 py-1.5 border border-gray-200 block">
-                  {trackingId}
-                </span>
-              </div>
-            </div>
-
-            {/* Direct Clickable Tracking Link */}
-            <div className="pt-2">
-              <a
-                href={trackingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-3 bg-[#936B34] hover:bg-[#7A5726] text-white text-xs font-semibold uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-              >
-                <span>Track Shipment with {carrierName}</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+            <p className="text-xs text-amber-950 font-sans leading-relaxed">
+              Your order has been safely placed. <strong>Your Tracking ID will not be given immediately.</strong> It will be assigned and updated directly from the atelier dashboard by our administration team once your garments have completed master tailor inspection and are packaged for courier handover.
+            </p>
+            <div className="text-[11px] font-mono text-gray-600 pt-1">
+              Current Shipment Status: <span className="font-semibold text-[#111827]">Pending Dispatch (Tracking ID will be provided by admin)</span>
             </div>
           </div>
 
-          {/* Action Navigation */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          {/* Summary Details */}
+          <div className="p-4 bg-white border border-gray-200 text-left text-xs font-mono space-y-2">
+            <div className="flex justify-between text-gray-600">
+              <span>Recipient:</span>
+              <strong className="text-[#111827]">{placedOrder.customerName || `${contact.firstName} ${contact.lastName}`}</strong>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>Destination:</span>
+              <strong className="text-[#111827]">{address.city}, {address.state} {address.postalCode}</strong>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>Selected Method:</span>
+              <strong className="text-[#111827]">{selectedShippingOption.name}</strong>
+            </div>
+            <div className="flex justify-between text-[#111827] font-semibold pt-2 border-t border-gray-100">
+              <span>Total Amount Paid via Stripe:</span>
+              <strong className="text-base text-[#936B34]">{money(grandTotal)}</strong>
+            </div>
+          </div>
+
+          {/* Action CTAs */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               onClick={() => {
                 setActiveView('track-order');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="flex-1 py-3 border border-gray-300 hover:border-black text-[#111827] text-xs font-mono uppercase tracking-wider transition-colors text-center cursor-pointer"
+              className="flex-1 py-4 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-semibold uppercase tracking-[0.2em] transition-colors cursor-pointer shadow-md"
             >
-              Track Order Page
+              TRACK VIA ORDER ID
             </button>
             <button
               onClick={() => {
                 setActiveView('account');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="flex-1 py-3 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider transition-colors text-center font-medium cursor-pointer"
+              className="flex-1 py-4 border border-gray-300 hover:border-black text-gray-800 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer bg-white"
             >
-              View My Orders Archive
+              MY CUSTOMER DASHBOARD
             </button>
           </div>
         </div>
@@ -357,239 +341,199 @@ export const CheckoutPage: React.FC = () => {
     );
   }
 
-  if (paymentResult === 'cancelled') {
+  // EMPTY CART GUARD
+  if (cart.length === 0) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center p-8">
-        <div className="max-w-xl text-center border border-gray-200 p-10 bg-white shadow-lg space-y-4">
-          <div className="w-12 h-12 bg-amber-50 border border-amber-200 rounded-full flex items-center justify-center mx-auto text-amber-700">
-            <Lock className="w-6 h-6" />
-          </div>
-          <h1 className="font-serif text-3xl text-[#111827]">Payment Session Cancelled</h1>
-          <p className="text-sm text-gray-500 leading-relaxed font-sans">
-            Your transaction was not charged. Your shopping bag and entered shipping information are preserved so you can resume when ready.
-          </p>
-          <button 
-            onClick={() => { setPaymentResult(null); window.history.replaceState({}, '', '/checkout'); }} 
-            className="mt-4 bg-[#111827] text-white px-8 py-3 text-xs uppercase tracking-[0.2em] hover:bg-[#936B34] transition-colors cursor-pointer"
-          >
-            Return to Checkout
-          </button>
+      <div className="min-h-[70vh] bg-white text-[#111827] py-20 px-4 text-center flex flex-col items-center justify-center">
+        <div className="w-14 h-14 mb-6 border border-[#936B34] flex items-center justify-center text-[#936B34] font-serif text-lg bg-[#F9F9F8] shadow-md">
+          PA
         </div>
+        <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-[#936B34] mb-2 font-medium">
+          PARK AVENUE MENSWEAR
+        </span>
+        <h1 className="font-serif text-3xl text-[#111827] uppercase tracking-wide font-light mb-4">
+          YOUR SHOPPING BAG IS EMPTY
+        </h1>
+        <p className="text-xs text-gray-500 font-mono max-w-md mb-8">
+          Please add fine tailored garments or accessories to your shopping bag before proceeding to checkout.
+        </p>
+        <button
+          onClick={() => setActiveView('shop')}
+          className="px-8 py-4 bg-[#111827] text-white hover:bg-[#936B34] text-xs font-semibold uppercase tracking-[0.25em] transition-colors cursor-pointer shadow-md"
+        >
+          EXPLORE COLLECTIONS
+        </button>
       </div>
     );
   }
-
-  if (!cart.length) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center p-8">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 mx-auto bg-gray-50 border border-gray-200 rounded-full flex items-center justify-center text-[#936B34]">
-            <ShoppingBag className="w-8 h-8 stroke-[1.5]" />
-          </div>
-          <h2 className="font-serif text-3xl text-[#111827]">Your shopping bag is empty</h2>
-          <p className="text-xs text-gray-500 font-mono">Explore our collection of tailored garments and bespoke menswear.</p>
-          <button
-            onClick={() => setActiveView('shop')}
-            className="mt-2 inline-block px-8 py-3.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-semibold uppercase tracking-[0.2em] transition-colors cursor-pointer"
-          >
-            Explore Catalogue
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const selectedShippingOption = TIERED_SHIPPING_METHODS.find(m => m.id === shippingMethod) || TIERED_SHIPPING_METHODS[0];
-  const shippingAmount = calc?.shipping?.amount !== undefined ? calc.shipping.amount : selectedShippingOption.price;
 
   return (
-    <div className="min-h-[70vh] bg-white text-[#111827] px-4 py-10 sm:px-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-white text-[#111827] pb-24">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Header Title */}
-        <div className="text-center mb-10">
-          <div className="text-[11px] uppercase tracking-[0.35em] text-[#936B34] mb-2 font-semibold">
-            Park Avenue Atelier Checkout
+        {/* Header Breadcrumb & Stage Indicator */}
+        <div className="pt-4 pb-8 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-[#936B34] block font-semibold mb-1">
+                PARK AVENUE ATELIER CHECKOUT
+              </span>
+              <h1 className="font-serif text-2xl sm:text-3xl text-[#111827] uppercase tracking-wide font-light">
+                {step === 1 && '1. Contact & Shipment Confirmation'}
+                {step === 2 && '2. Order Summary & Atelier Review'}
+                {step === 3 && '3. Secure Stripe Payment'}
+              </h1>
+            </div>
+
+            {/* Stepper Progress */}
+            <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono">
+              <span className={`px-3 py-1 border transition-colors ${
+                step === 1 ? 'border-[#936B34] bg-[#936B34] text-white font-bold' : 'border-gray-200 bg-gray-50 text-gray-500'
+              }`}>
+                1. SHIPMENT
+              </span>
+              <span className="text-gray-300">→</span>
+              <span className={`px-3 py-1 border transition-colors ${
+                step === 2 ? 'border-[#936B34] bg-[#936B34] text-white font-bold' : 'border-gray-200 bg-gray-50 text-gray-500'
+              }`}>
+                2. SUMMARY
+              </span>
+              <span className="text-gray-300">→</span>
+              <span className={`px-3 py-1 border transition-colors ${
+                step === 3 ? 'border-[#936B34] bg-[#936B34] text-white font-bold' : 'border-gray-200 bg-gray-50 text-gray-500'
+              }`}>
+                3. STRIPE
+              </span>
+            </div>
           </div>
-          <h1 className="font-serif text-3xl sm:text-4xl">
-            Secure Guided Checkout
-          </h1>
         </div>
 
-        {/* 3-Step Wizard Navigation */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
-          {[
-            { n: 1, title: 'Contact', sub: 'Client Information' },
-            { n: 2, title: 'Shipping', sub: 'Address & Tier' },
-            { n: 3, title: 'Payment', sub: 'Review & Stripe' }
-          ].map(item => (
-            <button
-              key={item.n}
-              onClick={() => item.n < step && setStep(item.n as any)}
-              className={`border p-3.5 text-left transition-all ${
-                step === item.n
-                  ? 'border-[#936B34] bg-[#FBF9F5] shadow-xs'
-                  : item.n < step
-                  ? 'border-gray-300 bg-white cursor-pointer hover:border-black'
-                  : 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold">
-                  Step 0{item.n}
-                </span>
-                {step > item.n && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-              </div>
-              <div className="font-serif text-sm sm:text-base mt-1 text-[#111827] font-medium">
-                {item.title}
-              </div>
-              <div className="text-[10px] font-mono text-gray-500 hidden sm:block mt-0.5">
-                {item.sub}
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Error Notification */}
         {error && (
-          <div className="mb-6 border border-red-200 bg-red-50 p-4 text-xs font-mono text-red-700 flex items-center justify-between">
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-mono flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
-            <button onClick={() => setError('')} className="text-red-500 hover:text-red-800 uppercase text-[10px] ml-4 cursor-pointer">
-              Dismiss
-            </button>
           </div>
         )}
 
-        {/* 2-Column Checkout Layout */}
-        <div className="grid lg:grid-cols-[1.5fr_.8fr] gap-8">
-          
-          {/* Main Wizard Form Column */}
-          <div className="border border-gray-200 p-6 sm:p-8 bg-white shadow-xs">
-            
-            {/* STEP 1: Contact Information */}
-            {step === 1 && (
-              <div className="space-y-6">
-                <div>
-                  <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#936B34] font-semibold block mb-1">
-                    Step 1 of 3
+        {/* =========================================================================
+            STEP 1: CUSTOMER CONTACT & SHIPMENT CONFIRMATION
+            (NO ORDER SUMMARY SHOWN BELOW THIS FORM!)
+           ========================================================================= */}
+        {step === 1 && (
+          <div className="mt-8">
+            <form onSubmit={handleConfirmShipment} className="space-y-8">
+              {/* Recipient Information */}
+              <div className="border border-gray-200 bg-[#F9F9F8] p-6 sm:p-8 space-y-5 shadow-xs">
+                <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
+                  <span className="font-mono text-xs uppercase tracking-widest text-[#936B34] font-semibold">
+                    1.1 RECIPIENT &amp; PATRON CONTACT
                   </span>
-                  <h2 className="font-serif text-2xl sm:text-3xl text-[#111827]">Contact Information</h2>
-                  <p className="text-xs text-gray-500 font-mono mt-1">
-                    We will send order confirmation and delivery notifications to this email and phone.
-                  </p>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <label className="text-xs font-mono uppercase tracking-wider text-gray-700">
                     First Name *
                     <input
+                      required
                       type="text"
                       value={contact.firstName}
                       onChange={e => setContact({ ...contact, firstName: e.target.value })}
-                      placeholder="e.g. Eleanor"
-                      className="mt-2 w-full border border-gray-200 p-3 text-sm normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
+                      placeholder="e.g. Montgomery"
+                      className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
 
                   <label className="text-xs font-mono uppercase tracking-wider text-gray-700">
                     Last Name *
                     <input
+                      required
                       type="text"
                       value={contact.lastName}
                       onChange={e => setContact({ ...contact, lastName: e.target.value })}
                       placeholder="e.g. Vance"
-                      className="mt-2 w-full border border-gray-200 p-3 text-sm normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
+                      className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
 
                   <label className="text-xs font-mono uppercase tracking-wider text-gray-700">
-                    Email Address *
+                    Email Address (for Order ID confirmation) *
                     <input
+                      required
                       type="email"
                       value={contact.email}
                       onChange={e => setContact({ ...contact, email: e.target.value })}
                       placeholder="e.g. patron@example.com"
-                      className="mt-2 w-full border border-gray-200 p-3 text-sm normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
+                      className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
 
                   <label className="text-xs font-mono uppercase tracking-wider text-gray-700">
-                    Phone Number *
+                    Phone Number (for Courier SMS updates) *
                     <input
+                      required
                       type="tel"
                       value={contact.phone}
                       onChange={e => setContact({ ...contact, phone: e.target.value })}
                       placeholder="e.g. +1 (555) 234-5678"
-                      className="mt-2 w-full border border-gray-200 p-3 text-sm normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
+                      className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
                 </div>
-
-                <div className="pt-4 border-t border-gray-100">
-                  <button
-                    onClick={continueShipping}
-                    className="w-full bg-[#111827] hover:bg-[#936B34] active:bg-[#7a5829] text-white p-4 text-xs uppercase tracking-[0.25em] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                  >
-                    <span>Continue to Shipping</span>
-                    <ArrowRight className="w-4 h-4 text-[#936B34]" />
-                  </button>
-                </div>
               </div>
-            )}
 
-            {/* STEP 2: Shipping Address & Method */}
-            {step === 2 && (
-              <div className="space-y-6">
-                <div>
-                  <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#936B34] font-semibold block mb-1">
-                    Step 2 of 3
+              {/* Shipping Address (US Country removed, State Selector prominent) */}
+              <div className="border border-gray-200 bg-[#F9F9F8] p-6 sm:p-8 space-y-5 shadow-xs">
+                <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
+                  <span className="font-mono text-xs uppercase tracking-widest text-[#936B34] font-semibold">
+                    1.2 DESTINATION ADDRESS (UNITED STATES)
                   </span>
-                  <h2 className="font-serif text-2xl sm:text-3xl text-[#111827]">Shipping Address &amp; Delivery Method</h2>
-                  <p className="text-xs text-gray-500 font-mono mt-1">
-                    Sales tax and delivery charges are calculated dynamically upon destination selection.
-                  </p>
                 </div>
 
-                {/* Shipping Address Inputs */}
                 <div className="grid sm:grid-cols-2 gap-4">
                   <label className="text-xs font-mono uppercase tracking-wider text-gray-700 sm:col-span-2">
                     Street Address *
                     <input
+                      required
+                      type="text"
                       value={address.street}
                       onChange={e => setAddress({ ...address, street: e.target.value })}
                       placeholder="e.g. 740 Park Avenue"
-                      className="mt-2 w-full border border-gray-200 p-3 text-sm normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
+                      className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
 
                   <label className="text-xs font-mono uppercase tracking-wider text-gray-700 sm:col-span-2">
                     Apartment / Suite / Floor (Optional)
                     <input
+                      type="text"
                       value={address.apartment}
                       onChange={e => setAddress({ ...address, apartment: e.target.value })}
                       placeholder="e.g. Penthouse B"
-                      className="mt-2 w-full border border-gray-200 p-3 text-sm normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
+                      className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
 
                   <label className="text-xs font-mono uppercase tracking-wider text-gray-700">
                     City *
                     <input
+                      required
+                      type="text"
                       value={address.city}
                       onChange={e => setAddress({ ...address, city: e.target.value })}
                       placeholder="e.g. New York"
-                      className="mt-2 w-full border border-gray-200 p-3 text-sm normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
+                      className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
 
                   <label className="text-xs font-mono uppercase tracking-wider text-gray-700">
-                    US State (50 States + D.C.) *
+                    Destination US State *
                     <select
+                      required
                       value={address.state}
                       onChange={e => setAddress({ ...address, state: e.target.value })}
-                      className="mt-2 w-full border border-gray-200 p-3 text-sm normal-case tracking-normal bg-white focus:outline-none focus:border-[#936B34] cursor-pointer"
+                      className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34] cursor-pointer"
                     >
-                      <option value="">Select destination US state</option>
+                      <option value="">Select US destination state</option>
                       {STATES.map(([code, name]) => (
                         <option key={code} value={code}>
                           {name} ({code})
@@ -601,525 +545,477 @@ export const CheckoutPage: React.FC = () => {
                   <label className="text-xs font-mono uppercase tracking-wider text-gray-700 sm:col-span-2">
                     Postal Code (ZIP) *
                     <input
+                      required
+                      type="text"
+                      maxLength={10}
                       value={address.postalCode}
                       onChange={e => setAddress({ ...address, postalCode: e.target.value })}
                       placeholder="e.g. 10021"
-                      className="mt-2 w-full border border-gray-200 p-3 text-sm normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
+                      className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
                 </div>
+              </div>
 
-                {/* Tiered Shipping Method Selection */}
-                <div className="pt-2">
-                  <div className="text-xs font-mono uppercase tracking-wider text-gray-700 mb-3 font-semibold">
-                    Select Tiered Shipping Method *
-                  </div>
-                  <div className="space-y-3">
-                    {TIERED_SHIPPING_METHODS.map(m => {
-                      const isSelected = shippingMethod === m.id;
-                      return (
-                        <label
-                          key={m.id}
-                          className={`flex items-start justify-between border p-4 cursor-pointer transition-all ${
-                            isSelected
-                              ? 'border-[#936B34] bg-[#FBF9F5] shadow-xs'
-                              : 'border-gray-200 hover:border-gray-400 bg-white'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <input
-                              type="radio"
-                              name="shippingMethod"
-                              checked={isSelected}
-                              onChange={() => setShippingMethod(m.id)}
-                              className="mt-1 accent-[#936B34]"
-                            />
-                            <div>
-                              <div className="font-medium text-sm text-[#111827]">
-                                {m.name}
-                              </div>
-                              <div className="text-xs text-gray-500 mt-0.5">
-                                {m.description}
-                              </div>
-                              <div className="text-[11px] font-mono text-[#936B34] mt-1 font-semibold">
-                                Estimated Delivery: {m.estimatedDelivery}
-                              </div>
+              {/* Delivery Tier Options */}
+              <div className="border border-gray-200 bg-[#F9F9F8] p-6 sm:p-8 space-y-4 shadow-xs">
+                <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
+                  <span className="font-mono text-xs uppercase tracking-widest text-[#936B34] font-semibold">
+                    1.3 SELECT DELIVERY COURIER &amp; TIER
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {availableShippingMethods.map(m => {
+                    const isSelected = shippingMethod === m.id;
+                    return (
+                      <label
+                        key={m.id}
+                        className={`flex items-start justify-between border p-4 cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-[#936B34] bg-white shadow-xs'
+                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="radio"
+                            name="shippingMethod"
+                            checked={isSelected}
+                            onChange={() => setShippingMethod(m.id)}
+                            className="mt-1 accent-[#936B34]"
+                          />
+                          <div>
+                            <div className="font-medium text-sm text-[#111827]">
+                              {m.name}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {m.description}
+                            </div>
+                            <div className="text-[11px] font-mono text-[#936B34] mt-1 font-semibold">
+                              Speed: {m.speed} · Carrier: {m.carrier}
                             </div>
                           </div>
+                        </div>
 
-                          <div className="text-right shrink-0 ml-3">
-                            <span className="font-mono text-sm font-semibold text-[#111827]">
-                              {m.price === 0 ? 'Complimentary ($0.00)' : money(m.price)}
-                            </span>
-                          </div>
-                        </label>
-                      );
-                    })}
+                        <div className="text-right shrink-0 ml-3">
+                          <span className="font-mono text-sm font-semibold text-[#111827]">
+                            {money(m.cost)}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Atelier Master Tailoring Instructions (Optional) */}
+              <div className="border border-gray-200 bg-[#F9F9F8] p-6 sm:p-8 space-y-3 shadow-xs">
+                <div className="flex items-center gap-2 text-xs font-mono uppercase text-[#936B34] font-semibold">
+                  <Scissors className="w-3.5 h-3.5" />
+                  <span>1.4 ATELIER TAILORING &amp; ALTERATION NOTES (OPTIONAL)</span>
+                </div>
+                <textarea
+                  rows={2}
+                  value={alterationNotes}
+                  onChange={e => setAlterationNotes(e.target.value)}
+                  placeholder="Specify desired trouser break, hemming measurement, sleeve adjustments, or special concierge packaging..."
+                  className="w-full bg-white border border-gray-300 p-3 text-xs font-mono text-[#111827] focus:outline-none focus:border-[#936B34]"
+                />
+              </div>
+
+              {/* Action Button: Moves to Next Page (Order Summary) */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full bg-[#111827] hover:bg-[#936B34] text-white py-4 px-6 text-xs uppercase tracking-[0.25em] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <span>CONFIRM SHIPMENT &amp; VIEW ORDER SUMMARY</span>
+                  <ArrowRight className="w-4 h-4 text-[#936B34]" />
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* =========================================================================
+            STEP 2: DEDICATED ORDER SUMMARY PAGE
+            (All details shown here, confirmation tick box, then proceed to Stripe)
+           ========================================================================= */}
+        {step === 2 && (
+          <div className="mt-8 space-y-8">
+            <div className="p-4 bg-[#F9F9F8] border border-gray-200 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#936B34] font-semibold">
+                  ORDER SUMMARY &amp; SPECIFICATIONS REVIEW
+                </span>
+                <p className="text-xs text-gray-500 font-mono mt-0.5">
+                  Please review your complete delivery details, garment line items, and statutory charges.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="text-xs font-mono uppercase tracking-wider text-[#936B34] underline hover:text-black cursor-pointer"
+              >
+                Edit Shipment
+              </button>
+            </div>
+
+            {/* Recipient & Shipping Summary Cards */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="p-5 border border-gray-200 bg-[#F9F9F8] space-y-2 text-xs font-mono shadow-xs">
+                <span className="text-[10px] uppercase text-[#936B34] font-semibold tracking-wider block">
+                  DELIVERY DESTINATION
+                </span>
+                <div className="font-semibold text-sm text-[#111827]">
+                  {contact.firstName} {contact.lastName}
+                </div>
+                <div className="text-gray-700">
+                  {address.street} {address.apartment ? `, ${address.apartment}` : ''}
+                </div>
+                <div className="text-gray-700">
+                  {address.city}, {address.state} {address.postalCode}
+                </div>
+                <div className="text-gray-500 text-[11px] pt-1">
+                  Email: {contact.email} · Phone: {contact.phone}
+                </div>
+              </div>
+
+              <div className="p-5 border border-gray-200 bg-[#F9F9F8] space-y-2 text-xs font-mono shadow-xs">
+                <span className="text-[10px] uppercase text-[#936B34] font-semibold tracking-wider block">
+                  SHIPPING METHOD &amp; SPEED
+                </span>
+                <div className="font-semibold text-sm text-[#111827]">
+                  {selectedShippingOption.name}
+                </div>
+                <div className="text-gray-700">
+                  Carrier: {selectedShippingOption.carrier}
+                </div>
+                <div className="text-[#936B34] font-semibold">
+                  Estimated Speed: {selectedShippingOption.speed}
+                </div>
+                <div className="text-gray-500 text-[11px]">
+                  Shipping Rate: {money(shippingAmount)}
+                </div>
+              </div>
+            </div>
+
+            {/* Complete Itemized Garments Breakdown */}
+            <div className="border border-gray-200 bg-white shadow-xs">
+              <div className="p-4 bg-[#F9F9F8] border-b border-gray-200 flex items-center justify-between">
+                <span className="text-xs font-mono uppercase tracking-wider text-gray-700 font-semibold">
+                  SELECTED GARMENTS ({cart.reduce((s, i) => s + i.quantity, 0)})
+                </span>
+                <span className="text-xs font-mono text-gray-500">
+                  Itemized Total: {money(cartSubtotal)}
+                </span>
+              </div>
+
+              <div className="divide-y divide-gray-100">
+                {cart.map(i => (
+                  <div key={i.id} className="p-4 sm:p-5 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      {i.product.images?.[0] ? (
+                        <img 
+                          src={i.product.images[0]} 
+                          alt={i.product.name} 
+                          className="w-16 h-20 object-cover border border-gray-200 shrink-0" 
+                        />
+                      ) : (
+                        <div className="w-16 h-20 bg-gray-100 flex items-center justify-center text-xs font-serif text-[#936B34] shrink-0 border border-gray-200">
+                          PA
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-serif text-base text-[#111827] font-medium">
+                          {i.product.name}
+                        </h4>
+                        <div className="text-xs font-mono text-gray-500 space-x-2 mt-0.5">
+                          <span>Size: <strong>{i.selectedSize}</strong></span>
+                          <span>·</span>
+                          <span>Color: <strong>{i.selectedColor}</strong></span>
+                          <span>·</span>
+                          <span>Qty: <strong>{i.quantity}</strong></span>
+                        </div>
+                        <div className="text-[10px] font-mono text-gray-400 mt-1">
+                          SKU: {i.product.sku}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <span className="font-mono text-sm text-[#111827] font-semibold block">
+                        {money(i.price * i.quantity)}
+                      </span>
+                      {i.quantity > 1 && (
+                        <span className="text-[10px] font-mono text-gray-400">
+                          {money(i.price)} each
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                <div className="flex justify-between gap-3 pt-4 border-t border-gray-100">
-                  <button
-                    onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className="border border-gray-300 hover:border-black px-6 py-3.5 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer"
-                  >
-                    Back
-                  </button>
-                  <button
-                    disabled={calculating}
-                    onClick={continuePayment}
-                    className="flex-1 bg-[#111827] hover:bg-[#936B34] active:bg-[#7a5829] text-white p-4 text-xs uppercase tracking-[0.2em] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
-                  >
-                    <span>{calculating ? 'Calculating Totals…' : 'Continue to Payment'}</span>
-                    <ArrowRight className="w-4 h-4 text-[#936B34]" />
-                  </button>
-                </div>
+            {/* Atelier Alterations Note if supplied */}
+            {alterationNotes && (
+              <div className="p-4 bg-amber-50/70 border border-amber-200 text-xs font-mono space-y-1">
+                <span className="font-semibold text-amber-900 uppercase">
+                  ATELIER ALTERATION &amp; BREAK SPECIFICATIONS:
+                </span>
+                <p className="text-amber-950 font-sans">{alterationNotes}</p>
               </div>
             )}
 
-            {/* STEP 3: Order Review & Payment */}
-            {step === 3 && (
-              <div className="space-y-6">
+            {/* Financial Summary Breakdown */}
+            <div className="p-6 border border-gray-200 bg-[#F9F9F8] space-y-3.5 text-xs font-mono shadow-xs">
+              <div className="flex justify-between text-gray-700">
+                <span>GARMENT SUBTOTAL</span>
+                <span className="font-semibold text-[#111827]">{money(cartSubtotal)}</span>
+              </div>
+
+              <div className="flex justify-between text-gray-700">
+                <span>SHIPPING &amp; COURIER FEE ({selectedShippingOption.name})</span>
+                <span className="font-semibold text-[#111827]">{money(shippingAmount)}</span>
+              </div>
+
+              <div className="flex justify-between text-gray-700">
                 <div>
-                  <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#936B34] font-semibold block mb-1">
-                    Step 3 of 3
+                  <span>STATE SALES TAX ({address.state})</span>
+                  {taxCalculation && (
+                    <span className="block text-[10px] text-[#936B34]">
+                      {taxCalculation.rateFormatted} statutory rate
+                    </span>
+                  )}
+                </div>
+                <span className="font-semibold text-[#111827]">
+                  {taxAmount === 0 ? 'Exempt / $0.00' : money(taxAmount)}
+                </span>
+              </div>
+
+              <div className="pt-3 border-t border-gray-200 flex justify-between items-baseline">
+                <div>
+                  <span className="font-serif text-xl text-[#111827] font-semibold block">
+                    TOTAL AMOUNT
                   </span>
-                  <h2 className="font-serif text-2xl sm:text-3xl text-[#111827]">Order Review &amp; Payment</h2>
-                  <p className="text-xs text-gray-500 font-mono mt-1">
-                    Please review your delivery details and order breakdown prior to launching secure Stripe payment.
-                  </p>
+                  <span className="text-[10px] text-gray-500">
+                    USD · Includes Destination Sales Tax &amp; Fully Insured Delivery
+                  </span>
                 </div>
+                <span className="font-serif text-2xl text-[#936B34] font-bold tabular-nums">
+                  {money(grandTotal)}
+                </span>
+              </div>
+            </div>
 
-                {/* Client Contact & Shipping Review Cards */}
-                <div className="grid sm:grid-cols-2 gap-4 bg-[#F9F9F8] border border-gray-200 p-5 text-xs font-mono">
-                  <div>
-                    <div className="text-[10px] uppercase text-[#936B34] font-semibold tracking-wider mb-1">
-                      Recipient &amp; Contact
-                    </div>
-                    <div className="font-semibold text-sm text-[#111827] mb-1">
-                      {contact.firstName} {contact.lastName}
-                    </div>
-                    <div className="text-gray-600">{contact.email}</div>
-                    <div className="text-gray-600">{contact.phone}</div>
-                    <button
-                      onClick={() => setStep(1)}
-                      className="mt-2 text-[10px] text-[#936B34] underline hover:text-black uppercase tracking-wider cursor-pointer"
-                    >
-                      Edit Contact Details
-                    </button>
-                  </div>
-
-                  <div>
-                    <div className="text-[10px] uppercase text-[#936B34] font-semibold tracking-wider mb-1">
-                      Shipping Address &amp; Tier
-                    </div>
-                    <div className="text-gray-800">
-                      {address.street}
-                      {address.apartment ? `, ${address.apartment}` : ''}
-                    </div>
-                    <div className="text-gray-800">
-                      {address.city}, {address.state} {address.postalCode}
-                    </div>
-                    <div className="text-[#936B34] font-semibold mt-1">
-                      {selectedShippingOption.name} ({selectedShippingOption.price === 0 ? 'Complimentary' : money(selectedShippingOption.price)})
-                    </div>
-                    <button
-                      onClick={() => setStep(2)}
-                      className="mt-2 text-[10px] text-[#936B34] underline hover:text-black uppercase tracking-wider cursor-pointer"
-                    >
-                      Edit Shipping Details
-                    </button>
-                  </div>
+            {/* Mandatory Confirmation Checkbox */}
+            <div className="p-5 border-2 border-[#936B34] bg-[#FBF9F5] shadow-xs">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isOrderConfirmedAndAgreed}
+                  onChange={(e) => setIsOrderConfirmedAndAgreed(e.target.checked)}
+                  className="mt-1 w-4 h-4 accent-[#936B34] cursor-pointer"
+                />
+                <div className="text-xs text-gray-800 leading-relaxed font-sans">
+                  <strong className="text-[#111827] font-semibold block mb-0.5">
+                    CONFIRMATION &amp; ATELIER AGREEMENT:
+                  </strong>
+                  I confirm that all shipping destination details, selected garment sizes, colors, and alteration specifications listed above are correct. I agree to proceed to the secure Stripe payment page to authorize <strong>{money(grandTotal)}</strong>.
                 </div>
+              </label>
+            </div>
 
-                {/* Garments List Review */}
+            {/* Step 2 Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="py-4 px-6 border border-gray-300 text-xs font-mono uppercase tracking-wider hover:border-black transition-colors cursor-pointer bg-white"
+              >
+                Back to Edit Shipment
+              </button>
+              <button
+                type="button"
+                disabled={!isOrderConfirmedAndAgreed}
+                onClick={handleProceedToStripe}
+                className="flex-1 py-4 px-6 bg-[#111827] hover:bg-[#936B34] text-white text-xs uppercase tracking-[0.25em] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <span>PROCEED TO STRIPE PAYMENT</span>
+                <ArrowRight className="w-4 h-4 text-[#936B34]" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================================================
+            STEP 3: DEDICATED STRIPE PAYMENT PAGE
+           ========================================================================= */}
+        {step === 3 && (
+          <div className="mt-8 space-y-6">
+            {/* Payment Total Banner */}
+            <div className="p-5 bg-[#111827] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#E5C384] block mb-1">
+                  PAYMENT AUTHORIZATION
+                </span>
+                <h3 className="font-serif text-2xl text-white font-light">
+                  Stripe Payment Sheet
+                </h3>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-mono text-gray-400 block uppercase">
+                  AMOUNT TO CHARGE
+                </span>
+                <span className="font-serif text-2xl text-[#E5C384] font-semibold tabular-nums">
+                  {money(grandTotal)} USD
+                </span>
+              </div>
+            </div>
+
+            {/* Stripe Form Container */}
+            <div className="border border-gray-200 bg-[#F9F9F8] p-6 sm:p-8 space-y-6 shadow-xl">
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#635BFF] text-white text-[11px] font-bold rounded-xs shadow-xs">
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>stripe</span>
+                  </span>
+                  <span className="text-xs font-mono uppercase tracking-wider text-gray-600">
+                    Encrypted Payment Gateway
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-700">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>256-Bit TLS PCI-DSS</span>
+                </div>
+              </div>
+
+              {stripeError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-mono flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{stripeError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleAuthorizeStripePayment} className="space-y-4">
                 <div>
-                  <div className="text-xs font-mono uppercase tracking-wider text-gray-700 mb-3 font-semibold">
-                    Garments Selected ({cart.reduce((s, i) => s + i.quantity, 0)})
-                  </div>
-                  <div className="border border-gray-200 divide-y divide-gray-100">
-                    {cart.map(i => (
-                      <div key={i.id} className="p-3.5 flex items-center justify-between text-xs font-mono">
-                        <div>
-                          <span className="font-serif text-sm text-[#111827] font-medium block">
-                            {i.product.name}
-                          </span>
-                          <span className="text-gray-500 text-[11px]">
-                            Size: {i.selectedSize} · Color: {i.selectedColor} · Qty: {i.quantity}
-                          </span>
-                        </div>
-                        <span className="font-semibold text-[#111827] text-sm tabular-nums">
-                          {money(i.price * i.quantity)}
-                        </span>
-                      </div>
-                    ))}
+                  <label className="block text-xs font-mono uppercase text-gray-700 mb-1.5 font-medium">
+                    CARDHOLDER NAME *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={stripeCardholder || `${contact.firstName} ${contact.lastName}`.trim()}
+                    onChange={e => setStripeCardholder(e.target.value)}
+                    placeholder="e.g. Montgomery Vance"
+                    className="w-full bg-white border border-gray-300 p-3 text-sm font-sans focus:outline-none focus:border-[#936B34]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono uppercase text-gray-700 mb-1.5 font-medium">
+                    CARD NUMBER *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      value={stripeCardNumber}
+                      onChange={e => setStripeCardNumber(e.target.value)}
+                      placeholder="4242 4242 4242 4242"
+                      className="w-full bg-white border border-gray-300 p-3 text-sm font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                    <CreditCard className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
                   </div>
                 </div>
 
-                {/* Step 3 Form CTA Buttons */}
-                <div className="flex justify-between gap-3 pt-4 border-t border-gray-100">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-gray-700 mb-1.5 font-medium">
+                      EXPIRY *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={5}
+                      value={stripeExpiry}
+                      onChange={e => setStripeExpiry(e.target.value)}
+                      placeholder="MM/YY"
+                      className="w-full bg-white border border-gray-300 p-3 text-sm font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-gray-700 mb-1.5 font-medium">
+                      CVC / CVV *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      maxLength={4}
+                      value={stripeCvc}
+                      onChange={e => setStripeCvc(e.target.value)}
+                      placeholder="•••"
+                      className="w-full bg-white border border-gray-300 p-3 text-sm font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-gray-700 mb-1.5 font-medium">
+                      BILLING ZIP *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={stripeZip || address.postalCode}
+                      onChange={e => setStripeZip(e.target.value)}
+                      placeholder="e.g. 10021"
+                      className="w-full bg-white border border-gray-300 p-3 text-sm font-mono focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+                </div>
+
+                {/* Important Notice Regarding Tracking ID Assignment */}
+                <div className="pt-2 text-[11px] font-mono text-gray-500 bg-gray-50 p-3 border border-gray-200">
+                  ℹ️ Upon successful payment, you will immediately receive your <strong>Order ID</strong>. Your courier <strong>Tracking ID</strong> will be generated and issued by our atelier administrators once packaging is finalized.
+                </div>
+
+                <div className="flex gap-3 pt-3">
                   <button
+                    type="button"
                     onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className="border border-gray-300 hover:border-black px-6 py-3.5 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer"
+                    className="py-4 px-6 border border-gray-300 text-xs font-mono uppercase tracking-wider hover:border-black transition-colors cursor-pointer bg-white"
                   >
-                    Back
+                    Back to Summary
                   </button>
+
                   <button
+                    type="submit"
                     disabled={loading}
-                    onClick={makePayment}
-                    className="flex-1 bg-[#111827] hover:bg-[#936B34] active:bg-[#7a5829] text-white p-4 text-xs uppercase tracking-[0.25em] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                    className="flex-1 py-4 px-6 bg-[#635BFF] hover:bg-[#5249e0] text-white text-xs uppercase tracking-[0.2em] font-semibold transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-md disabled:opacity-50"
                   >
                     {loading ? (
                       <>
-                        <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        <span>Opening Secure Stripe Session…</span>
+                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Authorizing with Stripe…</span>
                       </>
                     ) : (
                       <>
-                        <span>Make Payment</span>
-                        <Lock className="w-4 h-4 text-[#936B34]" />
+                        <Lock className="w-4 h-4" />
+                        <span>AUTHORIZE &amp; PAY {money(grandTotal)}</span>
                       </>
                     )}
                   </button>
                 </div>
-
-                <p className="text-[11px] text-gray-500 flex items-center gap-2 pt-1 font-mono">
-                  <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Stripe hosted checkout ensures zero storage of raw credit card tokens. Total is cryptographically confirmed.</span>
-                </p>
-              </div>
-            )}
-
+              </form>
+            </div>
           </div>
+        )}
 
-          {/* Sticky Order Summary Column */}
-          <aside className="border border-gray-200 p-6 sm:p-7 h-fit lg:sticky lg:top-6 bg-white shadow-xs">
-            <div className="flex items-center justify-between pb-4 mb-5 border-b border-gray-100">
-              <div className="flex items-center gap-2 font-serif text-xl text-[#111827]">
-                <Truck className="w-5 h-5 text-[#936B34]"/>
-                <span>Order Summary</span>
-              </div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold">
-                Step {step} of 3
-              </span>
-            </div>
-
-            {/* Garment Items Preview */}
-            <div className="space-y-2.5 pb-4 border-b border-gray-100 text-xs">
-              {cart.map(i => (
-                <div key={i.id} className="flex justify-between items-center text-gray-600">
-                  <span className="truncate max-w-[200px]" title={i.product.name}>
-                    {i.product.name} <span className="text-gray-400">× {i.quantity}</span>
-                  </span>
-                  <span className="font-mono text-[#111827] font-medium shrink-0 ml-2">
-                    {money(i.price * i.quantity)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Itemized Calculation Breakdown */}
-            <div className="py-4 space-y-3.5 text-xs font-mono">
-              <div className="flex justify-between text-gray-600">
-                <span>GARMENT SUBTOTAL</span>
-                <span className="font-mono text-[#111827] font-semibold">{money(calc?.subtotal ?? cartSubtotal)}</span>
-              </div>
-
-              {/* Tiered Shipping Charge */}
-              <div className="flex justify-between text-gray-600">
-                <span>SHIPPING &amp; DELIVERY</span>
-                <span className="font-mono text-[#111827] font-medium">
-                  {shippingAmount === 0 ? 'Complimentary ($0.00)' : money(shippingAmount)}
-                </span>
-              </div>
-
-              {/* Dynamic State Sales Tax Calculation */}
-              <div className="flex justify-between items-baseline text-gray-600">
-                <div>
-                  <span>STATE SALES TAX</span>
-                  {address.state && calc?.tax && (
-                    <span className="block text-[10px] text-[#936B34]">
-                      {calc.tax.rate === 0
-                        ? `0% Tax (${address.state} Nomad State)`
-                        : `${(calc.tax.rate * 100).toFixed(2)}% Destination Rate (${address.state})`}
-                    </span>
-                  )}
-                </div>
-                <span className="font-mono text-[#111827] font-medium">
-                  {!address.state
-                    ? 'Calculated upon selecting state'
-                    : calculating
-                    ? 'Calculating…'
-                    : calc
-                    ? (calc.tax?.taxAmount === 0 ? '$0.00 (0% State Tax)' : money(calc.tax.taxAmount))
-                    : 'Calculated upon selecting state'}
-                </span>
-              </div>
-            </div>
-
-            {/* Grand Total */}
-            <div className="border-t border-gray-200 pt-4 flex justify-between items-baseline">
-              <div>
-                <span className="font-serif text-xl text-[#111827] block">Grand Total</span>
-                <span className="text-[10px] font-mono text-gray-400">USD · Includes State Tax &amp; Delivery</span>
-              </div>
-              <span className="font-serif text-2xl text-[#111827] font-semibold tabular-nums">
-                {calc ? money(calc.total) : money(cartSubtotal + shippingAmount)}
-              </span>
-            </div>
-
-            {/* MAKE PAYMENT BUTTON DIRECTLY AFTER ORDER SUMMARY */}
-            <div className="mt-6 pt-5 border-t border-gray-100 space-y-3">
-              <button
-                type="button"
-                id="order-summary-make-payment-cta"
-                disabled={loading || (step === 2 && calculating)}
-                onClick={handleMakePaymentClick}
-                className="w-full bg-[#111827] hover:bg-[#936B34] active:bg-[#7a5829] active:scale-[0.99] text-white py-4 px-6 text-xs font-semibold uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    <span>Opening Secure Payment…</span>
-                  </>
-                ) : step === 3 ? (
-                  <>
-                    <span>Make Payment</span>
-                    <Lock className="w-4 h-4 text-[#936B34]" />
-                  </>
-                ) : step === 2 ? (
-                  <>
-                    <span>Continue to Payment</span>
-                    <ArrowRight className="w-4 h-4 text-[#936B34]" />
-                  </>
-                ) : (
-                  <>
-                    <span>Continue to Shipping</span>
-                    <ArrowRight className="w-4 h-4 text-[#936B34]" />
-                  </>
-                )}
-              </button>
-
-              <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-500 font-mono pt-1">
-                <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                <span>256-Bit Encrypted Stripe Checkout</span>
-              </div>
-
-              <p className="text-[10px] text-gray-400 text-center leading-relaxed">
-                Sales tax is computed using real-time jurisdictional rates. Final total is verified securely prior to payment authorization.
-              </p>
-            </div>
-          </aside>
-
-        </div>
       </div>
-
-      {/* STRIPE PAYMENT SHEET / CHECKOUT MODAL */}
-      {isStripeModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white border border-gray-200 shadow-2xl p-6 sm:p-8 space-y-6 my-8">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#635BFF] text-white text-[11px] font-bold tracking-wider rounded-xs uppercase shadow-xs">
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span>Stripe</span>
-                </span>
-                <span className="text-[11px] font-mono uppercase tracking-widest text-[#936B34] font-semibold">
-                  Secure Payment Sheet
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setIsStripeModalOpen(false); setStripeError(''); }}
-                className="p-1 text-gray-400 hover:text-black transition-colors cursor-pointer"
-                aria-label="Close payment modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Title & Security Reassurance */}
-            <div>
-              <h3 className="font-serif text-2xl sm:text-3xl text-[#111827]">
-                Park Avenue Atelier Payment
-              </h3>
-              <p className="text-xs text-gray-500 font-mono mt-1 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>256-Bit TLS End-to-End Encryption · PCI-DSS Level 1 Verified</span>
-              </p>
-            </div>
-
-            {/* Error Message inside modal if any */}
-            {stripeError && (
-              <div className="border border-red-200 bg-red-50 p-3.5 text-xs font-mono text-red-700 flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
-                <span>{stripeError}</span>
-              </div>
-            )}
-
-            {/* Verified Calculated Total Breakdown Card */}
-            <div className="bg-[#FBF9F5] border border-[#936B34]/30 p-4 space-y-2 text-xs font-mono">
-              <div className="flex justify-between text-gray-600">
-                <span>Garments Subtotal:</span>
-                <span className="font-semibold text-[#111827]">{money(calc?.subtotal ?? cartSubtotal)}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Tiered Shipping ({selectedShippingOption.name}):</span>
-                <span className="font-semibold text-[#111827]">
-                  {shippingAmount === 0 ? 'Complimentary ($0.00)' : money(shippingAmount)}
-                </span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>State Sales Tax ({address.state || 'Selected State'}):</span>
-                <span className="font-semibold text-[#111827]">
-                  {calc?.tax ? (calc.tax.taxAmount === 0 ? '$0.00 (0% Nomad Rate)' : money(calc.tax.taxAmount)) : '$0.00'}
-                </span>
-              </div>
-              <div className="pt-2 border-t border-[#936B34]/20 flex justify-between items-baseline">
-                <span className="font-serif text-lg font-bold text-[#111827]">Verified Grand Total:</span>
-                <span className="font-serif text-2xl font-bold text-[#936B34] tabular-nums">
-                  {money(calc?.total ?? (cartSubtotal + shippingAmount))}
-                </span>
-              </div>
-            </div>
-
-            {/* Card Information Fields */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-mono uppercase tracking-wider text-gray-700 font-medium">
-                  Payment Details
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStripeCardNumber('4242 •••• •••• 4242');
-                    setStripeExpiry('12/28');
-                    setStripeCvc('888');
-                    setStripeZip(address.postalCode || '10021');
-                    showToast('Stripe test credentials populated', 'info');
-                  }}
-                  className="text-[10px] font-mono uppercase text-[#936B34] hover:text-black underline cursor-pointer"
-                >
-                  Use 4242 Stripe Test Card
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono uppercase text-gray-600 mb-1">
-                  Cardholder Name
-                </label>
-                <input
-                  type="text"
-                  value={stripeCardholder}
-                  onChange={e => setStripeCardholder(e.target.value)}
-                  placeholder="e.g. Eleanor Vance"
-                  className="w-full border border-gray-200 p-2.5 text-sm font-sans focus:outline-none focus:border-[#936B34]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono uppercase text-gray-600 mb-1">
-                  Card Number
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={stripeCardNumber}
-                    onChange={e => setStripeCardNumber(e.target.value)}
-                    placeholder="4242 4242 4242 4242"
-                    className="w-full border border-gray-200 p-2.5 pl-10 text-sm font-mono focus:outline-none focus:border-[#936B34]"
-                  />
-                  <CreditCard className="w-4 h-4 text-gray-400 absolute left-3 top-3 pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-mono uppercase text-gray-600 mb-1">
-                    Expiration (MM/YY)
-                  </label>
-                  <input
-                    type="text"
-                    value={stripeExpiry}
-                    onChange={e => setStripeExpiry(e.target.value)}
-                    placeholder="12/28"
-                    className="w-full border border-gray-200 p-2.5 text-sm font-mono focus:outline-none focus:border-[#936B34]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-mono uppercase text-gray-600 mb-1">
-                    CVC / CVV
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      maxLength={4}
-                      value={stripeCvc}
-                      onChange={e => setStripeCvc(e.target.value)}
-                      placeholder="888"
-                      className="w-full border border-gray-200 p-2.5 pl-8 text-sm font-mono focus:outline-none focus:border-[#936B34]"
-                    />
-                    <Lock className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-3 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono uppercase text-gray-600 mb-1">
-                  Billing ZIP / Postal Code
-                </label>
-                <input
-                  type="text"
-                  value={stripeZip}
-                  onChange={e => setStripeZip(e.target.value)}
-                  placeholder="e.g. 10021"
-                  className="w-full border border-gray-200 p-2.5 text-sm font-mono focus:outline-none focus:border-[#936B34]"
-                />
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                disabled={isAuthorizingStripe}
-                onClick={handleProcessStripePayment}
-                className="w-full py-4 bg-[#111827] hover:bg-[#936B34] active:bg-[#7a5829] text-white font-semibold text-xs uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-60"
-              >
-                {isAuthorizingStripe ? (
-                  <>
-                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    <span>Authorizing with Stripe…</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Authorize &amp; Pay {money(calc?.total ?? (cartSubtotal + shippingAmount))}</span>
-                    <Lock className="w-4 h-4 text-[#936B34]" />
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                disabled={isAuthorizingStripe}
-                onClick={() => { setIsStripeModalOpen(false); setStripeError(''); }}
-                className="w-full py-2.5 border border-gray-200 hover:border-black text-gray-600 hover:text-black text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer text-center"
-              >
-                Cancel &amp; Return to Review
-              </button>
-            </div>
-
-            <div className="flex items-center justify-center gap-2 text-[10px] text-gray-400 font-mono text-center pt-1">
-              <Lock className="w-3 h-3 text-emerald-600 shrink-0" />
-              <span>Stripe hosted checkout ensures zero storage of raw credit card tokens.</span>
-            </div>
-
-          </div>
-        </div>
-      )}
     </div>
   );
 };
-

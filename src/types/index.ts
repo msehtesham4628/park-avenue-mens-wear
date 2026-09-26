@@ -72,6 +72,7 @@ export interface Product {
   isNewArrival?: boolean;
   alterationEligible?: boolean;
   totalStock: number;
+  shippingCharge?: number;
 }
 
 export interface CartItem {
@@ -212,9 +213,11 @@ export interface Customer {
     id: string;
     label: string;
     street: string;
+    apartment?: string;
     city: string;
     state: string;
     zipCode: string;
+    postalCode?: string;
     country: string;
     isDefault: boolean;
   }[];

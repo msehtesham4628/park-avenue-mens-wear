@@ -9,7 +9,7 @@ export interface ShippingMethod {
 }
 
 export const SHIPPING_METHODS: ShippingMethod[] = [
-  { id:'standard', name:'Complimentary Standard / Ground', description:'Insured ground delivery', price:0, estimatedDelivery:'5–8 business days', enabled:true },
+  { id:'standard', name:'Insured Standard / Ground', description:'Insured ground delivery with garment protection', price:15, estimatedDelivery:'3–5 business days', enabled:true },
   { id:'express', name:'Atelier Express Air', description:'Priority insured air delivery', price:25, estimatedDelivery:'2–3 business days', enabled:true },
   { id:'overnight', name:'White-Glove VIP Courier / Overnight', description:'Priority white-glove delivery', price:65, estimatedDelivery:'1 business day', enabled:true }
 ];

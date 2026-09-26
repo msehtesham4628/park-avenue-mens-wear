@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { X, ShoppingBag, Heart, ArrowRight, Scissors } from 'lucide-react';
+import { X, ShoppingBag, Heart, ArrowRight, Scissors, Calculator, CheckCircle2, Truck } from 'lucide-react';
 import { Product } from '../../types';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
+import { estimateTaxByZip } from '../../services/taxEngine';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -16,8 +17,35 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [zipInput, setZipInput] = useState('');
+  const [zipTaxEstimate, setZipTaxEstimate] = useState<{
+    stateCode: string;
+    stateName: string;
+    taxRate: number;
+    taxRateFormatted: string;
+    estimatedTax: number;
+    totalWithTax: number;
+    notes?: string;
+  } | null>(null);
+  const [zipTaxError, setZipTaxError] = useState('');
 
   if (!product) return null;
+
+  const handleCalculateZipTax = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setZipTaxError('');
+    if (!zipInput.trim()) {
+      setZipTaxEstimate(null);
+      return;
+    }
+    const estimate = estimateTaxByZip(zipInput.trim(), product.price);
+    if (!estimate) {
+      setZipTaxError('Please enter a valid 5-digit US ZIP code.');
+      setZipTaxEstimate(null);
+    } else {
+      setZipTaxEstimate(estimate);
+    }
+  };
 
   // Initialize variant defaults if not set
   const currentSize = selectedSize || product.variants?.[0]?.size || 'Standard';
@@ -136,6 +164,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   </span>
                 </div>
 
+                {/* Shipment Charge Tag */}
+                <div className="flex items-center justify-between p-2.5 bg-[#FBFBFA] border border-gray-200 mt-3 text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-3.5 h-3.5 text-[#936B34]" />
+                    <span className="text-gray-600">Shipment Charge:</span>
+                  </div>
+                  <strong className={product.shippingCharge === 0 ? 'text-emerald-700 font-semibold' : 'text-[#111827] font-semibold'}>
+                    {product.shippingCharge === 0 ? 'Free Shipping (Insured)' : `+$${product.shippingCharge !== undefined ? product.shippingCharge : 15}.00 Insured Ground`}
+                  </strong>
+                </div>
+
                 {/* Description snippet */}
                 <p className="text-xs text-gray-600 leading-relaxed my-4 line-clamp-3">
                   {product.description}
@@ -213,6 +252,68 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   </div>
                 </div>
 
+                {/* Real-time Sales Tax Estimator by ZIP Code */}
+                <div className="mb-4 p-3 bg-[#F9F9F8] border border-gray-200 text-xs font-mono">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="flex items-center gap-1.5 text-gray-700 font-semibold uppercase text-[10px] tracking-wider">
+                      <Calculator className="w-3.5 h-3.5 text-[#936B34]" />
+                      ESTIMATE STATE SALES TAX
+                    </span>
+                    {zipTaxEstimate && (
+                      <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100/80 px-1.5 py-0.5 border border-emerald-300">
+                        {zipTaxEstimate.stateCode} APPLIED
+                      </span>
+                    )}
+                  </div>
+                  <form onSubmit={handleCalculateZipTax} className="flex gap-2">
+                    <input
+                      type="text"
+                      maxLength={5}
+                      pattern="[0-9]{5}"
+                      value={zipInput}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 5);
+                        setZipInput(val);
+                        if (val.length === 5) {
+                          const est = estimateTaxByZip(val, product.price);
+                          if (est) setZipTaxEstimate(est);
+                        } else {
+                          setZipTaxEstimate(null);
+                        }
+                      }}
+                      placeholder="Enter 5-digit ZIP"
+                      className="flex-1 bg-white border border-gray-300 px-2.5 py-1.5 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
+                    />
+                    <button
+                      type="submit"
+                      className="px-3 py-1.5 bg-[#111827] hover:bg-[#936B34] text-white text-[10px] uppercase tracking-wider font-semibold transition-colors cursor-pointer"
+                    >
+                      CALCULATE
+                    </button>
+                  </form>
+                  {zipTaxError && (
+                    <p className="text-[11px] text-red-600 mt-1.5">{zipTaxError}</p>
+                  )}
+                  {zipTaxEstimate && (
+                    <div className="mt-2 pt-2 border-t border-gray-200 space-y-1 text-[11px]">
+                      <div className="flex justify-between text-gray-600">
+                        <span>State:</span>
+                        <strong className="text-[#111827]">{zipTaxEstimate.stateName} ({zipTaxEstimate.stateCode})</strong>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Estimated Tax:</span>
+                        <span className="font-semibold text-[#936B34]">
+                          {zipTaxEstimate.estimatedTax === 0 ? 'Exempt / $0.00' : `+$${zipTaxEstimate.estimatedTax.toFixed(2)} (${zipTaxEstimate.taxRateFormatted})`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-[#111827] font-semibold border-t border-gray-200/60 pt-1">
+                        <span>Total with Tax:</span>
+                        <span className="text-[#111827]">${zipTaxEstimate.totalWithTax.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Quantity and Actions */}
                 <div className="flex items-center gap-3 pt-2">
                   <div className="flex items-center border border-gray-200 bg-white">
@@ -265,7 +366,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               <div className="pt-6 border-t border-gray-200 mt-6 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs text-gray-500 font-mono">
                   <Scissors className="w-3.5 h-3.5 text-[#936B34]" />
-                  <span>Complimentary tailoring included</span>
+                  <span>Atelier master tailoring included</span>
                 </div>
                 <button
                   onClick={handleGoToPDP}

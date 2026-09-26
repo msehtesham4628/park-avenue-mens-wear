@@ -206,6 +206,13 @@ export const CartPage: React.FC = () => {
                           <div>
                             <span className="text-gray-400">COLOR:</span> <span className="text-[#111827]">{item.selectedColor}</span>
                           </div>
+                          <div className="flex items-center gap-1.5 pt-0.5 text-[11px] text-gray-500">
+                            <Truck className="w-3 h-3 text-[#936B34]" />
+                            <span>Shipment:</span>
+                            <span className={item.product.shippingCharge === 0 ? 'text-emerald-700 font-semibold' : 'text-gray-800 font-medium'}>
+                              {item.product.shippingCharge === 0 ? 'Free Shipping (Insured)' : `+$${item.product.shippingCharge !== undefined ? item.product.shippingCharge : 15}.00 Insured`}
+                            </span>
+                          </div>
                           {item.product.alterationEligible && (
                             <div className="inline-flex items-center gap-1 text-[10px] text-[#936B34] font-semibold uppercase tracking-wider mt-1 bg-[#936B34]/10 px-1.5 py-0.5">
                               <Sparkles className="w-2.5 h-2.5" />
@@ -319,15 +326,14 @@ export const CartPage: React.FC = () => {
 
                   <div className="flex justify-between text-gray-600">
                     <span className="flex items-center gap-1">
-                      <span>ATELIER COURIER</span>
-                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1 py-0.5">COMPLIMENTARY</span>
+                      <span>SHIPPING &amp; DELIVERY</span>
                     </span>
-                    <span className="text-emerald-700 font-semibold">$0.00</span>
+                    <span className="text-gray-500 font-mono text-[11px]">Calculated at checkout</span>
                   </div>
 
                   <div className="flex justify-between text-gray-600">
                     <span>SALES TAX</span>
-                    <span>Calculated at checkout</span>
+                    <span className="text-gray-500 font-mono text-[11px]">Calculated by state</span>
                   </div>
                 </div>
 
@@ -384,7 +390,7 @@ export const CartPage: React.FC = () => {
                   </button>
 
                   <p className="text-[10px] text-center font-mono text-gray-400 pt-1">
-                    Complimentary White-Glove Suit Bag Included With Every Order
+                    Signature White-Glove Suit Bag Included With Every Order
                   </p>
                 </div>
 
@@ -396,10 +402,10 @@ export const CartPage: React.FC = () => {
                   <Truck className="w-4 h-4 text-[#936B34] shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold text-[#111827] block uppercase tracking-wider text-[11px]">
-                      COMPLIMENTARY DISPATCH
+                      INSURED ATELIER DISPATCH
                     </span>
                     <span className="text-[11px] text-gray-500">
-                      Standard insured delivery on all sartorial orders across the continental US.
+                      Standard insured delivery on all sartorial orders across the United States.
                     </span>
                   </div>
                 </div>
@@ -420,10 +426,10 @@ export const CartPage: React.FC = () => {
                   <ShieldCheck className="w-4 h-4 text-[#936B34] shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold text-[#111827] block uppercase tracking-wider text-[11px]">
-                      COMPLIMENTARY FIRST ALTERATION
+                      ATELIER TAILORING SERVICES
                     </span>
                     <span className="text-[11px] text-gray-500">
-                      Consult our master tailoring artisans or partner fitters for precision hemming and adjustments.
+                      Consult our master tailoring artisans for precision hemming and bespoke adjustments.
                     </span>
                   </div>
                 </div>
