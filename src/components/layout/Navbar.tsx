@@ -479,13 +479,18 @@ export const Navbar: React.FC = () => {
 
               <button
                 onClick={() => {
-                  setActiveView('account');
+                  if (currentCustomer) {
+                    setActiveView('customer-dashboard');
+                  } else {
+                    setActiveView('login');
+                  }
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className={`p-1.5 cursor-pointer transition-colors ${
                   isTransparent ? 'text-white hover:text-[#E5C384]' : 'text-gray-700 hover:text-[#936B34]'
                 }`}
-                aria-label="ACCOUNT"
+                aria-label={currentCustomer ? 'Patron Dashboard' : 'Sign In'}
+                title={currentCustomer ? 'Patron Dashboard' : 'Sign In'}
               >
                 <User className="w-4 h-4" />
               </button>

@@ -67,9 +67,11 @@ import {
   exportTallyExcel,
   exportSalesReportToExcel
 } from '../../utils/excelErpUtils';
+import { AnalyticsVisualizer } from './AnalyticsVisualizer';
 
 type AdminTab = 
   | 'dashboard' 
+  | 'analytics'
   | 'products' 
   | 'inventory' 
   | 'orders' 
@@ -767,6 +769,7 @@ export const AdminDashboard: React.FC = () => {
           <nav className="flex space-x-6 sm:space-x-8 text-xs font-mono tracking-widest uppercase">
             {[
               { id: 'dashboard', label: 'DASHBOARD' },
+              { id: 'analytics', label: 'ANALYTICS & CHARTS' },
               { id: 'products', label: 'PRODUCTS' },
               { id: 'inventory', label: 'INVENTORY' },
               { id: 'orders', label: 'ORDERS' },
@@ -988,6 +991,17 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
+            {/* Real-time Sales, Product Performance & Return Rate Analytics Visualizer */}
+            <div className="pt-4">
+              <AnalyticsVisualizer
+                orders={ordersList}
+                products={productsList}
+                returns={returnsList}
+                dbStats={dbStats}
+                onRefresh={loadAllData}
+              />
+            </div>
+
             {/* Backend Integration Contract Information */}
             <div className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-3 font-mono text-xs text-gray-500 shadow-xs">
               <div className="flex items-center gap-2 text-[#936B34] uppercase tracking-wider font-medium">
@@ -1001,6 +1015,19 @@ export const AdminDashboard: React.FC = () => {
                 Mode: <strong className="text-[#936B34]">{API_CONFIG.isLiveBackend ? 'LIVE BACKEND ACTIVE' : 'IN-MEMORY PERSISTED SERVICE ENGINE'}</strong>
               </p>
             </div>
+          </div>
+        )}
+
+        {/* TAB: ANALYTICS & DATA VISUALIZATION */}
+        {activeTab === 'analytics' && (
+          <div className="mt-8 space-y-8">
+            <AnalyticsVisualizer
+              orders={ordersList}
+              products={productsList}
+              returns={returnsList}
+              dbStats={dbStats}
+              onRefresh={loadAllData}
+            />
           </div>
         )}
 

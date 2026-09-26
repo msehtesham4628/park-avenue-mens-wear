@@ -17,6 +17,7 @@ import { useShop } from '../../context/ShopContext';
 import { AuthService, ReturnService } from '../../services/api';
 import { Order, AlterationRecord, ReturnRequest } from '../../types';
 import { ImageWithFallback } from '../common/ImageWithFallback';
+import { LoginPage } from '../account/LoginPage';
 
 export const CustomerDashboard: React.FC = () => {
   const { 
@@ -26,6 +27,11 @@ export const CustomerDashboard: React.FC = () => {
     showToast,
     setCurrentOrder
   } = useShop();
+
+  // If no customer is authenticated, display the Sign In / Registration page
+  if (!currentCustomer) {
+    return <LoginPage />;
+  }
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [alterations, setAlterations] = useState<AlterationRecord[]>([]);

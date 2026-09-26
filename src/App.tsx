@@ -30,7 +30,7 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { WelcomePage } from './components/welcome/WelcomePage';
 
 const MainContent: React.FC = () => {
-  const { activeView } = useShop();
+  const { activeView, currentCustomer } = useShop();
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-[#111827] selection:bg-[#936B34] selection:text-white">
@@ -57,10 +57,14 @@ const MainContent: React.FC = () => {
         {activeView === 'track-order' && <OrderTrackingPage />}
         {activeView === 'track-alteration' && <AlterationTrackingPage />}
         {activeView === 'track-return' && <ReturnTrackingPage />}
-        {activeView === 'account-info' && <AccountInfoPage />}
-        {activeView === 'reset-password' && <ResetPasswordPage />}
-        {(activeView === 'account' || activeView === 'customer-dashboard') && <CustomerDashboard />}
-        {activeView === 'login' && <LoginPage />}
+        {activeView === 'account-info' && (currentCustomer ? <AccountInfoPage /> : <LoginPage />)}
+        {activeView === 'reset-password' && (currentCustomer ? <ResetPasswordPage /> : <LoginPage />)}
+        {(activeView === 'account' || activeView === 'customer-dashboard') && (
+          currentCustomer ? <CustomerDashboard /> : <LoginPage />
+        )}
+        {activeView === 'login' && (
+          currentCustomer ? <CustomerDashboard /> : <LoginPage />
+        )}
         {(activeView === 'admin' || activeView === 'dashboard') && <AdminDashboard />}
       </main>
 
