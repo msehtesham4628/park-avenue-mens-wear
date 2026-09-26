@@ -129,6 +129,7 @@ function mapBackendProductToFrontend(bp: any): Product {
     name: bp.name,
     subtitle: bp.subcategory || bp.category || 'Atelier Collection',
     category: (bp.category as any) || 'Suits',
+    subcategory: bp.subcategory || undefined,
     price: bp.price,
     originalPrice: bp.salePrice ? bp.price : undefined,
     sku: bp.sku,

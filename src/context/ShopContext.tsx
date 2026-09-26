@@ -28,8 +28,6 @@ export type AppView =
   | 'home'
   | 'welcome'
   | 'shop'
-  | 'category'
-  | 'categories'
   | 'pdp'
   | 'cart'
   | 'checkout'
@@ -53,11 +51,9 @@ interface ShopContextType {
   selectedProductId: string | null;
   navigateToProduct: (productId: string, category?: string) => void;
   selectedCategory: string;
-  setSelectedCategory: (cat: string) => void;
-  selectedSubcategory: string | null;
-  setSelectedSubcategory: (sub: string | null) => void;
-  openCategoryPage: (category: string, subcategory?: string) => void;
-  openCategoriesIndex: () => void;
+  selectedSubcategory: string;
+  setSelectedCategory: (cat: string, subcat?: string) => void;
+  setSelectedSubcategory: (subcat: string) => void;
   isProductsSubpage: boolean;
   setIsProductsSubpage: (val: boolean) => void;
   navigateToUrl: (url: string) => void;
@@ -154,8 +150,17 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activeView, setActiveViewState] = useState<AppView>('welcome');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(initialRoute.productId || null);
   const [selectedCategory, setSelectedCategoryState] = useState<string>(initialRoute.category || 'All');
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategoryState] = useState<string>('All');
   const [isProductsSubpage, setIsProductsSubpage] = useState<boolean>(initialRoute.isProductsSubpage || false);
+
+  const setSelectedCategory = useCallback((cat: string, subcat: string = 'All') => {
+    setSelectedCategoryState(cat);
+    setSelectedSubcategoryState(subcat);
+  }, []);
+
+  const setSelectedSubcategory = useCallback((subcat: string) => {
+    setSelectedSubcategoryState(subcat);
+  }, []);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -327,22 +332,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     setActiveViewState('shop');
     navigateTo(url);
-  };
-
-  const openCategoryPage = (category: string, subcategory?: string) => {
-    setSelectedCategoryState(category);
-    setSelectedSubcategory(subcategory || null);
-    setActiveViewState('category');
-    const slug = getCategorySlug(category);
-    const url = (slug && slug !== 'all') ? `/${slug}` : '/categories';
-    navigateTo(url);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const openCategoriesIndex = () => {
-    setActiveViewState('categories');
-    navigateTo('/categories');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const navigateToProduct = (productId: string, category?: string) => {
@@ -567,11 +556,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         selectedProductId,
         navigateToProduct,
         selectedCategory,
-        setSelectedCategory,
         selectedSubcategory,
+        setSelectedCategory,
         setSelectedSubcategory,
-        openCategoryPage,
-        openCategoriesIndex,
         isProductsSubpage,
         setIsProductsSubpage,
         navigateToUrl,

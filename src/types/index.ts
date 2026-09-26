@@ -23,15 +23,69 @@ export interface CategoryItem {
 }
 
 export const PRODUCT_CATEGORY_CATALOG: CategoryItem[] = [
-  { id: 'suits', name: 'Suits', queryValue: 'Suits', description: 'Suits and formal tailoring', subcategories: ['Suits', 'Dress Suits'] },
-  { id: 'blazers-jackets', name: 'Blazers & Jackets', queryValue: 'Blazers & Jackets', description: 'Blazers and leather jackets', subcategories: ['Blazers', 'Leather Jackets'] },
-  { id: 'shirts', name: 'Shirts', queryValue: 'Shirts', description: 'Formal and casual shirts', subcategories: ['Dress Shirts', 'Polo Shirts'] },
-  { id: 'pants', name: 'Pants', queryValue: 'Pants', description: 'Tailored trousers and denim', subcategories: ['Dress Pants / Pants', 'Jeans'] },
-  { id: 'outerwear', name: 'Outerwear', queryValue: 'Outerwear', description: 'Coats and outer layers', subcategories: ['Coats'] },
-  { id: 'sweaters-knitwear', name: 'Sweaters & Knitwear', queryValue: 'Sweaters & Knitwear', description: 'Sweaters and knitwear', subcategories: ['Sweaters'] },
-  { id: 'footwear', name: 'Footwear', queryValue: 'Footwear', description: 'Shoes and boots', subcategories: ['Shoes', 'Boots'] },
-  { id: 'accessories', name: 'Accessories', queryValue: 'Accessories', description: 'Finishing accessories', subcategories: ['Ties'] },
-  { id: 'shorts', name: 'Shorts', queryValue: 'Shorts', description: 'Tailored and casual shorts', subcategories: ['Shorts'] }
+  { 
+    id: 'suits', 
+    name: 'Suits', 
+    queryValue: 'Suits', 
+    description: 'Bespoke two-piece, three-piece, double-breasted, and evening tuxedos', 
+    subcategories: ['Two-Piece Suits', 'Three-Piece Suits', 'Double-Breasted Suits', 'Tuxedos & Eveningwear', 'Classic Business Suits'] 
+  },
+  { 
+    id: 'blazers-jackets', 
+    name: 'Blazers & Jackets', 
+    queryValue: 'Blazers & Jackets', 
+    description: 'Tailored sport coats, luxury leather jackets, and dinner jackets', 
+    subcategories: ['Tailored Blazers', 'Leather Jackets', 'Sport Coats', 'Dinner Jackets'] 
+  },
+  { 
+    id: 'shirts', 
+    name: 'Shirts', 
+    queryValue: 'Shirts', 
+    description: 'Egyptian Giza cotton dress shirts, formal twill, and polo shirts', 
+    subcategories: ['Formal Dress Shirts', 'Polo Shirts', 'Tuxedo Shirts', 'Casual Button-Downs', 'Linen Shirts'] 
+  },
+  { 
+    id: 'pants', 
+    name: 'Pants', 
+    queryValue: 'Pants', 
+    description: 'Tailored flannel trousers, pleated dress pants, chinos, and selvedge denim', 
+    subcategories: ['Tailored Dress Pants', 'Pleated Trousers', 'Chinos', 'Luxury Denim / Jeans'] 
+  },
+  { 
+    id: 'outerwear', 
+    name: 'Outerwear', 
+    queryValue: 'Outerwear', 
+    description: 'Cashmere topcoats, virgin wool overcoats, trench coats, and peacoats', 
+    subcategories: ['Wool Overcoats', 'Trench Coats', 'Peacoats', 'Cashmere Topcoats'] 
+  },
+  { 
+    id: 'sweaters-knitwear', 
+    name: 'Sweaters & Knitwear', 
+    queryValue: 'Sweaters & Knitwear', 
+    description: 'Pure Mongolian cashmere crewnecks, V-necks, turtlenecks, and cardigans', 
+    subcategories: ['Cashmere Crewnecks', 'V-Neck Sweaters', 'Cardigans', 'Turtlenecks & Rollnecks'] 
+  },
+  { 
+    id: 'footwear', 
+    name: 'Footwear', 
+    queryValue: 'Footwear', 
+    description: 'Goodyear-welted wholecut Oxfords, Derbies, penny loafers, and Balmoral boots', 
+    subcategories: ['Oxford Shoes', 'Derby Shoes', 'Penny Loafers', 'Balmoral Dress Boots', 'Chelsea Boots'] 
+  },
+  { 
+    id: 'accessories', 
+    name: 'Accessories', 
+    queryValue: 'Accessories', 
+    description: 'Handcrafted Como silk grenadine ties, bow ties, pocket squares, and cufflinks', 
+    subcategories: ['Silk Grenadine Ties', 'Bow Ties', 'Pocket Squares', 'Cufflinks', 'Leather Belts'] 
+  },
+  { 
+    id: 'shorts', 
+    name: 'Shorts', 
+    queryValue: 'Shorts', 
+    description: 'Tailored sartorial trouser shorts, breathable linen, and resort bermudas', 
+    subcategories: ['Tailored Trouser Shorts', 'Linen Shorts', 'Resort Bermudas'] 
+  }
 ];
 
 export const OFFICIAL_CATEGORIES: CategoryItem[] = [
@@ -54,6 +108,7 @@ export interface Product {
   name: string;
   subtitle: string;
   category: ProductCategory;
+  subcategory?: string;
   price: number;
   originalPrice?: number;
   sku: string;

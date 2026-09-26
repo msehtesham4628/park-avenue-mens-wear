@@ -234,6 +234,109 @@ export function getStateCodeFromZip(zip: string): string | null {
   return null;
 }
 
+export interface ZipTaxAndShipmentEstimate {
+  zip: string;
+  stateCode: string;
+  stateName: string;
+  taxRate: number;
+  taxRateFormatted: string;
+  estimatedTax: number;
+  isTaxExempt: boolean;
+  notes?: string;
+  standardShippingFee: number;
+  expressShippingFee: number;
+  standardShippingCarrier: string;
+  expressShippingCarrier: string;
+  standardDeliveryDate: string;
+  expressDeliveryDate: string;
+  subtotal: number;
+  totalWithStandard: number;
+  totalWithExpress: number;
+}
+
+/**
+ * Calculates estimated sales tax and shipment rates strictly from a 5-digit US ZIP code
+ */
+export function estimateTaxAndShipmentByZip(
+  zip: string,
+  unitPrice: number,
+  quantity: number = 1,
+  productShippingCharge?: number
+): ZipTaxAndShipmentEstimate | null {
+  const cleanZip = zip.replace(/\D/g, '').slice(0, 5);
+  if (cleanZip.length < 5) return null;
+
+  const stateCode = getStateCodeFromZip(cleanZip);
+  if (!stateCode) return null;
+
+  // Reads configured rates directly from Admin Dashboard / LocalStorage
+  const rates = getUsStateTaxRates();
+  const stateInfo = rates[stateCode] || {
+    code: stateCode,
+    name: stateCode,
+    rate: 0.07,
+    standardShippingRate: 15,
+    expressShippingRate: 25
+  };
+
+  const subtotal = Math.round(unitPrice * quantity * 100) / 100;
+  const taxResult = calculateStateTax(stateCode, [{ price: unitPrice, quantity }], subtotal);
+  const estimatedTax = taxResult ? taxResult.taxAmount : 0;
+  const taxRateFormatted = taxResult ? taxResult.rateFormatted : `${(stateInfo.rate * 100).toFixed(stateInfo.rate % 0.01 === 0 ? 1 : 2)}%`;
+
+  const isOffshore = ['AK', 'HI', 'PR'].includes(stateCode);
+
+  // Standard shipping fee strictly following Dashboard configuration:
+  // If product shippingCharge is explicitly configured as 0 (Free Shipping in Dashboard), rate is 0.
+  // Otherwise uses the Dashboard's configured standardShippingRate for the destination state.
+  let standardShippingFee: number;
+  if (productShippingCharge !== undefined && Number(productShippingCharge) === 0) {
+    standardShippingFee = 0;
+  } else if (productShippingCharge !== undefined && Number(productShippingCharge) > 0 && !isOffshore) {
+    standardShippingFee = Number(productShippingCharge);
+  } else if (stateInfo.standardShippingRate !== undefined) {
+    standardShippingFee = Number(stateInfo.standardShippingRate);
+  } else {
+    standardShippingFee = isOffshore ? 35 : 15;
+  }
+
+  // Express shipping fee strictly from Dashboard state configuration:
+  const expressShippingFee = stateInfo.expressShippingRate !== undefined
+    ? Number(stateInfo.expressShippingRate)
+    : (isOffshore ? 65 : 25);
+
+  // Compute realistic delivery dates skipping Sunday if needed
+  const stdDate = new Date();
+  stdDate.setDate(stdDate.getDate() + (isOffshore ? 5 : 3));
+  if (stdDate.getDay() === 0) stdDate.setDate(stdDate.getDate() + 1);
+
+  const expDate = new Date();
+  expDate.setDate(expDate.getDate() + (isOffshore ? 2 : 1));
+  if (expDate.getDay() === 0) expDate.setDate(expDate.getDate() + 1);
+
+  const formatDate = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  return {
+    zip: cleanZip,
+    stateCode,
+    stateName: stateInfo.name,
+    taxRate: stateInfo.rate,
+    taxRateFormatted,
+    estimatedTax,
+    isTaxExempt: estimatedTax === 0,
+    notes: taxResult?.notes || stateInfo.notes,
+    standardShippingFee,
+    expressShippingFee,
+    standardShippingCarrier: isOffshore ? 'FedEx 2Day Priority' : 'UPS Insured Ground',
+    expressShippingCarrier: isOffshore ? 'FedEx Priority Overnight' : 'FedEx Priority Air',
+    standardDeliveryDate: formatDate(stdDate),
+    expressDeliveryDate: formatDate(expDate),
+    subtotal,
+    totalWithStandard: Math.round((subtotal + standardShippingFee + estimatedTax) * 100) / 100,
+    totalWithExpress: Math.round((subtotal + expressShippingFee + estimatedTax) * 100) / 100
+  };
+}
+
 /**
  * Calculates estimated sales tax from a 5-digit ZIP code
  */
