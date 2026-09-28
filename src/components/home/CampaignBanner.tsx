@@ -17,7 +17,7 @@ export const CampaignBanner: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Editorial Campaign Container */}
-        <div className="border border-gray-200 bg-white grid grid-cols-1 lg:grid-cols-12 overflow-hidden items-stretch shadow-xl">
+        <div className="border border-gray-200 bg-white grid grid-cols-1 lg:grid-cols-12 overflow-hidden items-stretch shadow-xl rounded-2xl sm:rounded-3xl">
           
           {/* Left Column: Premium Placeholder Area */}
           <div className="lg:col-span-7 relative min-h-[380px] sm:min-h-[460px] flex items-center justify-center p-8 bg-[#F8F9FA] border-b lg:border-b-0 lg:border-r border-gray-200">
@@ -51,7 +51,7 @@ export const CampaignBanner: React.FC = () => {
             <div className="pt-2">
               <button
                 onClick={handleExplore}
-                className="w-full sm:w-auto px-8 py-4 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-semibold uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer shadow-md"
+                className="w-full sm:w-auto px-8 py-4 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-semibold uppercase tracking-[0.25em] transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer shadow-md rounded-full active:scale-95"
               >
                 <span>EXPLORE PARK AVENUE MENSWEAR</span>
                 <ArrowRight className="w-4 h-4" />

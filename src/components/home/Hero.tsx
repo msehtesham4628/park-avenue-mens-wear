@@ -198,7 +198,7 @@ export const Hero: React.FC = () => {
 
         {/* Bottom Banner Content & Slide Meta Overlay - Tailored for Phone & Desktop */}
         <div className="absolute bottom-12 sm:bottom-16 inset-x-0 z-20 pointer-events-none flex flex-col items-center justify-center px-4 text-center">
-          <div className="max-w-xl mx-auto space-y-1.5 sm:space-y-2 p-3 sm:p-4 bg-black/50 backdrop-blur-md border border-white/10 rounded-xs shadow-xl pointer-events-auto">
+          <div className="max-w-xl mx-auto space-y-1.5 sm:space-y-2 p-3 sm:p-4 bg-black/60 backdrop-blur-md border border-white/15 rounded-2xl shadow-xl pointer-events-auto">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-black/60 border border-white/15 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-[0.25em] text-[#E5C384]">
               <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#936B34]" />
               <span>{currentSlide.tag}</span>
@@ -216,7 +216,7 @@ export const Hero: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleSlideCta(currentSlide.category)}
-                className="group inline-flex items-center gap-2.5 px-6 py-2.5 sm:px-7 sm:py-3 bg-white hover:bg-[#936B34] text-[#111827] hover:text-white border border-white hover:border-[#936B34] text-[11px] sm:text-xs font-mono font-medium uppercase tracking-[0.22em] transition-all duration-300 shadow-lg cursor-pointer rounded-xs active:scale-95"
+                className="group inline-flex items-center gap-2.5 px-6 py-2.5 sm:px-7 sm:py-3 bg-white hover:bg-[#936B34] text-[#111827] hover:text-white border border-white hover:border-[#936B34] text-[11px] sm:text-xs font-mono font-medium uppercase tracking-[0.22em] transition-all duration-300 shadow-lg cursor-pointer rounded-full active:scale-95"
               >
                 <span>EXPLORE {currentSlide.category.toUpperCase()}</span>
                 <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />

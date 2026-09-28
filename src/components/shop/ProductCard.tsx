@@ -41,7 +41,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   return (
     <div
       onClick={() => navigateToProduct(product.id)}
-      className="group flex flex-col bg-white border border-gray-200 hover:border-[#936B34] hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
+      className="group flex flex-col bg-white border border-gray-200 hover:border-[#936B34] hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden rounded-2xl"
     >
       {/* Product Media Area (Strictly Luxury Media Placeholder) */}
       <div className="relative aspect-[3/4] bg-[#F8F9FA] overflow-hidden">
@@ -65,12 +65,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         {/* Top Badges / Indicators */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-1 items-start">
           {product.isNewArrival && (
-            <span className="text-[9px] uppercase tracking-[0.25em] font-mono font-semibold text-white bg-[#111827] px-2 py-0.5 shadow-xs">
+            <span className="text-[9px] uppercase tracking-[0.25em] font-mono font-semibold text-white bg-[#111827] px-3 py-1 rounded-full shadow-xs">
               NEW ARRIVAL
             </span>
           )}
           {product.isFeatured && !product.isNewArrival && (
-            <span className="text-[9px] uppercase tracking-[0.25em] font-mono font-medium text-[#111827] bg-white px-2 py-0.5 border border-gray-200 shadow-xs">
+            <span className="text-[9px] uppercase tracking-[0.25em] font-mono font-medium text-[#111827] bg-white px-3 py-1 rounded-full border border-gray-200 shadow-xs">
               SIGNATURE
             </span>
           )}
@@ -83,7 +83,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
               e.stopPropagation();
               toggleWishlist(product.id);
             }}
-            className={`p-2 border backdrop-blur-md transition-colors cursor-pointer shadow-xs ${
+            className={`p-2 border backdrop-blur-md transition-colors cursor-pointer shadow-xs rounded-full ${
               isWishlisted
                 ? 'bg-[#936B34] text-white border-[#936B34]'
                 : 'bg-white/95 text-gray-700 border-gray-200 hover:text-[#936B34] hover:border-[#936B34]'
@@ -99,7 +99,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
                 e.stopPropagation();
                 onQuickView(product);
               }}
-              className="p-2 bg-white/95 text-gray-700 border border-gray-200 hover:border-[#936B34] hover:text-[#936B34] backdrop-blur-md transition-colors cursor-pointer shadow-xs"
+              className="p-2 bg-white/95 text-gray-700 border border-gray-200 hover:border-[#936B34] hover:text-[#936B34] backdrop-blur-md transition-colors cursor-pointer shadow-xs rounded-full"
               aria-label="Quick View"
             >
               <Eye className="w-3.5 h-3.5" />
@@ -112,7 +112,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           <button
             onClick={handleQuickAdd}
             disabled={isOutOfStock}
-            className={`w-full py-2.5 px-3 text-xs uppercase tracking-[0.2em] font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md ${
+            className={`w-full py-2.5 px-4 text-xs uppercase tracking-[0.2em] font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md rounded-full active:scale-95 ${
               isOutOfStock
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300'
                 : 'bg-[#111827] text-white hover:bg-[#936B34]'
@@ -194,9 +194,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
                   <button
                     key={v.id}
                     onClick={() => setSelectedSize(v.size)}
-                    className={`text-[9px] px-1.5 py-0.5 font-mono border transition-colors cursor-pointer ${
+                    className={`text-[9px] px-2 py-0.5 font-mono border transition-colors cursor-pointer rounded-full ${
                       isSelected
-                        ? 'border-[#936B34] text-[#936B34] bg-[#936B34]/10 font-semibold'
+                        ? 'border-[#936B34] text-[#936B34] bg-[#936B34]/10 font-semibold shadow-xs'
                         : out
                         ? 'border-gray-200 text-gray-300 line-through'
                         : 'border-gray-200 text-gray-700 hover:border-gray-400 hover:text-black bg-[#F8F9FA]'

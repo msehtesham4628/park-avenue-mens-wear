@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { productService } from '../services/productService.js';
+import { skuService } from '../services/skuService.js';
+import { descriptionService } from '../services/descriptionService.js';
 
 export const productController = {
   /**
@@ -240,5 +242,70 @@ export const productController = {
     } catch (err: any) {
       return res.status(500).json({ success: false, message: err.message });
     }
+  },
+
+  /**
+   * POST /api/products/generate-sku
+   */
+  async generateSku(req: Request, res: Response) {
+    try {
+      const { name, category, fabric, color } = req.body;
+      if (!name && !category) {
+        return res.status(400).json({ success: false, message: 'Garment name or category is required.' });
+      }
+      const result = await skuService.generateSku({ name: name || 'Garment', category: category || 'Suits', fabric, color });
+      return res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Auto SKU generated successfully.'
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/products/generate-description
+   */
+  async generateDescription(req: Request, res: Response) {
+    try {
+      const { name, category, fabric, fit, price, tone, additionalNotes } = req.body;
+      if (!name) {
+        return res.status(400).json({ success: false, message: 'Garment name is required.' });
+      }
+      const result = await descriptionService.generateProductDescription({
+        name,
+        category: category || 'Suits',
+        fabric,
+        fit,
+        price: price ? parseFloat(price) : undefined,
+        tone: tone || 'editorial',
+        additionalNotes
+      });
+      return res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Sartorial luxury description generated successfully.'
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/products/batch-auto-sku
+   */
+  async batchAutoSku(req: AuthenticatedRequest, res: Response) {
+    try {
+      const result = await skuService.batchAssignMissingSkus();
+      return res.status(200).json({
+        success: true,
+        data: result,
+        message: `Auto-assigned SKUs to ${result.updatedCount} products.`
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
   }
 };
+

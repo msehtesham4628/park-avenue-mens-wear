@@ -8,6 +8,14 @@ const router = Router();
 router.get('/', productController.getProducts);
 router.get('/:slug', productController.getProductBySlug);
 
+// Intelligent Sartorial Auto SKU & Auto Description Endpoints
+router.post('/generate-sku', productController.generateSku);
+router.post('/generate-description', productController.generateDescription);
+router.post('/admin/generate-sku', productController.generateSku);
+router.post('/admin/generate-description', productController.generateDescription);
+router.post('/batch-auto-sku', ...requireAdminOrStaff, productController.batchAutoSku);
+router.post('/admin/batch-auto-sku', ...requireAdminOrStaff, productController.batchAutoSku);
+
 // Admin endpoints mounted under /api/products, /api/products/admin, or /api/admin/products
 router.post('/admin/batch', ...requireAdminOrStaff, productController.batchCreateProducts);
 router.post('/batch', ...requireAdminOrStaff, productController.batchCreateProducts);

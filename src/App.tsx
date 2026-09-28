@@ -6,6 +6,7 @@ import { NotificationDrawer } from './components/layout/NotificationDrawer';
 import { CartDrawer } from './components/cart/CartDrawer';
 import { SearchModal } from './components/search/SearchModal';
 import { ToastContainer } from './components/common/ToastContainer';
+import { SeoHead } from './components/common/SeoHead';
 
 // View Pages
 import { Hero } from './components/home/Hero';
@@ -34,6 +35,7 @@ const MainContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-[#111827] selection:bg-[#936B34] selection:text-white">
+      <SeoHead />
       {activeView !== 'welcome' && <Navbar />}
 
       <main className={`flex-1 ${activeView === 'home' ? 'pt-0' : (activeView !== 'welcome' ? 'pt-24 sm:pt-28 md:pt-32' : '')}`}>

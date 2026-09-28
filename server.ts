@@ -8,6 +8,7 @@ import { connectDB } from './server/config/db.js';
 import { seedInitialData } from './server/config/seed.js';
 import apiRouter from './server/routes/index.js';
 import { errorHandler } from './server/middleware/errorHandler.js';
+import { seoService } from './server/services/seoService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,6 +50,29 @@ async function bootstrapServer() {
   } catch (dbErr: any) {
     console.warn('[Park Avenue Server] Database initialization warning:', dbErr?.message);
   }
+
+  // Direct root search engine crawl endpoints for https://www.parkavenuemenswear.com
+  app.get('/sitemap.xml', async (_req, res) => {
+    try {
+      const xml = await seoService.generateSitemapXml();
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+      return res.status(200).send(xml);
+    } catch (err: any) {
+      return res.status(500).send(`<error>${err?.message}</error>`);
+    }
+  });
+
+  app.get('/robots.txt', (_req, res) => {
+    try {
+      const txt = seoService.generateRobotsTxt();
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.status(200).send(txt);
+    } catch (err: any) {
+      return res.status(500).send(`Error: ${err?.message}`);
+    }
+  });
 
   // Mount API Router under /api
   app.use('/api', apiRouter);

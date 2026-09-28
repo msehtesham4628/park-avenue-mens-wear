@@ -80,15 +80,15 @@ export const CategoryShowcase: React.FC = () => {
           </div>
           <button
             onClick={openCategoriesIndex}
-            className="mt-4 sm:mt-0 text-xs font-mono uppercase tracking-[0.22em] text-[#936B34] hover:text-black transition-colors flex items-center gap-2 font-medium cursor-pointer group"
+            className="mt-4 sm:mt-0 text-xs font-mono uppercase tracking-[0.2em] text-[#111827] hover:text-white bg-white hover:bg-[#936B34] border border-gray-300 hover:border-[#936B34] px-4 sm:px-5 py-2 rounded-full transition-all duration-300 flex items-center gap-2 font-medium cursor-pointer group shadow-xs active:scale-95"
           >
             <span>VIEW COMPLETE CATALOG</span>
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
           </button>
         </div>
 
         {/* Elevated Luxury Department Buttons Bar */}
-        <div className="mb-14 p-5 sm:p-6 bg-[#FAF8F5] border border-gray-200/90 shadow-xs">
+        <div className="mb-14 p-5 sm:p-6 bg-[#FAF8F5] border border-gray-200/90 shadow-sm rounded-2xl sm:rounded-3xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-200/70">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#936B34]" />
@@ -105,7 +105,7 @@ export const CategoryShowcase: React.FC = () => {
             {/* Primary 'All Collections' Button */}
             <button
               onClick={openCategoriesIndex}
-              className="group inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 bg-[#111827] hover:bg-[#936B34] border border-[#111827] hover:border-[#936B34] text-white text-xs font-mono uppercase tracking-[0.16em] transition-all duration-300 shadow-xs cursor-pointer font-medium"
+              className="group inline-flex items-center gap-2 px-5 py-2.5 bg-[#111827] hover:bg-[#936B34] border border-[#111827] hover:border-[#936B34] text-white text-xs font-mono uppercase tracking-[0.16em] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer font-medium rounded-full active:scale-95"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#E5C384]" />
               <span>ALL COLLECTIONS</span>
@@ -117,11 +117,11 @@ export const CategoryShowcase: React.FC = () => {
               <button
                 key={cat.id}
                 onClick={() => handleSelect(cat.queryValue)}
-                className="group inline-flex items-center gap-2 px-4 py-2 sm:py-2.5 bg-white hover:bg-[#111827] border border-gray-300 hover:border-[#111827] text-gray-800 hover:text-white text-xs font-mono uppercase tracking-[0.15em] transition-all duration-200 shadow-xs cursor-pointer rounded-xs"
+                className="group inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-white hover:bg-[#111827] border border-gray-300 hover:border-[#111827] text-gray-800 hover:text-white text-xs font-mono uppercase tracking-[0.15em] transition-all duration-200 shadow-xs hover:shadow-sm cursor-pointer rounded-full active:scale-95"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-[#936B34] group-hover:bg-[#E5C384] transition-colors" />
                 <span className="font-medium">{cat.name}</span>
-                <ArrowUpRight className="w-3 h-3 text-gray-400 group-hover:text-[#E5C384] transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#E5C384] transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </button>
             ))}
           </div>
@@ -134,7 +134,7 @@ export const CategoryShowcase: React.FC = () => {
               key={cat.title}
               type="button"
               onClick={() => handleSelect(cat.title)}
-              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#F5F5F3] border border-gray-200 hover:border-[#936B34] text-left cursor-pointer transition-colors duration-300 shadow-xs hover:shadow-lg"
+              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#F5F5F3] border border-gray-200 hover:border-[#936B34] text-left cursor-pointer transition-all duration-300 shadow-xs hover:shadow-xl rounded-2xl sm:rounded-3xl"
             >
               {cat.image ? (
                 <img
@@ -168,7 +168,7 @@ export const CategoryShowcase: React.FC = () => {
                   {cat.displayName}
                 </h3>
 
-                <span className="inline-flex items-center gap-2.5 bg-white/10 backdrop-blur-xs border border-white/60 group-hover:border-[#E5C384] group-hover:bg-white group-hover:text-black px-4 py-2.5 text-[10px] sm:text-xs uppercase tracking-[0.22em] font-medium transition-all duration-300">
+                <span className="inline-flex items-center gap-2.5 bg-white/15 backdrop-blur-xs border border-white/60 group-hover:border-[#E5C384] group-hover:bg-white group-hover:text-black px-5 py-2.5 text-[10px] sm:text-xs uppercase tracking-[0.22em] font-medium transition-all duration-300 rounded-full shadow-sm">
                   <span>DISCOVER COLLECTION</span>
                   <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                 </span>

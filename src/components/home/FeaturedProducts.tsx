@@ -64,7 +64,7 @@ export const FeaturedProducts: React.FC = () => {
                 <button
                   key={tab.value}
                   onClick={() => setActiveTab(tab.value)}
-                  className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-mono tracking-widest uppercase transition-all whitespace-nowrap border cursor-pointer rounded-xs ${
+                  className={`inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 text-xs font-mono tracking-widest uppercase transition-all whitespace-nowrap border cursor-pointer rounded-full active:scale-95 ${
                     isActive
                       ? 'bg-[#111827] text-white border-[#111827] shadow-xs font-semibold'
                       : 'bg-white text-gray-700 border-gray-200 hover:border-[#936B34] hover:text-[#111827]'
@@ -90,7 +90,7 @@ export const FeaturedProducts: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="border border-gray-200 bg-[#F9F9F8] py-24 px-6 text-center flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="border border-gray-200 bg-[#F9F9F8] py-24 px-6 text-center flex flex-col items-center justify-center relative overflow-hidden rounded-2xl">
             {/* Background geometric drafting grid */}
             <div 
               className="absolute inset-0 opacity-[0.04] pointer-events-none"
@@ -100,7 +100,7 @@ export const FeaturedProducts: React.FC = () => {
               }}
             />
 
-            <div className="w-12 h-12 mb-6 border border-[#936B34] flex items-center justify-center font-serif text-base text-[#111827] tracking-widest bg-white shadow-xs">
+            <div className="w-12 h-12 mb-6 border border-[#936B34] flex items-center justify-center font-serif text-base text-[#111827] tracking-widest bg-white shadow-xs rounded-full">
               PA
             </div>
 
@@ -118,7 +118,7 @@ export const FeaturedProducts: React.FC = () => {
 
             <button
               onClick={() => setActiveView('shop')}
-              className="px-6 py-3 border border-[#111827] bg-[#111827] text-white hover:bg-[#936B34] hover:border-[#936B34] transition-colors text-xs font-mono font-medium tracking-widest uppercase flex items-center gap-2 cursor-pointer shadow-sm"
+              className="px-6 py-3 border border-[#111827] bg-[#111827] text-white hover:bg-[#936B34] hover:border-[#936B34] transition-colors text-xs font-mono font-medium tracking-widest uppercase flex items-center gap-2 cursor-pointer shadow-sm rounded-full active:scale-95"
             >
               <span>DISCOVER SARTORIAL COLLECTION</span>
             </button>
@@ -130,7 +130,7 @@ export const FeaturedProducts: React.FC = () => {
           <div className="mt-14 text-center">
             <button
               onClick={handleExploreMore}
-              className="inline-flex items-center gap-3 px-8 py-3.5 bg-white border border-gray-300 hover:border-black text-xs uppercase tracking-[0.2em] text-gray-800 hover:text-black transition-colors cursor-pointer shadow-xs"
+              className="inline-flex items-center gap-3 px-8 py-3.5 bg-white hover:bg-[#111827] border border-gray-300 hover:border-[#111827] text-xs uppercase tracking-[0.2em] text-gray-800 hover:text-white transition-all duration-300 cursor-pointer shadow-xs rounded-full active:scale-95"
             >
               <span>EXPLORE ALL {activeTab === 'All' ? 'GARMENTS' : activeTab}</span>
               <ArrowRight className="w-4 h-4" />

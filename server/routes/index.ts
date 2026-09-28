@@ -12,6 +12,7 @@ import dashboardRoutes from './dashboardRoutes.js';
 import categoryRoutes from './categoryRoutes.js';
 import checkoutRoutes from './checkoutRoutes.js';
 import returnRoutes from './returnRoutes.js';
+import seoRoutes from './seoRoutes.js';
 import { API_DOCUMENTATION } from '../docs/apiDocs.js';
 import { isDbConnected } from '../config/db.js';
 
@@ -49,6 +50,7 @@ apiRouter.use('/returns', returnRoutes);
 apiRouter.use('/payments', paymentRoutes);
 apiRouter.use('/checkout', checkoutRoutes);
 apiRouter.use('/notifications', notificationRoutes);
+apiRouter.use('/seo', seoRoutes);
 
 // Admin Specific Modules
 apiRouter.use('/admin/inventory', inventoryRoutes);
