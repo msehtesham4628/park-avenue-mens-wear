@@ -111,7 +111,8 @@ export const CheckoutPage: React.FC = () => {
     return availableShippingMethods.find(m => m.id === shippingMethod) || availableShippingMethods[0];
   }, [availableShippingMethods, shippingMethod]);
 
-  const shippingAmount = selectedShippingOption ? selectedShippingOption.cost : 15;
+  const isFreeShipping = (selectedShippingOption?.freeThreshold !== undefined || selectedShippingOption?.id === 'standard') && cartSubtotal >= 200;
+  const shippingAmount = isFreeShipping ? 0 : (selectedShippingOption ? selectedShippingOption.cost : 15);
 
   // Real-time State Sales Tax Calculation using configured tax rates
   const taxCalculation = useMemo(() => {
@@ -665,8 +666,29 @@ export const CheckoutPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
+                  {cartSubtotal >= 200 ? (
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono flex items-center justify-between">
+                      <span className="font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                        <Truck className="w-4 h-4 text-emerald-700" />
+                        Complimentary Standard Shipping Unlocked!
+                      </span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                        Order &gt; $200
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-[#FAF8F5] border border-[#936B34]/30 text-gray-700 text-xs font-mono flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Truck className="w-4 h-4 text-[#936B34]" />
+                        <span>Add <strong>{money(200 - cartSubtotal)}</strong> more for <strong>Free Standard Shipping</strong></span>
+                      </span>
+                      <span className="text-[11px] font-semibold text-[#936B34]">Threshold: $200</span>
+                    </div>
+                  )}
+
                   {availableShippingMethods.map(m => {
                     const isSelected = shippingMethod === m.id;
+                    const qualifiesFree = (m.freeThreshold !== undefined || m.id === 'standard') && cartSubtotal >= 200;
                     return (
                       <label
                         key={m.id}
@@ -685,8 +707,13 @@ export const CheckoutPage: React.FC = () => {
                             className="mt-1 accent-[#936B34]"
                           />
                           <div>
-                            <div className="font-medium text-sm text-[#111827]">
-                              {m.name}
+                            <div className="font-medium text-sm text-[#111827] flex items-center gap-2">
+                              <span>{m.name}</span>
+                              {qualifiesFree && (
+                                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold">
+                                  FREE ON $200+
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-gray-500 mt-0.5">
                               {m.description}
@@ -698,8 +725,12 @@ export const CheckoutPage: React.FC = () => {
                         </div>
 
                         <div className="text-right shrink-0 ml-3">
-                          <span className="font-mono text-sm font-semibold text-[#111827]">
-                            {money(m.cost)}
+                          <span className="font-mono text-sm font-semibold">
+                            {qualifiesFree ? (
+                              <span className="text-emerald-700 font-bold uppercase">FREE</span>
+                            ) : (
+                              <span className="text-[#111827]">{money(m.cost)}</span>
+                            )}
                           </span>
                         </div>
                       </label>
@@ -795,7 +826,11 @@ export const CheckoutPage: React.FC = () => {
                   Estimated Speed: {selectedShippingOption.speed}
                 </div>
                 <div className="text-gray-500 text-[11px]">
-                  Shipping Rate: {money(shippingAmount)}
+                  Shipping Rate: {shippingAmount === 0 ? (
+                    <strong className="text-emerald-700 uppercase">FREE (Complimentary $200+)</strong>
+                  ) : (
+                    money(shippingAmount)
+                  )}
                 </div>
               </div>
             </div>
@@ -877,7 +912,13 @@ export const CheckoutPage: React.FC = () => {
 
               <div className="flex justify-between text-gray-700">
                 <span>SHIPPING &amp; COURIER FEE ({selectedShippingOption.name})</span>
-                <span className="font-semibold text-[#111827]">{money(shippingAmount)}</span>
+                <span className="font-semibold text-[#111827]">
+                  {shippingAmount === 0 ? (
+                    <span className="text-emerald-700 font-bold uppercase">FREE ($0.00)</span>
+                  ) : (
+                    money(shippingAmount)
+                  )}
+                </span>
               </div>
 
               <div className="flex justify-between text-gray-700">

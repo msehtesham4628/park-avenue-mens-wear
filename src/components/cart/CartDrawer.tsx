@@ -46,11 +46,29 @@ export const CartDrawer: React.FC = () => {
             </button>
           </div>
 
-          {/* Insured Atelier Delivery Information */}
-          <div className="px-6 py-3 bg-[#F9F9F8] border-b border-gray-200">
-            <div className="flex items-center gap-2 text-[10px] font-mono tracking-wider uppercase text-[#936B34] font-medium">
-              <Truck className="w-3.5 h-3.5 shrink-0" />
-              <span>INSURED ATELIER DISPATCH · COMPLIMENTARY COURIER</span>
+          {/* Insured Atelier Delivery Information & Free Shipping Progress */}
+          <div className="px-6 py-3.5 bg-[#F9F9F8] border-b border-gray-200">
+            <div className="flex items-center justify-between text-[10px] font-mono tracking-wider uppercase text-[#936B34] font-medium">
+              <div className="flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  {cartSubtotal >= 200 ? (
+                    <strong className="text-emerald-700">FREE SHIPPING UNLOCKED</strong>
+                  ) : (
+                    <span>ADD <strong>${(200 - cartSubtotal).toFixed(2)}</strong> FOR FREE SHIPPING</span>
+                  )}
+                </span>
+              </div>
+              <span className="font-semibold text-gray-500">
+                {cartSubtotal >= 200 ? 'QUALIFIED' : `$${cartSubtotal.toFixed(0)} / $200`}
+              </span>
+            </div>
+            {/* Free Shipping Progress Meter */}
+            <div className="w-full bg-gray-200 h-1.5 mt-2 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 ${cartSubtotal >= 200 ? 'bg-emerald-600' : 'bg-[#936B34]'}`}
+                style={{ width: `${Math.min(100, Math.max(0, (cartSubtotal / 200) * 100))}%` }}
+              />
             </div>
           </div>
 
@@ -199,45 +217,64 @@ export const CartDrawer: React.FC = () => {
                   <span className="text-[#111827] font-semibold">${cartSubtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-gray-500">
-                  <span>EXPRESS DELIVERY</span>
-                  <span className="text-emerald-700 font-medium">
-                    Complimentary Atelier Courier
+                  <span>STANDARD DELIVERY</span>
+                  <span className={cartSubtotal >= 200 ? "text-emerald-700 font-semibold" : "text-[#111827] font-semibold"}>
+                    {cartSubtotal >= 200 ? 'FREE ($0.00)' : '$15.00'}
                   </span>
                 </div>
+                {cartSubtotal >= 200 && (
+                  <div className="text-[10px] text-emerald-700 font-mono flex items-center gap-1 justify-end">
+                    <span>✓ Free shipping on orders &gt; $200</span>
+                  </div>
+                )}
                 <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold text-[#111827]">
-                  <span>BAG SUBTOTAL</span>
-                  <span className="text-[#936B34] tabular-nums">${cartSubtotal.toFixed(2)}</span>
+                  <span>ESTIMATED TOTAL</span>
+                  <span className="text-[#936B34] tabular-nums">
+                    ${(cartSubtotal + (cartSubtotal >= 200 ? 0 : 15)).toFixed(2)}
+                  </span>
                 </div>
               </div>
 
-              {/* Temporary Checkout Suspension Notice */}
+              {/* Atelier Shipping Guarantee Notice */}
               <div className="p-3 bg-[#FAF8F5] border border-[#936B34]/30 space-y-1 text-left">
                 <div className="flex items-center gap-1.5 text-[#936B34] text-[10px] font-mono uppercase font-bold tracking-wider">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Online Checkout Temporarily Paused</span>
+                  <span>Complimentary Insured Delivery</span>
                 </div>
                 <p className="text-[11px] font-mono text-gray-600 leading-relaxed">
-                  Self-checkout is temporarily paused and will be re-enabled soon. Garments remain reserved in your bag.
+                  {cartSubtotal >= 200 
+                    ? 'Congratulations! Your order qualifies for free insured ground shipping.' 
+                    : `Add $${(200 - cartSubtotal).toFixed(2)} more to your bag to enjoy free shipping.`}
                 </p>
               </div>
 
               <button
                 onClick={() => {
                   setIsCartOpen(false);
-                  setActiveView('cart');
+                  if (!currentCustomer) {
+                    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('pa_checkout_return', '1');
+                    showToast('Please sign in to proceed with checkout', 'info');
+                    setActiveView('login');
+                  } else {
+                    setActiveView('checkout');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
                 }}
                 className="w-full py-3.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-semibold uppercase tracking-[0.25em] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
               >
-                <span>VIEW DETAILED BAG (/cart)</span>
+                <span>PROCEED TO CHECKOUT</span>
                 <ArrowRight className="w-4 h-4 text-white" />
               </button>
 
-              <a
-                href="tel:+18005557275"
+              <button
+                onClick={() => {
+                  setIsCartOpen(false);
+                  setActiveView('cart');
+                }}
                 className="w-full py-2.5 bg-white border border-gray-300 hover:border-black text-gray-700 hover:text-black text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer text-center block"
               >
-                CALL ATELIER CONCIERGE (+1 800-555-PARK)
-              </a>
+                VIEW DETAILED BAG (/cart)
+              </button>
             </div>
           )}
         </div>

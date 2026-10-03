@@ -1341,7 +1341,7 @@ export const ProductDetailPage: React.FC = () => {
                 {openSections.returns && (
                   <div className="p-4 pt-1 bg-white space-y-2 text-xs text-gray-600 leading-relaxed font-light">
                     <p>
-                      <strong>Atelier Courier Dispatch:</strong> All garments are packaged in breathable cedar travel covers and dispatched via insured FedEx or UPS with dedicated tracking number assigned upon quality inspection.
+                      <strong>Free Insured Shipping:</strong> All orders above $200 receive complimentary insured standard delivery. All garments are packaged in breathable cedar travel covers and dispatched via insured FedEx or UPS with dedicated tracking number assigned upon quality inspection.
                     </p>
                     <p>
                       <strong>Return &amp; Exchange Guarantee:</strong> We accept complimentary returns and size exchanges within 15 days of delivery. Items must remain in their original unworn condition with atelier security seals intact.

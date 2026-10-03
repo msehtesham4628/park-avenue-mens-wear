@@ -28,7 +28,8 @@ export function getShippingMethodsForState(stateCode?: string): ShippingMethodOp
         carrier: 'FedEx 2Day / UPS Air',
         speed: '3–4 Business Days',
         cost: standardRate,
-        description: 'Fully insured express air courier delivery to Alaska, Hawaii, or Puerto Rico.',
+        freeThreshold: 200,
+        description: 'Fully insured express air courier delivery to Alaska, Hawaii, or Puerto Rico (Free on orders over $200).',
         iconType: 'express'
       },
       {
@@ -50,7 +51,8 @@ export function getShippingMethodsForState(stateCode?: string): ShippingMethodOp
       carrier: 'UPS Ground / FedEx Home Delivery',
       speed: '3–5 Business Days',
       cost: standardRate,
-      description: 'Signature garment packaging in breathable atelier travel suit covers with delivery confirmation.',
+      freeThreshold: 200,
+      description: 'Signature garment packaging in breathable atelier travel suit covers with delivery confirmation (Free on orders over $200).',
       iconType: 'standard'
     },
     {

@@ -316,6 +316,36 @@ export const CartPage: React.FC = () => {
                   ORDER SUMMARY
                 </h2>
 
+                {/* Free Shipping Progress Indicator */}
+                <div className="py-4 border-b border-gray-100">
+                  <div className="flex items-center justify-between text-xs font-mono uppercase tracking-wider mb-2">
+                    <span className="flex items-center gap-1.5 font-semibold text-[#111827]">
+                      <Truck className="w-4 h-4 text-[#936B34]" />
+                      {subtotalAfterDiscount >= 200 ? (
+                        <span className="text-emerald-700">Free Shipping Unlocked!</span>
+                      ) : (
+                        <span>Free Shipping Goal</span>
+                      )}
+                    </span>
+                    <span className="text-[11px] text-gray-500 font-semibold">
+                      {subtotalAfterDiscount >= 200 ? 'QUALIFIED (>$200)' : `$${subtotalAfterDiscount.toFixed(0)} / $200`}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${subtotalAfterDiscount >= 200 ? 'bg-emerald-600' : 'bg-[#936B34]'}`}
+                      style={{ width: `${Math.min(100, Math.max(0, (subtotalAfterDiscount / 200) * 100))}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-[11px] font-mono text-gray-500">
+                    {subtotalAfterDiscount >= 200 ? (
+                      <span className="text-emerald-700 font-medium">✓ Your order qualifies for free insured standard delivery!</span>
+                    ) : (
+                      <span>Add <strong>${(200 - subtotalAfterDiscount).toFixed(2)}</strong> more to unlock free standard shipping.</span>
+                    )}
+                  </p>
+                </div>
+
                 <div className="py-4 space-y-3 text-xs font-mono border-b border-gray-100">
                   <div className="flex justify-between text-gray-600">
                     <span>GARMENT SUBTOTAL</span>
@@ -337,12 +367,14 @@ export const CartPage: React.FC = () => {
                     <span className="flex items-center gap-1">
                       <span>SHIPPING &amp; DELIVERY</span>
                     </span>
-                    <span className="text-emerald-700 font-mono text-[11px] font-medium">Complimentary Atelier Courier</span>
+                    <span className={subtotalAfterDiscount >= 200 ? "text-emerald-700 font-mono text-[11px] font-semibold uppercase" : "text-[#111827] font-mono text-[11px] font-medium"}>
+                      {subtotalAfterDiscount >= 200 ? 'FREE ($0.00)' : '$15.00 (Standard)'}
+                    </span>
                   </div>
 
                   <div className="flex justify-between text-gray-600">
                     <span>SALES TAX</span>
-                    <span className="text-gray-500 font-mono text-[11px]">Calculated by state</span>
+                    <span className="text-gray-500 font-mono text-[11px]">Calculated at checkout by state</span>
                   </div>
                 </div>
 
@@ -353,7 +385,7 @@ export const CartPage: React.FC = () => {
                   </span>
                   <div className="text-right">
                     <span className="font-serif text-2xl text-[#111827] font-semibold block">
-                      ${subtotalAfterDiscount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      ${(subtotalAfterDiscount + (subtotalAfterDiscount >= 200 ? 0 : 15)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                     <span className="text-[10px] font-mono text-gray-400">USD · White-glove insured atelier reservation</span>
                   </div>
@@ -387,30 +419,37 @@ export const CartPage: React.FC = () => {
                   </p>
                 </form>
 
-                {/* Order Reservation & Concierge Notice (Checkout Temporarily Removed) */}
+                {/* Checkout & Concierge Actions */}
                 <div className="pt-4 space-y-3">
-                  <div className="p-4 bg-[#FAF8F5] border border-[#936B34]/40 space-y-2.5">
-                    <div className="flex items-center gap-2 text-[#936B34] font-semibold text-xs font-mono uppercase tracking-wider">
-                      <ShieldCheck className="w-4 h-4 text-[#936B34]" />
-                      <span>Online Checkout Temporarily Paused</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!currentCustomer) {
+                        if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('pa_checkout_return', '1');
+                        showToast('Please sign in to proceed with checkout', 'info');
+                        setActiveView('login');
+                      } else {
+                        setActiveView('checkout');
+                        navigateTo('/checkout');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    className="w-full py-4 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-semibold uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  >
+                    <span>PROCEED TO SECURE CHECKOUT</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <div className="p-3 bg-[#FAF8F5] border border-[#936B34]/30 space-y-1 text-left">
+                    <div className="flex items-center gap-1.5 text-[#936B34] text-[10px] font-mono uppercase font-bold tracking-wider">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Complimentary Insured Delivery</span>
                     </div>
-                    <p className="text-xs text-gray-600 leading-relaxed font-mono">
-                      Online self-checkout has been temporarily paused and will be re-enabled soon. All items in your bag remain reserved in your private session. To complete a tailored reservation, please connect with our atelier concierge:
+                    <p className="text-[11px] font-mono text-gray-600 leading-relaxed">
+                      {subtotalAfterDiscount >= 200 
+                        ? 'Your order qualifies for Free Standard Insured Delivery in breathable garment covers.' 
+                        : 'Orders over $200 qualify for free insured delivery across all 50 states.'}
                     </p>
-                    <div className="pt-2 flex flex-col gap-2">
-                      <a
-                        href="tel:+18005557275"
-                        className="w-full py-3.5 px-4 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono font-semibold uppercase tracking-wider text-center transition-colors cursor-pointer shadow-sm"
-                      >
-                        Call Concierge (+1 800-555-PARK)
-                      </a>
-                      <a
-                        href="mailto:concierge@parkavenuemenswear.com?subject=Park%20Avenue%20Bag%20Reservation"
-                        className="w-full py-3 px-4 bg-white border border-gray-300 hover:border-black text-[#111827] text-xs font-mono uppercase tracking-wider text-center transition-colors cursor-pointer"
-                      >
-                        Email Atelier Concierge
-                      </a>
-                    </div>
                   </div>
 
                   <p className="text-[10px] text-center font-mono text-gray-400">

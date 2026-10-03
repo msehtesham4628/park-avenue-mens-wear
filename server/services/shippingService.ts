@@ -9,7 +9,7 @@ export interface ShippingMethod {
 }
 
 export const SHIPPING_METHODS: ShippingMethod[] = [
-  { id:'standard', name:'Insured Standard / Ground', description:'Insured ground delivery with garment protection', price:15, estimatedDelivery:'3–5 business days', enabled:true },
+  { id:'standard', name:'Insured Standard / Ground', description:'Insured ground delivery with garment protection (Free on orders over $200)', price:15, estimatedDelivery:'3–5 business days', enabled:true, freeShippingThreshold:200 },
   { id:'express', name:'Atelier Express Air', description:'Priority insured air delivery', price:25, estimatedDelivery:'2–3 business days', enabled:true },
   { id:'overnight', name:'White-Glove VIP Courier / Overnight', description:'Priority white-glove delivery', price:65, estimatedDelivery:'1 business day', enabled:true }
 ];
@@ -27,7 +27,8 @@ export const shippingService = {
       (normalized.includes('standard') && m.id === 'standard')
     ) || SHIPPING_METHODS[0];
 
-    const amount = method.freeShippingThreshold !== undefined && subtotal >= method.freeShippingThreshold ? 0 : method.price;
+    const freeThreshold = method.freeShippingThreshold ?? (method.id === 'standard' ? 200 : undefined);
+    const amount = (freeThreshold !== undefined && subtotal >= freeThreshold) ? 0 : method.price;
     return { ...method, amount };
   }
 };

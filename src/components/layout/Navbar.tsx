@@ -99,7 +99,7 @@ export const Navbar: React.FC = () => {
             </div>
 
             <div className={`mx-auto text-center font-medium tracking-[0.18em] truncate px-2 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
-              COMPLIMENTARY WORLDWIDE DELIVERY &amp; BESPOKE TAILORING
+              FREE INSURED SHIPPING ON ORDERS OVER $200 · BESPOKE ATELIER TAILORING
             </div>
 
             <div className={`hidden md:flex items-center gap-3 text-right text-[10px] ${isTransparent ? 'text-gray-300' : 'text-gray-500'}`}>

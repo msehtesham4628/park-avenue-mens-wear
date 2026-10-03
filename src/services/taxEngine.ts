@@ -287,10 +287,13 @@ export function estimateTaxAndShipmentByZip(
   const isOffshore = ['AK', 'HI', 'PR'].includes(stateCode);
 
   // Standard shipping fee strictly following Dashboard configuration:
+  // Any order above $200 receives Free Standard Shipping!
   // If product shippingCharge is explicitly configured as 0 (Free Shipping in Dashboard), rate is 0.
   // Otherwise uses the Dashboard's configured standardShippingRate for the destination state.
   let standardShippingFee: number;
-  if (productShippingCharge !== undefined && Number(productShippingCharge) === 0) {
+  if (subtotal >= 200) {
+    standardShippingFee = 0;
+  } else if (productShippingCharge !== undefined && Number(productShippingCharge) === 0) {
     standardShippingFee = 0;
   } else if (productShippingCharge !== undefined && Number(productShippingCharge) > 0 && !isOffshore) {
     standardShippingFee = Number(productShippingCharge);
