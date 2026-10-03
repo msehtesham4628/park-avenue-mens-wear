@@ -145,8 +145,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                         subtext={product.name}
                       />
                     )}
+                    {/* Image indicator badge */}
                     <div className="absolute top-2 left-2 bg-[#111827] text-white text-[9px] font-mono px-2 py-0.5 uppercase tracking-wider">
-                      {currentView?.label || 'Garment View'}
+                      {product.category}
                     </div>
                   </div>
 
@@ -156,17 +157,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                       <button
                         key={idx}
                         onClick={() => setActiveImageIndex(idx)}
-                        className={`p-1.5 border text-center transition-colors cursor-pointer ${
+                        className={`p-1 border text-center transition-colors cursor-pointer rounded-xs ${
                           safeIndex === idx ? 'border-[#936B34] bg-[#F3F4F6] ring-1 ring-[#936B34]' : 'border-gray-200 opacity-70 hover:opacity-100 bg-[#F9F9F8]'
                         }`}
+                        aria-label={`View photo 0${idx + 1}`}
                       >
                         {v.url ? (
                           <div className="aspect-[3/4] mb-1 bg-gray-100 overflow-hidden">
-                            <img src={v.url} alt={v.label} className="w-full h-full object-cover" />
+                            <img src={v.url} alt="" className="w-full h-full object-cover" />
                           </div>
                         ) : null}
                         <span className="font-mono text-[9px] text-[#936B34] block font-medium">0{idx + 1}</span>
-                        <span className="text-[8px] font-mono uppercase text-gray-500 truncate block">{v.label}</span>
                       </button>
                     ))}
                   </div>

@@ -11,6 +11,8 @@ import {
   Gift, 
   ChevronDown, 
   ChevronUp, 
+  ChevronLeft,
+  ChevronRight,
   Share2, 
   ShieldCheck, 
   RotateCcw, 
@@ -367,6 +369,34 @@ export const ProductDetailPage: React.FC = () => {
     }
   }, [product?.price, product?.shippingCharge, quantity]);
 
+  const handlePrevImage = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (resolvedViews.length <= 1) return;
+    setActiveImageIndex(prev => (prev - 1 + resolvedViews.length) % resolvedViews.length);
+  };
+
+  const handleNextImage = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (resolvedViews.length <= 1) return;
+    setActiveImageIndex(prev => (prev + 1) % resolvedViews.length);
+  };
+
+  // Keyboard navigation for fullscreen zoom modal
+  useEffect(() => {
+    if (!isZoomModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsZoomModalOpen(false);
+      } else if (e.key === 'ArrowLeft') {
+        setActiveImageIndex(prev => (prev - 1 + resolvedViews.length) % (resolvedViews.length || 1));
+      } else if (e.key === 'ArrowRight') {
+        setActiveImageIndex(prev => (prev + 1) % (resolvedViews.length || 1));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZoomModalOpen, resolvedViews.length]);
+
   const handleAddToCart = () => {
     if (!product || isOutOfStock) return;
     addToCart(product, currentSize, currentColor, quantity);
@@ -519,7 +549,7 @@ export const ProductDetailPage: React.FC = () => {
               {currentDisplayImage ? (
                 <img
                   src={currentDisplayImage}
-                  alt={`${product.name} - ${resolvedViews[activeImageIndex]?.label || 'view'}`}
+                  alt={`${product.name} - 0${activeImageIndex + 1}`}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-zoom-in"
                   onClick={() => setIsZoomModalOpen(true)}
                 />
@@ -529,7 +559,7 @@ export const ProductDetailPage: React.FC = () => {
                   category={product.category}
                   aspectRatio="auto"
                   className="w-full h-full min-h-[460px]"
-                  subtext={resolvedViews[activeImageIndex]?.label || product.name}
+                  subtext={product.name}
                 />
               )}
 
@@ -543,11 +573,6 @@ export const ProductDetailPage: React.FC = () => {
                 <span className="text-[9px] uppercase tracking-[0.2em] font-mono font-medium text-[#111827] bg-white/95 backdrop-blur-xs px-2.5 py-0.5 border border-gray-200 shadow-xs">
                   {product.category.toUpperCase()}
                 </span>
-                {resolvedViews[activeImageIndex] && (
-                  <span className="text-[9px] uppercase tracking-[0.2em] font-mono font-bold text-[#936B34] bg-white/95 backdrop-blur-xs px-2.5 py-1 border border-[#936B34]/30 shadow-xs">
-                    {resolvedViews[activeImageIndex].label}
-                  </span>
-                )}
               </div>
 
               {/* Image Counter Badge */}
@@ -571,30 +596,25 @@ export const ProductDetailPage: React.FC = () => {
                 <button
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
-                  className={`aspect-[3/4] bg-[#F8F9FA] border p-1 sm:p-1.5 text-center flex flex-col items-center justify-between transition-all cursor-pointer relative overflow-hidden ${
+                  className={`aspect-[3/4] bg-[#F8F9FA] border p-0.5 transition-all cursor-pointer relative overflow-hidden rounded-xs ${
                     activeImageIndex === idx
-                      ? 'border-[#936B34] ring-2 ring-[#936B34]/40 bg-[#F0F2F5]'
-                      : 'border-gray-200 opacity-75 hover:opacity-100 hover:border-gray-400'
+                      ? 'border-[#936B34] ring-2 ring-[#936B34]/60 bg-white shadow-xs'
+                      : 'border-gray-200 opacity-70 hover:opacity-100 hover:border-gray-400'
                   }`}
+                  aria-label={`View photo 0${idx + 1}`}
                 >
                   <div className="w-full h-full relative overflow-hidden bg-gray-100">
                     {view.url ? (
                       <img 
                         src={view.url} 
-                        alt={view.label} 
-                        className={`w-full h-full object-cover transition-opacity ${activeImageIndex === idx ? 'opacity-100' : 'opacity-80'}`} 
+                        alt="" 
+                        className={`w-full h-full object-cover transition-transform duration-300 ${activeImageIndex === idx ? 'scale-105' : ''}`} 
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-1">
                         <span className="font-mono text-[10px] text-[#936B34] font-semibold">0{idx + 1}</span>
                       </div>
                     )}
-                  </div>
-
-                  <div className="w-full pt-1 pb-0.5 text-center bg-white/90">
-                    <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-gray-800 font-semibold block truncate">
-                      {view.label}
-                    </span>
                   </div>
 
                   {activeImageIndex === idx && (
@@ -1452,27 +1472,93 @@ export const ProductDetailPage: React.FC = () => {
 
       {/* FULLSCREEN IMAGE ZOOM MODAL */}
       {isZoomModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <button
-            onClick={() => setIsZoomModalOpen(false)}
-            className="absolute top-4 right-4 text-white hover:text-gray-300 p-2 z-10 cursor-pointer"
-            aria-label="Close zoom modal"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <div className="max-w-4xl max-h-[90vh] overflow-hidden flex items-center justify-center">
-            {primaryImage ? (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6"
+          onClick={() => setIsZoomModalOpen(false)}
+        >
+          {/* Top Bar with Product Title, Counter and Close */}
+          <div className="w-full max-w-5xl flex items-center justify-between z-20 text-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <span className="font-mono text-xs uppercase tracking-[0.25em] text-[#E5C384] font-medium truncate max-w-[200px] sm:max-w-md">
+                {product.name}
+              </span>
+              <span className="text-white/40">•</span>
+              <span className="font-mono text-xs text-gray-300">
+                0{activeImageIndex + 1} / 0{resolvedViews.length}
+              </span>
+            </div>
+            <button
+              onClick={() => setIsZoomModalOpen(false)}
+              className="text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Close zoom modal"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Center Area with Active Image and Navigation Arrows */}
+          <div className="relative w-full max-w-5xl flex-1 flex items-center justify-center my-2 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {resolvedViews.length > 1 && (
+              <button
+                type="button"
+                onClick={handlePrevImage}
+                className="absolute left-2 sm:left-4 z-20 p-2.5 sm:p-3 rounded-full bg-black/60 hover:bg-[#936B34] text-white border border-white/20 transition-all cursor-pointer shadow-xl active:scale-95"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            )}
+
+            {currentDisplayImage ? (
               <img
-                src={primaryImage}
+                src={currentDisplayImage}
                 alt={product.name}
-                className="max-w-full max-h-[85vh] object-contain shadow-2xl"
+                className="max-w-full max-h-[72vh] sm:max-h-[78vh] object-contain shadow-2xl transition-all duration-300 select-none"
               />
             ) : (
               <div className="w-96 h-96 bg-gray-900 border border-gray-700 flex items-center justify-center text-white font-mono text-sm">
                 HIGH RESOLUTION ATELIER MASTER
               </div>
             )}
+
+            {resolvedViews.length > 1 && (
+              <button
+                type="button"
+                onClick={handleNextImage}
+                className="absolute right-2 sm:right-4 z-20 p-2.5 sm:p-3 rounded-full bg-black/60 hover:bg-[#936B34] text-white border border-white/20 transition-all cursor-pointer shadow-xl active:scale-95"
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            )}
           </div>
+
+          {/* Bottom Thumbnails Selector Strip */}
+          {resolvedViews.length > 1 && (
+            <div 
+              className="flex items-center gap-2 sm:gap-3 py-2 px-3 bg-black/50 backdrop-blur-md border border-white/10 rounded-2xl z-20 max-w-full overflow-x-auto" 
+              onClick={(e) => e.stopPropagation()}
+            >
+              {resolvedViews.map((v, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImageIndex(idx)}
+                  className={`w-12 h-16 sm:w-14 sm:h-20 bg-gray-900 border rounded-xs overflow-hidden transition-all cursor-pointer shrink-0 ${
+                    activeImageIndex === idx
+                      ? 'border-[#E5C384] ring-2 ring-[#E5C384]/50 scale-105'
+                      : 'border-white/20 opacity-60 hover:opacity-100 hover:border-white/50'
+                  }`}
+                  aria-label={`View photo 0${idx + 1}`}
+                >
+                  <img
+                    src={v.url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
