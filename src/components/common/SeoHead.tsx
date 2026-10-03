@@ -13,7 +13,11 @@ export const SeoHead: React.FC = () => {
   const { activeView, selectedCategory, selectedProductId, products } = useShop();
 
   const selectedProduct = selectedProductId 
-    ? products.find(p => p.id === selectedProductId || p.sku === selectedProductId)
+    ? products.find(p => 
+        p.sku?.toLowerCase() === selectedProductId.toLowerCase() ||
+        p.id?.toLowerCase() === selectedProductId.toLowerCase() ||
+        ((p as any).productId && String((p as any).productId).toLowerCase() === selectedProductId.toLowerCase())
+      )
     : null;
 
   useEffect(() => {

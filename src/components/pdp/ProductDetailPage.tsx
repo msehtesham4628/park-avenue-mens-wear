@@ -27,7 +27,6 @@ import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { SizeGuideModal } from './SizeGuideModal';
-import { PdfViewerModal } from '../common/PdfViewerModal';
 import { estimateTaxAndShipmentByZip, ZipTaxAndShipmentEstimate } from '../../services/taxEngine';
 import { Product } from '../../types';
 import { extractProductColors } from '../../utils/colorUtils';
@@ -132,7 +131,6 @@ export const ProductDetailPage: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
-  const [selectedPdfDoc, setSelectedPdfDoc] = useState<{ url: string; title: string; fileName?: string } | null>(null);
 
   // Accordion open states
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -578,47 +576,6 @@ export const ProductDetailPage: React.FC = () => {
                 </button>
               ))}
             </div>
-
-            {/* Client Attached PDF Lookbook / Spec Documents */}
-            {product.pdfDocuments && product.pdfDocuments.length > 0 && (() => {
-              const uniquePdfs = product.pdfDocuments.filter((pdf, index, arr) => 
-                arr.findIndex(p => p.url === pdf.url || (p.fileName && p.fileName === pdf.fileName)) === index
-              );
-              if (uniquePdfs.length === 0) return null;
-              return (
-                <div className="p-3.5 bg-[#F9F9F8] border border-[#936B34]/30 mt-4 space-y-2 shadow-xs">
-                  <div className="flex items-center justify-between border-b border-gray-200 pb-2">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-[#936B34]" />
-                      <span className="text-xs font-mono uppercase tracking-wider text-[#111827] font-semibold">
-                        ATELIER PDF LOOKBOOK &amp; SPECIFICATIONS
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-[#936B34] font-bold">
-                      {uniquePdfs.length} Document(s)
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {uniquePdfs.map(pdf => (
-                      <button
-                        key={pdf.id}
-                        type="button"
-                        onClick={() => setSelectedPdfDoc({
-                          url: pdf.url,
-                          title: `${product.name} — ${pdf.title || pdf.fileName}`,
-                          fileName: pdf.fileName
-                        })}
-                        className="px-3 py-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-xs font-mono text-[#111827] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs font-medium"
-                      >
-                        <FileText className="w-3.5 h-3.5 text-[#936B34]" />
-                        <span className="truncate max-w-[200px]">{pdf.title || pdf.fileName}</span>
-                        <span className="text-[10px] text-gray-400">· View PDF</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
 
             {/* Atelier Craftsmanship Quality Guarantee (Anti-AI Slop luxury provenance) */}
             <div className="p-4 sm:p-5 bg-[#F9F9F8] border border-gray-200 mt-6 flex items-start gap-3.5">
@@ -1386,7 +1343,7 @@ export const ProductDetailPage: React.FC = () => {
                 return (
                   <div
                     key={comp.id}
-                    onClick={() => navigateToProduct(comp.id, comp.category)}
+                    onClick={() => navigateToProduct(comp.sku || comp.id, comp.category)}
                     className="group bg-white border border-gray-200 hover:border-[#111827] transition-all duration-300 cursor-pointer flex flex-col overflow-hidden"
                   >
                     <div className="relative aspect-[3/4] bg-[#F8F9FA] overflow-hidden">
@@ -1498,18 +1455,6 @@ export const ProductDetailPage: React.FC = () => {
         onClose={() => setIsSizeGuideOpen(false)}
         category={product.category}
       />
-
-      {/* PDF DOCUMENT VIEWER MODAL */}
-      {selectedPdfDoc && (
-        <PdfViewerModal
-          isOpen={Boolean(selectedPdfDoc)}
-          onClose={() => setSelectedPdfDoc(null)}
-          pdfUrl={selectedPdfDoc.url}
-          title={selectedPdfDoc.title}
-          fileName={selectedPdfDoc.fileName}
-        />
-      )}
-
     </div>
   );
 };

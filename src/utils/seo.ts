@@ -6,6 +6,7 @@
  */
 
 import { Product, ProductCategory } from '../types';
+import { getCategorySlug } from './router';
 
 export const CANONICAL_BASE = 'https://www.parkavenuemenswear.com';
 export const BRAND_NAME = 'Park Avenue Menswear';
@@ -49,10 +50,14 @@ export function generateProductSeo(product: Product): SeoMetadataOptions {
     ? (product.images[0].startsWith('http') ? product.images[0] : `${CANONICAL_BASE}${product.images[0]}`)
     : DEFAULT_OG_IMAGE;
 
+  const catSlug = getCategorySlug(product.category) || 'category';
+  const skuOrId = product.sku || product.id;
+  const productUrl = `/${catSlug}/products/${encodeURIComponent(skuOrId)}`;
+
   return {
     title,
     description,
-    canonicalPath: `/product/${product.id}`,
+    canonicalPath: productUrl,
     ogType: 'product',
     ogImage: primaryImage,
     keywords,
@@ -60,8 +65,8 @@ export function generateProductSeo(product: Product): SeoMetadataOptions {
     category: product.category,
     breadcrumbs: [
       { name: 'Home', path: '/' },
-      { name: product.category, path: `/${product.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` },
-      { name: product.name, path: `/product/${product.id}` }
+      { name: product.category, path: `/${catSlug}` },
+      { name: product.name, path: productUrl }
     ]
   };
 }

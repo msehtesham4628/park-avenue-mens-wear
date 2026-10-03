@@ -194,14 +194,14 @@ export const ProductViewsUploader: React.FC<ProductViewsUploaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono uppercase tracking-wider text-[#936B34] font-semibold">
-                GARMENT MULTI-ANGLE &amp; PDF UPLOADER (3–5 VIEWS)
+                GARMENT MULTI-ANGLE VIEWS UPLOADER (3–5 VIEWS)
               </span>
               <span className="px-2 py-0.5 bg-[#936B34]/10 text-[#936B34] text-[10px] font-mono font-bold">
                 {filledCount}/5 Active Views
               </span>
             </div>
             <p className="text-xs text-gray-600 font-sans mt-0.5">
-              Upload Front, Back, Left, Right &amp; Detail photos or PDFs sent by the client. PDFs are automatically rendered into high-resolution viewable photographs.
+              Upload Front, Back, Left, Right &amp; Detail photos of the garment for client display.
             </p>
           </div>
         </div>
@@ -218,7 +218,7 @@ export const ProductViewsUploader: React.FC<ProductViewsUploaderProps> = ({
         )}
       </div>
 
-      {/* Primary Batch Dropzone for 3-5 PDFs or Photos */}
+      {/* Primary Batch Dropzone for 3-5 Photos */}
       <div
         onDragOver={(e) => {
           e.preventDefault();
@@ -256,10 +256,10 @@ export const ProductViewsUploader: React.FC<ProductViewsUploaderProps> = ({
 
           <div>
             <h4 className="font-serif text-lg text-[#111827] uppercase tracking-wide font-medium">
-              DROP 3 TO 5 CLIENT PDFS OR PHOTOS AT ONCE
+              DROP 3 TO 5 PHOTOS AT ONCE
             </h4>
             <p className="text-xs text-gray-500 font-mono mt-1 leading-relaxed">
-              Drag &amp; drop Front, Back, Left, Right files, or a single multi-page PDF. They will automatically be parsed, rendered, and slotted into position.
+              Drag &amp; drop Front, Back, Left, Right files. They will automatically be parsed and slotted into position.
             </p>
           </div>
 
@@ -271,7 +271,7 @@ export const ProductViewsUploader: React.FC<ProductViewsUploaderProps> = ({
               className="px-5 py-2.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>SELECT 3-5 FILES (PDF / IMAGES)</span>
+              <span>SELECT 3-5 PHOTOS</span>
             </button>
           </div>
 
@@ -438,110 +438,6 @@ export const ProductViewsUploader: React.FC<ProductViewsUploaderProps> = ({
             );
           })}
         </div>
-      </div>
-
-      {/* Attached Client PDF Documents Section */}
-      <div className="border border-gray-200 bg-white p-5 space-y-3 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
-          <div>
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#936B34]" />
-              <h4 className="font-serif text-base text-[#111827] uppercase tracking-wide font-medium">
-                ATTACHED CLIENT PDF SPECIFICATIONS &amp; LOOKBOOKS
-              </h4>
-            </div>
-            <p className="text-xs text-gray-500 font-mono mt-0.5">
-              Original client PDFs attached to this garment. Available for download and consultation in the storefront salon.
-            </p>
-          </div>
-
-          <div>
-            <input
-              ref={extraPdfInputRef}
-              type="file"
-              accept=".pdf"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                const pdfDataUrl = await new Promise<string>((res) => {
-                  const r = new FileReader();
-                  r.onload = () => res(r.result as string);
-                  r.readAsDataURL(file);
-                });
-                const newDoc: ProductPdfDocument = {
-                  id: `pdf-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-                  title: file.name.replace(/\.pdf$/i, ''),
-                  fileName: file.name,
-                  url: pdfDataUrl,
-                  uploadedAt: new Date().toISOString(),
-                  viewType: 'spec',
-                  fileSize: `${(file.size / (1024 * 1024)).toFixed(2)} MB`
-                };
-                const nextPdfs = [...pdfDocuments, newDoc];
-                setPdfDocuments(nextPdfs);
-                notifyChange(views, nextPdfs);
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => extraPdfInputRef.current?.click()}
-              className="px-3.5 py-1.5 bg-[#936B34] hover:bg-[#7a5726] text-white text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 cursor-pointer font-medium"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Attach Additional PDF</span>
-            </button>
-          </div>
-        </div>
-
-        {pdfDocuments.length === 0 ? (
-          <p className="text-xs text-gray-400 font-mono italic py-2">
-            No standalone PDF lookbooks or measurement documents attached yet. Upload above or click &quot;Attach Additional PDF&quot;.
-          </p>
-        ) : (
-          <div className="divide-y divide-gray-100 border border-gray-100">
-            {pdfDocuments.map((pdf) => (
-              <div key={pdf.id} className="p-3 bg-[#FBFBFA] flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-7 h-7 bg-[#111827] text-[#936B34] flex items-center justify-center shrink-0">
-                    <FileText className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-mono text-xs font-semibold text-[#111827] truncate">
-                      {pdf.title || pdf.fileName}
-                    </div>
-                    <div className="text-[10px] font-mono text-gray-500">
-                      File: {pdf.fileName} {pdf.fileSize ? `(${pdf.fileSize})` : ''} · Added {new Date(pdf.uploadedAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setActivePdfModal({
-                      url: pdf.url,
-                      title: pdf.title,
-                      fileName: pdf.fileName
-                    })}
-                    className="px-2.5 py-1 bg-white border border-gray-300 text-xs font-mono uppercase tracking-wider text-gray-700 hover:border-black flex items-center gap-1 cursor-pointer"
-                  >
-                    <Eye className="w-3 h-3 text-[#936B34]" />
-                    <span>View</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePdf(pdf.id)}
-                    className="p-1 text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
-                    title="Remove document"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Active PDF Viewer Modal */}

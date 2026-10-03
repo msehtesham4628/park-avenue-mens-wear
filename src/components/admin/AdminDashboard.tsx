@@ -1831,7 +1831,6 @@ export const AdminDashboard: React.FC = () => {
                             <FileUp className="w-3.5 h-3.5 text-[#936B34]" />
                             <span>
                               {Object.values(prod.productViews || {}).filter(Boolean).length || prod.images?.length || 0}/5 Views
-                              {prod.pdfDocuments && prod.pdfDocuments.length > 0 ? ` · ${prod.pdfDocuments.length} PDF` : ''}
                             </span>
                           </button>
                         </td>
@@ -1842,7 +1841,7 @@ export const AdminDashboard: React.FC = () => {
                           <button
                             onClick={() => handleOpenQuickViews(prod)}
                             className="p-1.5 text-[#936B34] hover:text-[#7A5726] transition-colors cursor-pointer"
-                            title="Manage 3-5 Views & PDFs"
+                            title="Manage 3-5 Views"
                           >
                             <FileUp className="w-4 h-4" />
                           </button>
@@ -4890,7 +4889,7 @@ export const AdminDashboard: React.FC = () => {
                         <div className="space-y-1.5 pt-1">
                           <label className="w-full py-1.5 px-2 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] hover:text-[#936B34] text-[10px] font-mono uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs font-semibold">
                             <Upload className="w-3 h-3 text-[#936B34]" />
-                            <span>UPLOAD PDF / IMAGE</span>
+                            <span>UPLOAD IMAGE</span>
                             <input
                               type="file"
                               accept="image/*,application/pdf"
@@ -4909,102 +4908,13 @@ export const AdminDashboard: React.FC = () => {
                               ...prev,
                               views: { ...prev.views, [cfg.type]: e.target.value }
                             }))}
-                            placeholder="or paste image/PDF URL"
+                            placeholder="or paste image URL"
                             className="w-full bg-white border border-gray-200 px-2 py-1 text-[10px] text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                           />
                         </div>
                       </div>
                     );
                   })}
-                </div>
-
-                {/* Attached Technical PDF Documents Section */}
-                <div className="mt-4 pt-4 border-t border-gray-100 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <FileText className="w-4 h-4 text-[#936B34]" />
-                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#111827]">
-                        ATTACHED CLIENT PDF SPECIFICATIONS &amp; LOOKBOOKS
-                      </span>
-                    </div>
-                    <label className="px-2.5 py-1 bg-[#111827] text-white hover:bg-[#936B34] text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors font-medium">
-                      <Plus className="w-3 h-3" />
-                      <span>ATTACH PDF</span>
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = () => {
-                            const dataUrl = reader.result as string;
-                            setProductForm(prev => ({
-                              ...prev,
-                              pdfDocuments: [
-                                ...prev.pdfDocuments,
-                                {
-                                  id: `pdf-${Date.now()}`,
-                                  title: file.name.replace(/\.[^/.]+$/, ''),
-                                  fileName: file.name,
-                                  url: dataUrl,
-                                  uploadedAt: new Date().toISOString(),
-                                  fileSize: formatBytes(file.size)
-                                }
-                              ]
-                            }));
-                            showToast(`Attached PDF document ${file.name}`, 'success');
-                          };
-                          reader.readAsDataURL(file);
-                        }}
-                      />
-                    </label>
-                  </div>
-
-                  {productForm.pdfDocuments && productForm.pdfDocuments.length > 0 ? (
-                    <div className="divide-y divide-gray-100 border border-gray-200 bg-[#F9F9F8]">
-                      {productForm.pdfDocuments.map(pdf => (
-                        <div key={pdf.id} className="p-2.5 flex items-center justify-between gap-3 text-xs font-mono">
-                          <div className="flex items-center gap-2 truncate">
-                            <FileText className="w-4 h-4 text-[#936B34] shrink-0" />
-                            <div className="truncate">
-                              <span className="font-semibold text-[#111827] block truncate">{pdf.title || pdf.fileName}</span>
-                              <span className="text-[10px] text-gray-500">{pdf.fileSize || 'PDF Document'} · {new Date(pdf.uploadedAt).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => setActivePdfPreview({
-                                url: pdf.url,
-                                title: pdf.title || pdf.fileName,
-                                fileName: pdf.fileName
-                              })}
-                              className="px-2 py-1 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] text-[10px] uppercase font-mono cursor-pointer"
-                            >
-                              VIEW
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setProductForm(prev => ({
-                                ...prev,
-                                pdfDocuments: prev.pdfDocuments.filter(d => d.id !== pdf.id)
-                              }))}
-                              className="p-1 text-red-500 hover:text-red-700 cursor-pointer"
-                              title="Delete PDF"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[10px] font-mono text-gray-400 italic">
-                      No supplementary PDF documents attached yet.
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -5038,7 +4948,7 @@ export const AdminDashboard: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold">
-                  PARK AVENUE ATELIER · 3-5 VIEWS &amp; PDF MANAGER
+                  PARK AVENUE ATELIER · 3-5 VIEWS MANAGER
                 </span>
                 <span className="text-[10px] font-mono bg-[#936B34] text-white px-2 py-0.5">
                   SKU: {quickViewsProduct.sku}
@@ -5203,88 +5113,6 @@ export const AdminDashboard: React.FC = () => {
               })}
             </div>
 
-            {/* Attached PDF Specifications */}
-            <div className="border border-gray-200 bg-white p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#111827] uppercase">
-                  <FileText className="w-4 h-4 text-[#936B34]" />
-                  <span>Product Technical PDF Documents ({quickViewsForm.pdfDocuments.length})</span>
-                </div>
-                <label className="px-2.5 py-1 bg-[#111827] text-white hover:bg-[#936B34] text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors font-medium">
-                  <Plus className="w-3 h-3" />
-                  <span>Attach PDF</span>
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        const dataUrl = reader.result as string;
-                        setQuickViewsForm(prev => ({
-                          ...prev,
-                          pdfDocuments: [
-                            ...prev.pdfDocuments,
-                            {
-                              id: `pdf-${Date.now()}`,
-                              title: file.name.replace(/\.[^/.]+$/, ''),
-                              fileName: file.name,
-                              url: dataUrl,
-                              uploadedAt: new Date().toISOString(),
-                              fileSize: formatBytes(file.size)
-                            }
-                          ]
-                        }));
-                        showToast(`Attached PDF document ${file.name}`, 'success');
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                </label>
-              </div>
-
-              {quickViewsForm.pdfDocuments.length > 0 ? (
-                <div className="divide-y divide-gray-100">
-                  {quickViewsForm.pdfDocuments.map(pdf => (
-                    <div key={pdf.id} className="py-2 flex items-center justify-between gap-3 text-xs font-mono">
-                      <div className="flex items-center gap-2 truncate">
-                        <FileText className="w-3.5 h-3.5 text-[#936B34] shrink-0" />
-                        <span className="font-medium text-[#111827] truncate">{pdf.title || pdf.fileName}</span>
-                        <span className="text-[10px] text-gray-400">({pdf.fileSize || 'PDF'})</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => setActivePdfPreview({
-                            url: pdf.url,
-                            title: pdf.title || pdf.fileName,
-                            fileName: pdf.fileName
-                          })}
-                          className="px-2 py-0.5 bg-gray-100 hover:bg-[#936B34] hover:text-white text-[10px] font-mono uppercase transition-colors cursor-pointer"
-                        >
-                          View
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setQuickViewsForm(prev => ({
-                            ...prev,
-                            pdfDocuments: prev.pdfDocuments.filter(d => d.id !== pdf.id)
-                          }))}
-                          className="p-1 text-red-500 hover:text-red-700 cursor-pointer"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[10px] font-mono text-gray-400 italic">No attached PDF documents.</p>
-              )}
-            </div>
-
             {/* Save Button */}
             <div className="flex items-center gap-3 pt-2">
               <button
@@ -5292,7 +5120,7 @@ export const AdminDashboard: React.FC = () => {
                 onClick={handleSaveQuickViews}
                 className="flex-1 py-3.5 bg-[#111827] hover:bg-[#936B34] text-white font-semibold text-xs uppercase tracking-widest transition-colors cursor-pointer shadow-md text-center"
               >
-                SAVE 3-5 VIEWS &amp; PDFS TO CATALOG
+                SAVE 3-5 VIEWS TO CATALOG
               </button>
               <button
                 type="button"

@@ -425,16 +425,27 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     navigateTo(url);
   };
 
-  const navigateToProduct = (productId: string, category?: string) => {
-    setSelectedProductId(productId);
-    if (category) {
-      setSelectedCategoryState(category);
+  const navigateToProduct = (productIdOrSku: string, category?: string) => {
+    const clean = (productIdOrSku || '').trim();
+    const matched = products.find(p => 
+      (p.sku && p.sku.toLowerCase() === clean.toLowerCase()) ||
+      (p.id && p.id.toLowerCase() === clean.toLowerCase()) ||
+      ((p as any).productId && String((p as any).productId).toLowerCase() === clean.toLowerCase()) ||
+      ((p as any)._id && String((p as any)._id).toLowerCase() === clean.toLowerCase())
+    );
+
+    const canonicalSku = matched?.sku || clean;
+    const resolvedCategory = category || matched?.category || (selectedCategory !== 'All' ? selectedCategory : undefined);
+
+    setSelectedProductId(canonicalSku);
+    if (resolvedCategory && resolvedCategory !== 'All') {
+      setSelectedCategoryState(resolvedCategory);
     }
     setActiveViewState('pdp');
     const url = buildUrl({
       view: 'pdp',
-      category: category || selectedCategory,
-      productId
+      category: resolvedCategory,
+      productId: canonicalSku
     });
     navigateTo(url);
     window.scrollTo({ top: 0, behavior: 'smooth' });

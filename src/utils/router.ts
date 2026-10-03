@@ -211,6 +211,21 @@ export function parseRoute(pathname?: string): RouteMatch {
       return { view: 'categories' };
 
     case 'category':
+      // Handle /category/products/:sku
+      if (segments.length >= 3 && (segments[1] === 'products' || segments[1] === 'product')) {
+        return { view: 'pdp', productId: segments[2] };
+      }
+      // Handle /category/:category/products/:sku
+      if (segments.length >= 4 && (segments[2] === 'products' || segments[2] === 'product')) {
+        const catSlug = segments[1];
+        const catName = CATEGORY_SLUG_MAP[catSlug] || catSlug;
+        return { 
+          view: 'pdp', 
+          category: catName as ProductCategory, 
+          categorySlug: catSlug, 
+          productId: segments[3] 
+        };
+      }
       if (segments.length >= 2 && segments[1]) {
         const catSlug = segments[1];
         const catName = CATEGORY_SLUG_MAP[catSlug] || catSlug;
@@ -223,7 +238,7 @@ export function parseRoute(pathname?: string): RouteMatch {
     case 'catalog':
     case 'catalogue':
       if (segments.length >= 2 && segments[1] && segments[1] !== 'products' && segments[1] !== 'product') {
-        // e.g. /products/prod-suit-01
+        // e.g. /products/PA-ST-NAVY-150
         return { view: 'pdp', productId: segments[1] };
       }
       return { view: 'shop', category: 'All', categorySlug: 'all', isProductsSubpage: true };
@@ -234,6 +249,17 @@ export function parseRoute(pathname?: string): RouteMatch {
         return { view: 'pdp', productId: segments[1] };
       }
       return { view: 'shop', category: 'All' };
+  }
+
+  // Any generic /:category/products/:sku or /:category/product/:sku route
+  if (segments.length >= 3 && (segments[1] === 'products' || segments[1] === 'product')) {
+    const categoryName = CATEGORY_SLUG_MAP[firstSeg] || firstSeg;
+    return { 
+      view: 'pdp', 
+      category: categoryName as ProductCategory, 
+      categorySlug: firstSeg, 
+      productId: segments[2] 
+    };
   }
 
   // Category routes: e.g. /suits, /suits/products, /suits/products/:id
@@ -350,11 +376,10 @@ export function buildUrl(params: {
 
     case 'pdp':
       if (productId) {
-        if (category && category !== 'All' && category !== 'all') {
-          const slug = getCategorySlug(category);
-          return `/${slug}/products/${productId}`;
-        }
-        return `/product/${productId}`;
+        const catSlug = (category && category !== 'All' && category !== 'all')
+          ? getCategorySlug(category)
+          : 'category';
+        return `/${catSlug}/products/${encodeURIComponent(productId)}`;
       }
       return '/shop';
 

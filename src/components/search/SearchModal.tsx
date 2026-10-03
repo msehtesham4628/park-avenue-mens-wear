@@ -140,7 +140,7 @@ export const SearchModal: React.FC = () => {
                     <div
                       key={product.id}
                       onClick={() => {
-                        navigateToProduct(product.id);
+                        navigateToProduct(product.sku || product.id, product.category);
                         setIsSearchOpen(false);
                       }}
                       className="group flex gap-4 p-3 bg-[#F9F9F8] border border-gray-200 hover:border-[#936B34] hover:bg-[#F3F4F6] transition-all cursor-pointer shadow-lg"

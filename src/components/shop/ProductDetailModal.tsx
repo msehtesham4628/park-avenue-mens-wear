@@ -70,7 +70,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
   const handleGoToPDP = () => {
     onClose();
-    navigateToProduct(product.id);
+    navigateToProduct(product.sku || product.id, product.category);
   };
 
   // Distinct available sizes and colors

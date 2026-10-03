@@ -62,7 +62,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   };
 
   const handleCardClick = () => {
-    navigateToProduct(product.id, product.category);
+    navigateToProduct(product.sku || product.id, product.category);
   };
 
   return (
