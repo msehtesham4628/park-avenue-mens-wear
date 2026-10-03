@@ -213,20 +213,50 @@ export const ProductService = {
   async getById(id: string): Promise<Product | null> {
     const cleanId = (id || '').trim();
     if (!cleanId) return null;
+    const lower = cleanId.toLowerCase();
 
-    let prod = productsCache.find(p => p.id === cleanId || p.sku === cleanId);
+    const findInList = (list: Product[]): Product | null => {
+      const byId = list.find(p => 
+        (p.id && p.id.toLowerCase() === lower) ||
+        ((p as any)._id && String((p as any)._id).toLowerCase() === lower) ||
+        ((p as any).productId && String((p as any).productId).toLowerCase() === lower)
+      );
+      if (byId) return byId;
+
+      const bySku = list.find(p => p.sku && p.sku.toLowerCase() === lower);
+      if (bySku) return bySku;
+
+      const bySlug = list.find(p => (p as any).slug && String((p as any).slug).toLowerCase() === lower);
+      if (bySlug) return bySlug;
+
+      const byName = list.find(p => 
+        p.name && p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === lower
+      );
+      return byName || null;
+    };
+
+    let prod = findInList(productsCache);
     if (!prod) {
       const vaultProds = await storageVault.getProducts();
-      prod = vaultProds.find(p => p.id === cleanId || p.sku === cleanId);
+      prod = findInList(vaultProds);
+    }
+    if (prod) {
+      return { ...prod };
     }
 
-    const remote = await fetchRemote<any>(`/products/${encodeURIComponent(cleanId)}`);
-    if (remote) {
-      const mapped = mapBackendProductToFrontend(remote);
-      await storageVault.saveProduct(mapped);
-      return mapped;
-    }
-    return prod ? { ...prod } : null;
+    try {
+      const remote = await fetchRemote<any>(`/products/${encodeURIComponent(cleanId)}`);
+      if (remote) {
+        const mapped = mapBackendProductToFrontend(remote);
+        await storageVault.saveProduct(mapped);
+        if (!productsCache.some(p => p.id === mapped.id)) {
+          productsCache.unshift(mapped);
+        }
+        return mapped;
+      }
+    } catch (_) {}
+
+    return null;
   },
 
   async create(newProductData: Omit<Product, 'id' | 'totalStock'>): Promise<Product> {

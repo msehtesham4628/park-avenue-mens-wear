@@ -76,6 +76,8 @@ interface ShopContextType {
   setIsNotificationsOpen: (open: boolean) => void;
   searchFilter: string;
   setSearchFilter: (q: string) => void;
+  adminTab: string;
+  setAdminTab: (tab: string) => void;
 
   // Products
   products: Product[];
@@ -161,11 +163,45 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return path;
   });
 
-  const [activeView, setActiveViewState] = useState<AppView>('welcome');
+  const [adminTab, setAdminTabState] = useState<string>(initialRoute.adminTab || 'dashboard');
+  const [activeView, setActiveViewState] = useState<AppView>(() => {
+    if (initialRoute.view === 'admin' || initialRoute.view === 'dashboard') {
+      return 'admin';
+    }
+    if (initialRoute.view === 'welcome') {
+      return 'welcome';
+    }
+    if (initialRoute.view === 'home') {
+      try {
+        const seen = sessionStorage.getItem('pa_welcome_seen');
+        if (!seen) {
+          sessionStorage.setItem('pa_welcome_seen', '1');
+          return 'welcome';
+        }
+      } catch (_) {}
+      return 'home';
+    }
+    // Direct product, category, cart, and account links should never be delayed by welcome screen
+    return initialRoute.view;
+  });
   const [selectedProductId, setSelectedProductId] = useState<string | null>(initialRoute.productId || null);
   const [selectedCategory, setSelectedCategoryState] = useState<string>(initialRoute.category || 'All');
   const [selectedSubcategory, setSelectedSubcategoryState] = useState<string>('All');
   const [isProductsSubpage, setIsProductsSubpage] = useState<boolean>(initialRoute.isProductsSubpage || false);
+
+  const setAdminTab = useCallback((tab: string) => {
+    setAdminTabState(tab);
+    const clean = tab.toLowerCase();
+    let target = '/admin';
+    if (clean === 'products' || clean === 'product') {
+      target = '/admin/product';
+    } else if (clean === 'erp-reports' || clean === 'erp' || clean === 'tally') {
+      target = '/admin/erp';
+    } else if (clean && clean !== 'dashboard') {
+      target = `/admin/${clean}`;
+    }
+    navigateTo(target);
+  }, []);
 
   const setSelectedCategory = useCallback((cat: string, subcat: string = 'All') => {
     setSelectedCategoryState(cat);
@@ -264,7 +300,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const rawDest = sessionStorage.getItem('pa_entry_path') || '/';
     sessionStorage.removeItem('pa_entry_path');
     try {
-      sessionStorage.removeItem('pa_welcome_seen');
+      sessionStorage.setItem('pa_welcome_seen', '1');
     } catch (_) {}
     const dest = (rawDest === '/welcome' || rawDest === '') ? '/' : rawDest;
     const match = parseRoute(dest);
@@ -276,6 +312,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     if (match.productId) {
       setSelectedProductId(match.productId);
+    }
+    if (match.adminTab) {
+      setAdminTabState(match.adminTab);
     }
     setIsProductsSubpage(!!match.isProductsSubpage);
 
@@ -360,6 +399,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (match.productId) {
         setSelectedProductId(match.productId);
       }
+      if (match.adminTab) {
+        setAdminTabState(match.adminTab);
+      }
       setIsProductsSubpage(!!match.isProductsSubpage);
     };
 
@@ -377,7 +419,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       view,
       category: selectedCategory,
       productId: selectedProductId || undefined,
-      isProductsSubpage
+      isProductsSubpage,
+      adminTab
     });
     navigateTo(url);
   };
@@ -622,6 +665,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsNotificationsOpen,
         searchFilter,
         setSearchFilter,
+        adminTab,
+        setAdminTab,
         products,
         isLoadingProducts,
         refreshProducts,

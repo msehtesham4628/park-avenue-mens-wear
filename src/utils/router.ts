@@ -7,6 +7,8 @@ export interface RouteMatch {
   categorySlug?: string;
   productId?: string;
   isProductsSubpage?: boolean;
+  adminTab?: string;
+  subcategory?: string;
 }
 
 // Map slugs to standard Category names
@@ -147,10 +149,17 @@ export function parseRoute(pathname?: string): RouteMatch {
       return { view: 'welcome' };
 
     case 'admin':
-      return { view: 'admin' };
+      if (segments.length >= 2 && segments[1]) {
+        const sub = segments[1].toLowerCase();
+        let adminTab = sub;
+        if (sub === 'product' || sub === 'products') adminTab = 'products';
+        else if (sub === 'erp' || sub === 'erp-reports' || sub === 'tally') adminTab = 'erp-reports';
+        return { view: 'admin', adminTab };
+      }
+      return { view: 'admin', adminTab: 'dashboard' };
 
     case 'dashboard':
-      return { view: 'dashboard' };
+      return { view: 'admin', adminTab: 'dashboard' };
 
     case 'customer-dashboard':
     case 'client-dashboard':
@@ -213,7 +222,7 @@ export function parseRoute(pathname?: string): RouteMatch {
     case 'products':
     case 'catalog':
     case 'catalogue':
-      if (segments.length >= 2 && segments[1] && segments[1] !== 'products') {
+      if (segments.length >= 2 && segments[1] && segments[1] !== 'products' && segments[1] !== 'product') {
         // e.g. /products/prod-suit-01
         return { view: 'pdp', productId: segments[1] };
       }
@@ -231,8 +240,8 @@ export function parseRoute(pathname?: string): RouteMatch {
   if (CATEGORY_SLUG_MAP[firstSeg]) {
     const categoryName = CATEGORY_SLUG_MAP[firstSeg];
     
-    // Check for /:category/products/:id
-    if (segments.length >= 3 && segments[1] === 'products') {
+    // Check for /:category/products/:id or /:category/product/:id
+    if (segments.length >= 3 && (segments[1] === 'products' || segments[1] === 'product')) {
       return { 
         view: 'pdp', 
         category: categoryName, 
@@ -241,8 +250,8 @@ export function parseRoute(pathname?: string): RouteMatch {
       };
     }
 
-    // Check for /:category/products
-    if (segments.length >= 2 && segments[1] === 'products') {
+    // Check for /:category/products or /:category/product
+    if (segments.length >= 2 && (segments[1] === 'products' || segments[1] === 'product')) {
       return { 
         view: 'shop', 
         category: categoryName, 
@@ -252,7 +261,7 @@ export function parseRoute(pathname?: string): RouteMatch {
     }
 
     // Check for /:category/:id
-    if (segments.length >= 2 && segments[1] !== 'products') {
+    if (segments.length >= 2 && segments[1] !== 'products' && segments[1] !== 'product') {
       return { 
         view: 'pdp', 
         category: categoryName, 
@@ -282,8 +291,9 @@ export function buildUrl(params: {
   category?: string;
   productId?: string;
   isProductsSubpage?: boolean;
+  adminTab?: string;
 }): string {
-  const { view, category, productId, isProductsSubpage } = params;
+  const { view, category, productId, isProductsSubpage, adminTab } = params;
 
   switch (view) {
     case 'home':
@@ -293,10 +303,20 @@ export function buildUrl(params: {
       return '/welcome';
 
     case 'admin':
-      return '/admin';
-
     case 'dashboard':
-      return '/dashboard';
+      if (adminTab) {
+        const tabLower = adminTab.toLowerCase();
+        if (tabLower === 'products' || tabLower === 'product') {
+          return '/admin/product';
+        }
+        if (tabLower === 'erp-reports' || tabLower === 'erp' || tabLower === 'tally') {
+          return '/admin/erp';
+        }
+        if (tabLower !== 'dashboard') {
+          return `/admin/${tabLower}`;
+        }
+      }
+      return '/admin';
 
     case 'customer-dashboard':
       return '/customer-dashboard';

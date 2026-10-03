@@ -179,42 +179,7 @@ export const ShopPage: React.FC = () => {
         return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
       });
 
-    const groups = new Map<string, Product[]>();
-    filtered.forEach(product => {
-      const key = product.name.trim().toLowerCase();
-      const group = groups.get(key) || [];
-      group.push(product);
-      groups.set(key, group);
-    });
-
-    return Array.from(groups.values()).map(group => {
-      const primary = group[0];
-      if (group.length === 1) return primary;
-
-      const mergedVariants = group.flatMap(p => p.variants || []).filter((variant, index, arr) =>
-        arr.findIndex(v =>
-          v.color.toLowerCase() === variant.color.toLowerCase() &&
-          v.size.toLowerCase() === variant.size.toLowerCase() &&
-          v.sku === variant.sku
-        ) === index
-      );
-
-      const colorImages: Record<string, string[]> = {};
-      group.forEach(p => {
-        const colors = [...new Set((p.variants || []).map(v => v.color))];
-        colors.forEach(color => {
-          if (p.images?.length) colorImages[color] = p.images;
-        });
-      });
-
-      return {
-        ...primary,
-        variants: mergedVariants,
-        images: group.flatMap(p => p.images || []),
-        colorImages,
-        totalStock: mergedVariants.reduce((sum, v) => sum + (v.stock || 0), 0)
-      } as Product;
-    });
+    return filtered;
   }, [products, selectedCategory, searchFilter, maxPrice, selectedSizes, selectedColors, availability, sortBy]);
 
   const currentCategoryMeta = useMemo(() => {
@@ -583,20 +548,13 @@ export const ShopPage: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredProducts.map(product => {
-                  const related = products.filter(p =>
-                    p.id !== product.id &&
-                    p.name.trim().toLowerCase() === product.name.trim().toLowerCase()
-                  );
-                  return (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      colorProducts={related}
-                      onQuickView={(p) => setQuickViewProduct(p)}
-                    />
-                  );
-                })}
+                {filteredProducts.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onQuickView={(p) => setQuickViewProduct(p)}
+                  />
+                ))}
               </div>
             )}
           </main>

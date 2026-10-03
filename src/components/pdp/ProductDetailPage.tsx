@@ -31,11 +31,13 @@ import { PdfViewerModal } from '../common/PdfViewerModal';
 import { estimateTaxAndShipmentByZip, ZipTaxAndShipmentEstimate } from '../../services/taxEngine';
 import { Product } from '../../types';
 import { extractProductColors } from '../../utils/colorUtils';
+import { ProductService } from '../../services/api';
 
 export const ProductDetailPage: React.FC = () => {
   const { 
     selectedProductId, 
     products, 
+    isLoadingProducts,
     addToCart, 
     toggleWishlist, 
     isInWishlist,
@@ -46,7 +48,83 @@ export const ProductDetailPage: React.FC = () => {
     showToast
   } = useShop();
 
-  const product = products.find(p => p.id === selectedProductId) || products[0];
+  const [remoteProduct, setRemoteProduct] = useState<Product | null>(null);
+  const [isFetchingProduct, setIsFetchingProduct] = useState(false);
+
+  // Flexible local product matching with strict prioritized matching
+  const localMatch = useMemo(() => {
+    if (!selectedProductId || !products || products.length === 0) return null;
+    let clean = selectedProductId.trim();
+    try {
+      clean = decodeURIComponent(clean).trim();
+    } catch (_) {}
+    const lower = clean.toLowerCase();
+
+    // 1. Exact ID, _id, or productId match (highest priority)
+    const byId = products.find(p => 
+      (p.id && p.id.toLowerCase() === lower) ||
+      ((p as any)._id && String((p as any)._id).toLowerCase() === lower) ||
+      ((p as any).productId && String((p as any).productId).toLowerCase() === lower)
+    );
+    if (byId) return byId;
+
+    // 2. Exact SKU match
+    const bySku = products.find(p => p.sku && p.sku.toLowerCase() === lower);
+    if (bySku) return bySku;
+
+    // 3. Exact slug match
+    const bySlug = products.find(p => (p as any).slug && String((p as any).slug).toLowerCase() === lower);
+    if (bySlug) return bySlug;
+
+    // 4. Slugified name fallback
+    const byName = products.find(p => 
+      p.name && p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') === lower
+    );
+    return byName || null;
+  }, [products, selectedProductId]);
+
+  // Fetch product from remote API if not found in current local array
+  useEffect(() => {
+    if (!selectedProductId) {
+      setRemoteProduct(null);
+      return;
+    }
+    if (localMatch) {
+      setRemoteProduct(null);
+      return;
+    }
+
+    let active = true;
+    setIsFetchingProduct(true);
+    ProductService.getById(selectedProductId)
+      .then(res => {
+        if (active && res) {
+          setRemoteProduct(res);
+        }
+      })
+      .catch(err => {
+        console.warn('[PDP] Remote product lookup warning:', err);
+      })
+      .finally(() => {
+        if (active) {
+          setIsFetchingProduct(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedProductId, localMatch]);
+
+  // If a specific selectedProductId was requested:
+  // ONLY display that exact product (local or remote). NEVER fall back to products[0]!
+  const product: Product | null = useMemo(() => {
+    if (selectedProductId) {
+      return localMatch || remoteProduct || null;
+    }
+    // Only if no product was selected, use the first available product
+    return products.length > 0 ? products[0] : null;
+  }, [selectedProductId, localMatch, remoteProduct, products]);
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
@@ -120,6 +198,25 @@ export const ProductDetailPage: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  if (isFetchingProduct || (isLoadingProducts && !product)) {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center bg-white text-[#111827] px-4 py-20">
+        <div className="max-w-md w-full border border-gray-200 bg-[#F9F9F8] p-8 sm:p-12 text-center flex flex-col items-center shadow-lg">
+          <ParkAvenueLogo variant="mark" size="md" className="w-12 h-12 mb-6 animate-pulse" />
+          <span className="font-mono text-[11px] uppercase tracking-[0.35em] text-[#936B34] mb-3 block font-semibold">
+            PARK AVENUE ATELIER
+          </span>
+          <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wider mb-3 font-light">
+            RETRIEVING GARMENT SPECIFICATIONS
+          </h2>
+          <p className="text-xs text-gray-500 uppercase tracking-widest font-mono leading-relaxed">
+            Consulting private tailoring archive...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!product) {
     return (
       <div className="min-h-[75vh] flex items-center justify-center bg-white text-[#111827] px-4 py-20">
@@ -129,10 +226,12 @@ export const ProductDetailPage: React.FC = () => {
             PARK AVENUE MENSWEAR
           </span>
           <h2 className="font-serif text-2xl sm:text-3xl text-[#111827] uppercase tracking-wider mb-4 font-light">
-            NO PRODUCT SELECTED
+            {selectedProductId ? 'GARMENT NOT FOUND' : 'NO PRODUCT SELECTED'}
           </h2>
           <p className="text-xs text-gray-500 uppercase tracking-widest font-mono leading-relaxed mb-8">
-            Please choose a garment from our collections catalog to view complete tailoring details.
+            {selectedProductId 
+              ? `We could not locate garment "${selectedProductId}" in our current catalogue. It may be part of an exclusive archive or private commission.`
+              : 'Please choose a garment from our collections catalog to view complete tailoring details.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <button

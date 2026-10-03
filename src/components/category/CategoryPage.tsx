@@ -178,31 +178,15 @@ export const CategoryPage: React.FC = () => {
     });
   }, [products, currentCategoryItem, selectedSubcategory, searchQuery, filterInStockOnly]);
 
-  // Group products by name for color swatching
-  const groupedProducts = useMemo(() => {
-    const map = new Map<string, Product[]>();
-    for (const p of categoryProducts) {
-      const key = p.name.trim().toLowerCase();
-      if (!map.has(key)) {
-        map.set(key, []);
-      }
-      map.get(key)!.push(p);
-    }
-    return Array.from(map.values()).map(list => ({
-      primary: list[0],
-      colorVariants: list.slice(1)
-    }));
-  }, [categoryProducts]);
-
-  // Sort grouped products
+  // Sort category products directly to prevent swallowing/redirecting products
   const sortedProducts = useMemo(() => {
-    return [...groupedProducts].sort((a, b) => {
-      if (sortBy === 'price-low') return a.primary.price - b.primary.price;
-      if (sortBy === 'price-high') return b.primary.price - a.primary.price;
-      if (sortBy === 'newest') return (b.primary.isNewArrival ? 1 : 0) - (a.primary.isNewArrival ? 1 : 0);
-      return (b.primary.isFeatured ? 1 : 0) - (a.primary.isFeatured ? 1 : 0);
+    return [...categoryProducts].sort((a, b) => {
+      if (sortBy === 'price-low') return a.price - b.price;
+      if (sortBy === 'price-high') return b.price - a.price;
+      if (sortBy === 'newest') return (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0);
+      return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
     });
-  }, [groupedProducts, sortBy]);
+  }, [categoryProducts, sortBy]);
 
   // Other categories for easy cross-shopping
   const otherCategories = useMemo(() => {
@@ -408,11 +392,10 @@ export const CategoryPage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
-            {sortedProducts.map(({ primary, colorVariants }) => (
+            {sortedProducts.map((prod) => (
               <ProductCard
-                key={primary.id}
-                product={primary}
-                colorProducts={colorVariants}
+                key={prod.id}
+                product={prod}
                 onQuickView={setQuickViewProduct}
               />
             ))}

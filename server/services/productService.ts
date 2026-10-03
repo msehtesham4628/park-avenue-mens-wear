@@ -175,16 +175,52 @@ export const productService = {
   },
 
   /**
-   * Get single product by Slug or ID
+   * Get single product by Slug or ID (robust case-insensitive and ObjectId lookup)
    */
   async getProductBySlugOrId(identifier: string): Promise<IProduct | null> {
-    return ProductModel.findOne({
-      $or: [
-        { slug: identifier },
-        { productId: identifier },
-        { sku: identifier }
-      ]
-    }).lean();
+    const clean = (identifier || '').trim();
+    if (!clean) return null;
+
+    const isObjectId = mongoose.isValidObjectId(clean);
+    const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`^${escaped}$`, 'i');
+
+    try {
+      if (mongoose.connection.readyState === 1) {
+        const product = await ProductModel.findOne({
+          $or: [
+            { id: regex },
+            { slug: regex },
+            { productId: regex },
+            { sku: regex },
+            ...(isObjectId ? [{ _id: clean }] : [])
+          ]
+        }).lean();
+
+        if (product) return product as IProduct;
+
+        const byName = await ProductModel.findOne({ name: regex }).lean();
+        if (byName) return byName as IProduct;
+      }
+    } catch (dbErr) {
+      console.warn('[ProductService] Database lookup warning:', dbErr);
+    }
+
+    // Check in-memory store fallback
+    if (inMemoryStore.length > 0) {
+      const lower = clean.toLowerCase();
+      const found = inMemoryStore.find(p => 
+        (p.slug && String(p.slug).toLowerCase() === lower) ||
+        (p.productId && String(p.productId).toLowerCase() === lower) ||
+        (p.sku && String(p.sku).toLowerCase() === lower) ||
+        (p._id && String(p._id).toLowerCase() === lower) ||
+        (p.id && String(p.id).toLowerCase() === lower) ||
+        (p.name && generateSlug(p.name) === lower)
+      );
+      if (found) return found;
+    }
+
+    return null;
   },
 
   /**

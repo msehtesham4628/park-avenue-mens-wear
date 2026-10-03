@@ -34,13 +34,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
     if (!acc.some(v => (v.color || 'Standard').toLowerCase() === (variant.color || 'Standard').toLowerCase())) acc.push(variant);
     return acc;
   }, []);
-  const [selectedColor, setSelectedColor] = useState<string>(colorOptions[0]?.color || product.variants?.[0]?.color || 'Standard');
-  const selectedColorProduct = groupedProducts.find(p => (p.variants || []).some(v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase())) || product;
-  const primaryImg = selectedColorProduct.colorImages?.[selectedColor]?.[0] || 
-                     selectedColorProduct.productViews?.front || 
-                     selectedColorProduct.images?.[0];
-  const secondaryImg = selectedColorProduct.productViews?.back || 
-                       selectedColorProduct.images?.[1];
+  const initialProductColor = product.variants?.[0]?.color || (product.colors && product.colors[0]) || 'Standard';
+  const [selectedColor, setSelectedColor] = useState<string>(initialProductColor);
+  const primaryImg = product.colorImages?.[selectedColor]?.[0] || 
+                     product.productViews?.front || 
+                     product.images?.[0];
+  const secondaryImg = product.productViews?.back || 
+                       product.images?.[1];
   const [isHovered, setIsHovered] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string>(
     product.variants?.find(v => v.stock > 0)?.size || product.variants?.[0]?.size || 'Standard'
@@ -48,7 +48,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   const isWishlisted = isInWishlist(product.id);
 
   // Check stock for currently selected size
-  const activeVariant = groupedProducts.flatMap(p => p.variants || []).find(v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.size === selectedSize) || groupedProducts.flatMap(p => p.variants || []).find(v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase()) || product.variants?.find(v => v.size === selectedSize);
+  const activeVariant = product.variants?.find(v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase() && v.size === selectedSize) || 
+                        product.variants?.find(v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase()) || 
+                        product.variants?.find(v => v.size === selectedSize);
   const isOutOfStock = activeVariant ? activeVariant.stock <= 0 : (product.totalStock ?? 0) <= 0;
   const isLowStock = activeVariant ? activeVariant.stock > 0 && activeVariant.stock <= 3 : false;
 
@@ -56,12 +58,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
     e.stopPropagation();
     if (isOutOfStock) return;
     const defaultColor = activeVariant?.color || selectedColor || product.variants?.[0]?.color || 'Standard';
-    addToCart(selectedColorProduct, selectedSize, defaultColor, 1);
+    addToCart(product, selectedSize, defaultColor, 1);
+  };
+
+  const handleCardClick = () => {
+    navigateToProduct(product.id, product.category);
   };
 
   return (
     <div
-      onClick={() => navigateToProduct(product.id)}
+      onClick={handleCardClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className="group flex flex-col bg-white border border-gray-200 hover:border-[#936B34] hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden rounded-2xl"

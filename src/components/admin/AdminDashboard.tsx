@@ -72,7 +72,7 @@ import {
 } from '../../services/api';
 import { Product, ProductVariant, Order, AlterationRecord, Customer, ProductCategory, ReturnRequest, AuditLogEntry } from '../../types';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
-import { navigateTo } from '../../utils/router';
+import { navigateTo, parseRoute } from '../../utils/router';
 import { generateAutoSku } from '../../utils/skuGenerator';
 import { extractProductColors, getColorHex, isLightColor, LUXURY_COLOR_PALETTES } from '../../utils/colorUtils';
 import { CANONICAL_BASE, generateProductSeo, generateCategorySeo } from '../../utils/seo';
@@ -119,16 +119,55 @@ export const AdminDashboard: React.FC = () => {
     logout,
     products,
     isPaymentGatewayHidden,
-    togglePaymentGateway
+    togglePaymentGateway,
+    adminTab,
+    setAdminTab
   } = useShop();
+
+  const resolveAdminTab = (tabStr?: string): AdminTab => {
+    if (!tabStr) return 'dashboard';
+    const lower = tabStr.toLowerCase();
+    if (lower === 'product' || lower === 'products') return 'products';
+    if (lower === 'erp' || lower === 'erp-reports' || lower === 'tally') return 'erp-reports';
+    if (lower === 'inventory') return 'inventory';
+    if (lower === 'orders') return 'orders';
+    if (lower === 'returns') return 'returns';
+    if (lower === 'customers') return 'customers';
+    if (lower === 'alterations') return 'alterations';
+    if (lower === 'analytics') return 'analytics';
+    if (lower === 'logs') return 'logs';
+    if (lower === 'notifications') return 'notifications';
+    if (lower === 'seo') return 'seo';
+    if (lower === 'settings') return 'settings';
+    return 'dashboard';
+  };
+
+  const [activeTab, setActiveTabState] = useState<AdminTab>(() => {
+    if (typeof window !== 'undefined') {
+      const parsed = parseRoute(window.location.pathname);
+      if (parsed.adminTab) {
+        return resolveAdminTab(parsed.adminTab);
+      }
+    }
+    return resolveAdminTab(adminTab);
+  });
+
+  const setActiveTab = (tabId: AdminTab) => {
+    setActiveTabState(tabId);
+    setAdminTab(tabId);
+  };
+
+  useEffect(() => {
+    if (adminTab) {
+      setActiveTabState(resolveAdminTab(adminTab));
+    }
+  }, [adminTab]);
 
   // Admin Authentication State for restricted access (/admin and /dashboard)
   const [adminUsername, setAdminUsername] = useState('parkamw@admin.com');
   const [adminPassword, setAdminPassword] = useState('');
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-
-  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [productsList, setProductsList] = useState<Product[]>([]);
   const [ordersList, setOrdersList] = useState<Order[]>([]);
   const [returnsList, setReturnsList] = useState<ReturnRequest[]>([]);
