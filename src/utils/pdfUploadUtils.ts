@@ -143,224 +143,22 @@ function createPdfFallbackCanvas(fileName: string, pageNum = 1, viewLabel = 'Gar
  * shadows, and gradient edges while safeguarding garments, linings, lapels, and details.
  */
 export function applyStudioWhiteBackground(canvas: HTMLCanvasElement): HTMLCanvasElement {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return canvas;
-
-  const width = canvas.width;
-  const height = canvas.height;
-  if (width <= 0 || height <= 0) return canvas;
-
-  try {
-    const imgData = ctx.getImageData(0, 0, width, height);
-    const data = imgData.data;
-    const totalPixels = width * height;
-
-    // Sample border pixels and 4 corner patches (top-left, top-right, bottom-left, bottom-right)
-    let borderCount = 0;
-    let sumR = 0, sumG = 0, sumB = 0;
-
-    const samplePixel = (px: number, py: number) => {
-      if (px < 0 || px >= width || py < 0 || py >= height) return;
-      const idx = (py * width + px) * 4;
-      const a = data[idx + 3];
-      if (a > 20) {
-        sumR += data[idx];
-        sumG += data[idx + 1];
-        sumB += data[idx + 2];
-        borderCount++;
-      }
-    };
-
-    // 1. Sample outer perimeter borders
-    for (let x = 0; x < width; x += 2) {
-      samplePixel(x, 0);
-      samplePixel(x, 1);
-      samplePixel(x, height - 1);
-      samplePixel(x, height - 2);
-    }
-    for (let y = 0; y < height; y += 2) {
-      samplePixel(0, y);
-      samplePixel(1, y);
-      samplePixel(width - 1, y);
-      samplePixel(width - 2, y);
-    }
-
-    // 2. Sample 4 corner patches (8x8 pixels each)
-    const cornerSize = Math.min(12, Math.floor(Math.min(width, height) / 8));
-    for (let dy = 0; dy < cornerSize; dy++) {
-      for (let dx = 0; dx < cornerSize; dx++) {
-        samplePixel(dx, dy); // top-left
-        samplePixel(width - 1 - dx, dy); // top-right
-        samplePixel(dx, height - 1 - dy); // bottom-left
-        samplePixel(width - 1 - dx, height - 1 - dy); // bottom-right
-      }
-    }
-
-    const avgR = borderCount > 0 ? sumR / borderCount : 255;
-    const avgG = borderCount > 0 ? sumG / borderCount : 255;
-    const avgB = borderCount > 0 ? sumB / borderCount : 255;
-    const avgLum = 0.299 * avgR + 0.587 * avgG + 0.114 * avgB;
-
-    // 0 = unvisited, 1 = background (whiten to #FFFFFF), 2 = garment foreground
-    const mask = new Uint8Array(totalPixels);
-
-    // BFS queue for flood filling from the outer perimeter
-    const queue = new Int32Array(totalPixels);
-    let qHead = 0;
-    let qTail = 0;
-
-    const isBackdropColor = (r: number, g: number, b: number, a: number): boolean => {
-      if (a < 235) return true; // Transparent or semi-transparent
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-      const sat = Math.max(r, g, b) - Math.min(r, g, b);
-
-      // Distance to sampled border color
-      const dr = r - avgR;
-      const dg = g - avgG;
-      const db = b - avgB;
-      const dist = Math.sqrt(dr * dr + dg * dg + db * db);
-
-      // Matches border backdrop color closely
-      if (dist < 48) return true;
-
-      // Light neutral studio backdrop (e.g. white, off-white, light gray, soft studio lights)
-      if (lum >= 165 && sat < 40) {
-        if (Math.abs(lum - avgLum) < 55 || lum >= 195) return true;
-      }
-
-      // Very bright highlights in backdrop
-      if (lum >= 235 && sat < 42) return true;
-
-      return false;
-    };
-
-    // Seed perimeter pixels into BFS queue
-    for (let x = 0; x < width; x++) {
-      const topIdx = x;
-      const btmIdx = (height - 1) * width + x;
-      
-      const topData = topIdx * 4;
-      if (isBackdropColor(data[topData], data[topData + 1], data[topData + 2], data[topData + 3])) {
-        mask[topIdx] = 1;
-        queue[qTail++] = topIdx;
-      } else {
-        mask[topIdx] = 2;
-      }
-
-      const btmData = btmIdx * 4;
-      if (isBackdropColor(data[btmData], data[btmData + 1], data[btmData + 2], data[btmData + 3])) {
-        mask[btmIdx] = 1;
-        queue[qTail++] = btmIdx;
-      } else {
-        mask[btmIdx] = 2;
-      }
-    }
-
-    for (let y = 1; y < height - 1; y++) {
-      const leftIdx = y * width;
-      const rightIdx = y * width + (width - 1);
-
-      const leftData = leftIdx * 4;
-      if (mask[leftIdx] === 0) {
-        if (isBackdropColor(data[leftData], data[leftData + 1], data[leftData + 2], data[leftData + 3])) {
-          mask[leftIdx] = 1;
-          queue[qTail++] = leftIdx;
-        } else {
-          mask[leftIdx] = 2;
-        }
-      }
-
-      const rightData = rightIdx * 4;
-      if (mask[rightIdx] === 0) {
-        if (isBackdropColor(data[rightData], data[rightData + 1], data[rightData + 2], data[rightData + 3])) {
-          mask[rightIdx] = 1;
-          queue[qTail++] = rightIdx;
-        } else {
-          mask[rightIdx] = 2;
-        }
-      }
-    }
-
-    // Run BFS to spread across contiguous background
-    while (qHead < qTail) {
-      const curr = queue[qHead++];
-      const cx = curr % width;
-      const cy = Math.floor(curr / width);
-
-      // Check 4 neighbors
-      const neighbors = [
-        cx > 0 ? curr - 1 : -1,
-        cx < width - 1 ? curr + 1 : -1,
-        cy > 0 ? curr - width : -1,
-        cy < height - 1 ? curr + width : -1
-      ];
-
-      for (let i = 0; i < 4; i++) {
-        const nIdx = neighbors[i];
-        if (nIdx >= 0 && mask[nIdx] === 0) {
-          const dIdx = nIdx * 4;
-          if (isBackdropColor(data[dIdx], data[dIdx + 1], data[dIdx + 2], data[dIdx + 3])) {
-            mask[nIdx] = 1;
-            queue[qTail++] = nIdx;
-          } else {
-            mask[nIdx] = 2;
-          }
-        }
-      }
-    }
-
-    // Second pass: Whiten all background pixels and soft-feather edges to pure #FFFFFF
-    for (let i = 0; i < totalPixels; i++) {
-      const dIdx = i * 4;
-      if (mask[i] === 1 || data[dIdx + 3] < 245) {
-        // Pure studio white #FFFFFF
-        data[dIdx] = 255;
-        data[dIdx + 1] = 255;
-        data[dIdx + 2] = 255;
-        data[dIdx + 3] = 255;
-      } else if (mask[i] === 2) {
-        // Soft feathering on boundary
-        const px = i % width;
-        const py = Math.floor(i / width);
-        const hasBgNeighbor = 
-          (px > 0 && mask[i - 1] === 1) ||
-          (px < width - 1 && mask[i + 1] === 1) ||
-          (py > 0 && mask[i - width] === 1) ||
-          (py < height - 1 && mask[i + width] === 1);
-
-        if (hasBgNeighbor) {
-          const lum = 0.299 * data[dIdx] + 0.587 * data[dIdx + 1] + 0.114 * data[dIdx + 2];
-          if (lum > 210) {
-            const blend = 0.75;
-            data[dIdx] = Math.round(data[dIdx] * (1 - blend) + 255 * blend);
-            data[dIdx + 1] = Math.round(data[dIdx + 1] * (1 - blend) + 255 * blend);
-            data[dIdx + 2] = Math.round(data[dIdx + 2] * (1 - blend) + 255 * blend);
-          }
-        }
-      }
-    }
-
-    ctx.putImageData(imgData, 0, 0);
-  } catch (err) {
-    console.warn('[Background Whitening] Canvas pixel processing warning:', err);
-  }
-
+  // Preserves original authentic background and transparency without forced whitening
   return canvas;
 }
 
 export const changeImageBackgroundToWhite = applyStudioWhiteBackground;
 
 /**
- * Loads an image URL or data URL and converts its background to pure studio white (#FFFFFF).
+ * Loads an image URL or data URL and preserves its background
  */
 export async function whitenImageFromUrlOrDataUrl(urlOrData: string): Promise<string> {
-  if (!urlOrData || typeof urlOrData !== 'string') return urlOrData;
-  return compressImageFile(urlOrData, 1200, 1600, 0.88);
+  return urlOrData;
 }
 
 /**
  * Compress and resize an image file or data URL to standard sartorial presentation dimensions,
- * automatically whitening the background to pure studio white (#FFFFFF).
+ * preserving original background and transparency to blend seamlessly with the website.
  */
 export async function compressImageFile(
   fileOrDataUrl: File | string,
@@ -386,15 +184,14 @@ export async function compressImageFile(
           resolve(src);
           return;
         }
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        // Automatically change background to pure studio white (#FFFFFF)
-        applyStudioWhiteBackground(canvas);
-
         try {
-          const compressed = canvas.toDataURL('image/jpeg', quality);
+          const isTransparent = typeof fileOrDataUrl !== 'string'
+            ? (fileOrDataUrl.type === 'image/png' || fileOrDataUrl.type === 'image/webp')
+            : (fileOrDataUrl.startsWith('data:image/png') || fileOrDataUrl.startsWith('data:image/webp'));
+          const mime = isTransparent ? 'image/webp' : 'image/jpeg';
+          const compressed = canvas.toDataURL(mime, quality);
           resolve(compressed);
         } catch (_) {
           resolve(src);
@@ -416,8 +213,7 @@ export async function compressImageFile(
 }
 
 /**
- * Render a specific page of a PDF file to an image data URL using PDF.js,
- * automatically converting the rendered background to pure studio white (#FFFFFF).
+ * Render a specific page of a PDF file to an image data URL using PDF.js.
  */
 export async function renderPdfPageToDataUrl(pdfData: ArrayBuffer | Uint8Array, pageNum = 1, fallbackName = 'Document.pdf', viewLabel = 'View'): Promise<string> {
   try {
@@ -447,16 +243,10 @@ export async function renderPdfPageToDataUrl(pdfData: ArrayBuffer | Uint8Array, 
       return createPdfFallbackCanvas(fallbackName, pageNum, viewLabel);
     }
 
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     await page.render({
       canvasContext: ctx,
       viewport
     }).promise;
-
-    // Automatically change PDF background to pure studio white (#FFFFFF)
-    applyStudioWhiteBackground(canvas);
 
     return canvas.toDataURL('image/jpeg', 0.84);
   } catch (err) {

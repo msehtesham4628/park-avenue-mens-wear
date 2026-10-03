@@ -1,13 +1,8 @@
-import { GoogleGenAI } from '@google/genai';
-
 export interface GenerateTitleParams {
   rawText?: string;
   category?: string;
   fabric?: string;
   fit?: string;
-  provider?: 'gemini' | 'openai' | 'auto';
-  imageBase64?: string;
-  imageMimeType?: string;
 }
 
 export interface GeneratedTitleResponse {
@@ -21,7 +16,7 @@ export interface GeneratedTitleResponse {
   detectedFabric?: string;
   detectedFit?: string;
   detectedColor?: string;
-  source: 'gemini-ai' | 'openai-ai' | 'sartorial-engine';
+  source: 'sartorial-engine';
 }
 
 const CATEGORY_MAP: Record<string, string[]> = {
@@ -43,165 +38,6 @@ const CATEGORY_MAP: Record<string, string[]> = {
 
 export const titleService = {
   async generateProductTitle(params: GenerateTitleParams): Promise<GeneratedTitleResponse> {
-    const rawText = (params.rawText || '').trim();
-    const provider = params.provider || 'auto';
-    const geminiKey = process.env.GEMINI_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
-    const hasImage = Boolean(params.imageBase64 && params.imageBase64.length > 50);
-
-    const systemPrompt = `You are the master branding director and head sartorial copywriter for Park Avenue Menswear, an ultra-luxury bespoke menswear house in New York City.
-Given raw text or uploaded garment image describing a menswear garment (e.g. client notes, fabric descriptions, supplier specs, garment photo, or rough bullet points):
-"${rawText || 'Luxury menswear garment photo uploaded'}"
-
-Optional context:
-- Hinted Category: "${params.category || ''}"
-- Hinted Fabric: "${params.fabric || ''}"
-
-Generate a prestigious, high-end, luxury garment product title and 4 variations.
-Titles should be evocative, elegant, clear, and reflect ultra-luxury craftsmanship (e.g., "The Park Avenue Sovereign Navy Double-Breasted Wool Suit", "Atelier Como Silk Grenadine Tie", "Mayfair Super 150s Pure Wool Blazer").
-
-Output MUST be valid JSON with this exact structure:
-{
-  "title": "Primary recommended luxury title (under 60 characters)",
-  "variations": [
-    { "label": "Executive Atelier (Recommended)", "title": "Bespoke full title", "style": "bespoke" },
-    { "label": "Sartorial Editorial", "title": "Editorial magazine style title", "style": "editorial" },
-    { "label": "Modern Minimalist", "title": "Concise modern luxury title", "style": "modern" },
-    { "label": "USA E-Commerce SEO", "title": "Search-optimized high-intent title", "style": "seo" }
-  ],
-  "detectedCategory": "Suits | Blazers & Jackets | Dress shirts | Pants | Footwear | Outerwear | Ties | Sweaters",
-  "detectedFabric": "Identified fabric or null",
-  "detectedFit": "Identified fit or null",
-  "detectedColor": "Identified primary color or null"
-}`;
-
-    // 1. Try OpenAI if explicitly chosen or auto-selected
-    if ((provider === 'openai' || (provider === 'auto' && openaiKey && !geminiKey)) && (rawText.length > 2 || hasImage)) {
-      if (openaiKey) {
-        try {
-          const userContent: any[] = [];
-          if (hasImage && params.imageBase64) {
-            const dataUrl = params.imageBase64.startsWith('data:') 
-              ? params.imageBase64 
-              : `data:${params.imageMimeType || 'image/jpeg'};base64,${params.imageBase64}`;
-            userContent.push({
-              type: 'image_url',
-              image_url: { url: dataUrl }
-            });
-          }
-          userContent.push({
-            type: 'text',
-            text: `Generate prestigious luxury title for this garment. ${rawText ? 'Details: ' + rawText : 'Inspect the garment cut, color, lapel and fabric.'}`
-          });
-
-          const res = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${openaiKey}`
-            },
-            body: JSON.stringify({
-              model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userContent }
-              ],
-              response_format: { type: 'json_object' },
-              temperature: 0.7
-            })
-          });
-
-          if (res.ok) {
-            const data: any = await res.json();
-            const content = data.choices?.[0]?.message?.content;
-            if (content) {
-              const parsed = JSON.parse(content);
-              if (parsed && parsed.title) {
-                return {
-                  title: parsed.title,
-                  variations: Array.isArray(parsed.variations) && parsed.variations.length > 0
-                    ? parsed.variations
-                    : [{ label: 'Executive Atelier (Recommended)', title: parsed.title, style: 'bespoke' }],
-                  detectedCategory: parsed.detectedCategory || params.category,
-                  detectedFabric: parsed.detectedFabric || params.fabric,
-                  detectedFit: parsed.detectedFit,
-                  detectedColor: parsed.detectedColor,
-                  source: 'openai-ai'
-                };
-              }
-            }
-          }
-        } catch (err: any) {
-          console.warn('[titleService] OpenAI title generation failed, falling back:', err?.message);
-        }
-      }
-    }
-
-    // 2. Try Gemini AI if chosen or default
-    if ((provider === 'gemini' || provider === 'auto' || !openaiKey) && geminiKey && (rawText.length > 2 || hasImage)) {
-      try {
-        const ai = new GoogleGenAI({
-          apiKey: geminiKey,
-          httpOptions: {
-            headers: {
-              'User-Agent': 'aistudio-build'
-            }
-          }
-        });
-
-        let contentsPayload: any;
-        if (hasImage && params.imageBase64) {
-          const cleanBase64 = params.imageBase64.replace(/^data:image\/[a-zA-Z0-9+]+;base64,/, '');
-          contentsPayload = {
-            parts: [
-              {
-                inlineData: {
-                  mimeType: params.imageMimeType || 'image/jpeg',
-                  data: cleanBase64
-                }
-              },
-              {
-                text: `${systemPrompt}\n\nGarment specifications / client notes: "${rawText || 'Analyze the garment cut, lapels, fabric and style in this photo'}"`
-              }
-            ]
-          };
-        } else {
-          contentsPayload = systemPrompt;
-        }
-
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: contentsPayload,
-          config: {
-            responseMimeType: 'application/json'
-          }
-        });
-
-        const text = response.text?.trim() || '';
-        if (text) {
-          const parsed = JSON.parse(text);
-          if (parsed && parsed.title) {
-            return {
-              title: parsed.title,
-              variations: Array.isArray(parsed.variations) && parsed.variations.length > 0 
-                ? parsed.variations 
-                : [
-                    { label: 'Executive Atelier (Recommended)', title: parsed.title, style: 'bespoke' }
-                  ],
-              detectedCategory: parsed.detectedCategory || params.category,
-              detectedFabric: parsed.detectedFabric || params.fabric,
-              detectedFit: parsed.detectedFit,
-              detectedColor: parsed.detectedColor,
-              source: 'gemini-ai'
-            };
-          }
-        }
-      } catch (err: any) {
-        console.warn('[titleService] Gemini AI title generation failed, falling back to algorithmic engine:', err?.message);
-      }
-    }
-
-    // 3. High-performance Sartorial Algorithmic Fallback Engine
     return titleService.generateAlgorithmicTitle(params);
   },
 
