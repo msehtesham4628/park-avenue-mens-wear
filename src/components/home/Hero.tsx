@@ -144,50 +144,36 @@ export const Hero: React.FC = () => {
         Guarantees hero images fit phones beautifully without being cut off or crushed!
       */}
       <div 
-        className="relative w-full h-[540px] xs:h-[580px] sm:h-[620px] md:h-[660px] lg:h-[720px] xl:h-[760px] 2xl:h-[800px] flex items-center justify-center overflow-hidden"
+        className="relative w-full h-[540px] xs:h-[580px] sm:h-[620px] md:h-[660px] lg:h-[720px] xl:h-[760px] 2xl:h-[800px] flex items-center justify-center overflow-hidden bg-[#0A0D14]"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {/* Background Ambient Layer: Seamless blurred backdrop from current image */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {HERO_SLIDES.map((slide, index) => (
-            <div
-              key={`ambient-${slide.src}`}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                index === activeImage ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              <img
-                src={slide.src}
-                alt=""
-                aria-hidden="true"
-                className="w-full h-full object-cover object-center blur-2xl opacity-40 scale-110 brightness-75 saturate-125"
-              />
-            </div>
-          ))}
-          {/* Subtle luxury vignette gradients for text readability without harsh borders */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/60" />
-        </div>
+        {/* Background Ambient Layer: Clean high-performance gradient, zero GPU blur lag */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/60 z-10 pointer-events-none" />
 
         {/* Foreground Image Presentation: 100% Edge-to-Edge with Zero Black Borders */}
-        <div className="relative z-10 w-full h-full flex items-center justify-center p-0">
+        <div className="relative w-full h-full flex items-center justify-center p-0">
           {HERO_SLIDES.map((slide, index) => {
             const isActive = index === activeImage;
+            // Only keep active and adjacent slide in DOM for instant response without lag
+            const isRelevant = Math.abs(index - activeImage) <= 1 || (activeImage === 0 && index === HERO_SLIDES.length - 1) || (activeImage === HERO_SLIDES.length - 1 && index === 0);
+            if (!isRelevant) return null;
+
             return (
               <div
                 key={slide.src}
-                className={`absolute inset-0 flex items-center justify-center transition-all duration-700 ease-out ${
+                className={`absolute inset-0 flex items-center justify-center transition-opacity duration-700 ease-out will-change-[opacity] ${
                   isActive 
-                    ? 'opacity-100 scale-100 pointer-events-auto' 
-                    : 'opacity-0 scale-[0.98] pointer-events-none'
+                    ? 'opacity-100 pointer-events-auto' 
+                    : 'opacity-0 pointer-events-none'
                 }`}
               >
                 <img
                   src={slide.src}
                   alt={`${slide.title} - ${slide.subtitle}`}
-                  className="w-full h-full object-cover object-top sm:object-center select-none transition-all duration-500"
-                  fetchPriority={index === 0 ? 'high' : 'auto'}
+                  className="w-full h-full object-cover object-top sm:object-center select-none"
+                  fetchPriority={isActive ? 'high' : 'auto'}
                   loading={index === 0 ? 'eager' : 'lazy'}
                   draggable={false}
                 />

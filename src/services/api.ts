@@ -33,11 +33,11 @@ import { storageVault } from '../utils/storageVault';
 
 export const API_CONFIG = {
   baseUrl: (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
-    (import.meta.env as any)?.NEXT_PUBLIC_API_URL ||
-    import.meta.env.VITE_API_URL || '/api',
-  authProvider: import.meta.env.VITE_AUTH_PROVIDER || 'jwt-bearer',
-  paymentGatewayUrl: import.meta.env.VITE_PAYMENT_GATEWAY_URL || '/api/payments',
-  commGatewayUrl: import.meta.env.VITE_COMMUNICATION_GATEWAY_URL || '/api/notifications/dispatch',
+    (typeof import.meta !== 'undefined' && (import.meta as any)?.env?.NEXT_PUBLIC_API_URL) ||
+    (typeof import.meta !== 'undefined' && (import.meta as any)?.env?.VITE_API_URL) || '/api',
+  authProvider: (typeof import.meta !== 'undefined' && (import.meta as any)?.env?.VITE_AUTH_PROVIDER) || 'jwt-bearer',
+  paymentGatewayUrl: (typeof import.meta !== 'undefined' && (import.meta as any)?.env?.VITE_PAYMENT_GATEWAY_URL) || '/api/payments',
+  commGatewayUrl: (typeof import.meta !== 'undefined' && (import.meta as any)?.env?.VITE_COMMUNICATION_GATEWAY_URL) || '/api/notifications/dispatch',
   isLiveBackend: true
 };
 

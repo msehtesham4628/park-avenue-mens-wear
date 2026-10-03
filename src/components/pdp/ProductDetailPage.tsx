@@ -179,22 +179,226 @@ export const ProductDetailPage: React.FC = () => {
     }
   }, [product?.id]);
 
-  // Observer for sticky bottom bar
+  // Observer for sticky bottom bar using lightweight IntersectionObserver
   useEffect(() => {
-    const handleScroll = () => {
-      if (!mainActionsRef.current) return;
-      const rect = mainActionsRef.current.getBoundingClientRect();
-      // If user scrolled past the main purchase actions, show sticky bottom bar
-      if (rect.bottom < 80) {
-        setShowStickyBar(true);
+    if (!mainActionsRef.current || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show sticky bar only when main actions are scrolled out of view
+        setShowStickyBar(!entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(mainActionsRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Safe variables and calculations
+  const originalPrice = product ? (product.originalPrice || Math.round(product.price * 1.35)) : 0;
+  const discountPercent = product ? Math.max(10, Math.round(((originalPrice - product.price) / (originalPrice || 1)) * 100)) : 0;
+
+  // Variants & Options (Strictly Hook order compliant)
+  const allSizes = useMemo(() => {
+    if (!product) return ['38R', '40R', '42R', '44R'];
+    return Array.from(new Set(product.variants?.map(v => v.size) || ['38R', '40R', '42R', '44R']));
+  }, [product]);
+
+  const extractedColors = useMemo(() => {
+    if (!product) return [];
+    return extractProductColors(product);
+  }, [product]);
+
+  const allColors = useMemo(() => extractedColors.map(c => c.name), [extractedColors]);
+
+  const currentSize = selectedSize || allSizes[0] || 'Standard';
+  const currentColor = selectedColor || allColors[0] || 'Midnight Navy';
+
+  const matchedVariant = useMemo(() => {
+    if (!product) return null;
+    return product.variants?.find(
+      v => v.size === currentSize && (v.color || '').toLowerCase() === currentColor.toLowerCase()
+    ) || product.variants?.find(v => v.size === currentSize);
+  }, [product, currentSize, currentColor]);
+
+  const availableStock = matchedVariant ? matchedVariant.stock : (product?.totalStock ?? 12);
+  const isOutOfStock = availableStock <= 0;
+  const isLowStock = availableStock > 0 && availableStock <= 3;
+  const isWishlisted = product ? isInWishlist(product.id) : false;
+
+  // Category image fallback mapping
+  const categoryImageMap: Record<string, string> = {
+    'Suits': '/Suits_image.png',
+    'Blazers & Jackets': '/Blazers_jackets_image.png',
+    'Shirts': '/Shirts_image.png',
+    'Dress Shirts': '/Shirts_image.png',
+    'Pants': '/Pants_image.png',
+    'Dress Pants': '/Pants_image.png',
+    'Jeans': '/Pants_image.png',
+    'Outerwear': '/Outwear_image.png',
+    'Coats': '/Outwear_image.png',
+    'Leather jackets': '/Blazers_jackets_image.png',
+    'Sweaters & Knitwear': '/Sweaters_kintwear_image.png',
+    'Sweaters': '/Sweaters_kintwear_image.png',
+    'Polo shirts': '/Shirts_image.png',
+    'Footwear': '/Footwear_image.png',
+    'Shoe': '/Footwear_image.png',
+    'Boots': '/Footwear_image.png',
+    'Loofers': '/Footwear_image.png',
+    'Accessories': '/Accessories_image.png',
+    'Ties': '/Accessories_image.png',
+    'Shorts': '/Shorts_image.png'
+  };
+
+  const primaryImage = product
+    ? (product.colorImages?.[currentColor]?.[0] || product.images?.[0] || categoryImageMap[product.category] || '/Suits_image.png')
+    : '/Suits_image.png';
+
+  // Dynamically resolve view angles from productViews, images, or client uploads
+  const resolvedViews = useMemo(() => {
+    if (!product) return [];
+    const list: { type: string; label: string; url: string; sub: string; isPdf?: boolean }[] = [];
+    const pv = product.productViews;
+
+    // 1. Front View (Primary)
+    const frontUrl = pv?.front || product.colorImages?.[currentColor]?.[0] || product.images?.[0] || categoryImageMap[product.category] || '/Suits_image.png';
+    if (frontUrl) {
+      list.push({ type: 'front', label: 'Front View', url: frontUrl, sub: 'Front Silhouette & Lapels' });
+    }
+
+    // 2. Back View
+    const backUrl = pv?.back || product.images?.[1] || '';
+    if (backUrl) {
+      list.push({ type: 'back', label: 'Back View', url: backUrl, sub: 'Rear Drape & Tailored Vents' });
+    }
+
+    // 3. Left View
+    const leftUrl = pv?.left || product.images?.[2] || '';
+    if (leftUrl) {
+      list.push({ type: 'left', label: 'Left View', url: leftUrl, sub: 'Left Profile & Sleeve Pitch' });
+    }
+
+    // 4. Right View
+    const rightUrl = pv?.right || product.images?.[3] || '';
+    if (rightUrl) {
+      list.push({ type: 'right', label: 'Right View', url: rightUrl, sub: 'Right Profile & Stance' });
+    }
+
+    // 5. Detail / Fabric View
+    const detailUrl = pv?.detail || product.images?.[4] || '';
+    if (detailUrl) {
+      list.push({ type: 'detail', label: 'Detail View', url: detailUrl, sub: 'Textile Weave & Stitching' });
+    }
+
+    // If fewer than 4 views exist, provide standard angles
+    if (list.length < 4) {
+      const fallbacks = [
+        { type: 'back', label: 'Back View', sub: 'Rear Silhouette' },
+        { type: 'left', label: 'Left View', sub: 'Profile Angle' },
+        { type: 'right', label: 'Right View', sub: 'Sartorial Finish' }
+      ];
+      for (const fb of fallbacks) {
+        if (!list.some(v => v.type === fb.type)) {
+          list.push({ type: fb.type, label: fb.label, url: frontUrl, sub: fb.sub });
+        }
+      }
+    }
+
+    return list.slice(0, 5);
+  }, [product, currentColor]);
+
+  const currentDisplayImage = resolvedViews[activeImageIndex]?.url || primaryImage;
+
+  // Delivery ZIP Code Tax & Shipment Handler (Synchronized with Dashboard)
+  const handleCalculateTaxAndShipment = (overrideZip?: string) => {
+    if (!product) return;
+    setZipError('');
+    const targetZip = (overrideZip !== undefined ? overrideZip : zipInput).trim();
+    const cleanZip = targetZip.replace(/\D/g, '').slice(0, 5);
+
+    if (!cleanZip || cleanZip.length < 5) {
+      setZipError('Please enter a valid 5-digit US ZIP code (e.g. 10001, 90210, 75001).');
+      setZipEstimate(null);
+      return;
+    }
+
+    setIsCalculatingZip(true);
+
+    const result = estimateTaxAndShipmentByZip(cleanZip, product.price, quantity, product.shippingCharge);
+
+    setTimeout(() => {
+      setIsCalculatingZip(false);
+      if (result) {
+        setZipEstimate(result);
+        setZipInput(cleanZip);
       } else {
-        setShowStickyBar(false);
+        setZipError(`ZIP code "${cleanZip}" could not be mapped to a US delivery territory.`);
+        setZipEstimate(null);
+      }
+    }, 180);
+  };
+
+  // Keep live estimate synced if price, quantity, product.shippingCharge, or Dashboard rates change
+  useEffect(() => {
+    if (!product) return;
+    const refreshEstimate = () => {
+      if (zipEstimate?.zip) {
+        const refreshed = estimateTaxAndShipmentByZip(zipEstimate.zip, product.price, quantity, product.shippingCharge);
+        if (refreshed) {
+          setZipEstimate(refreshed);
+        }
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    window.addEventListener('pa_rates_updated', refreshEstimate);
+    window.addEventListener('storage', refreshEstimate);
+    return () => {
+      window.removeEventListener('pa_rates_updated', refreshEstimate);
+      window.removeEventListener('storage', refreshEstimate);
+    };
+  }, [product?.price, product?.shippingCharge, quantity, zipEstimate?.zip]);
+
+  useEffect(() => {
+    if (!product) return;
+    if (zipEstimate?.zip) {
+      const refreshed = estimateTaxAndShipmentByZip(zipEstimate.zip, product.price, quantity, product.shippingCharge);
+      if (refreshed) {
+        setZipEstimate(refreshed);
+      }
+    }
+  }, [product?.price, product?.shippingCharge, quantity]);
+
+  const handleAddToCart = () => {
+    if (!product || isOutOfStock) return;
+    addToCart(product, currentSize, currentColor, quantity);
+    showToast(`Added ${product.name} (${currentSize} • ${currentColor}) to your bag.`, 'success');
+  };
+
+  const handleShare = async () => {
+    if (!product) return;
+    const shareUrl = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Park Avenue — ${product.name}`,
+          text: `Check out ${product.name} on Park Avenue Menswear`,
+          url: shareUrl,
+        });
+        return;
+      } catch (err) {
+        // User cancelled or share not supported
+      }
+    }
+    navigator.clipboard.writeText(shareUrl);
+    showToast('Product link copied to clipboard!', 'success');
+  };
+
+  // Complementary products for Complete the Look
+  const complementaryProducts = useMemo(() => {
+    if (!product) return [];
+    return products
+      .filter(p => p.id !== product.id && p.category !== product.category)
+      .slice(0, 4);
+  }, [products, product?.id, product?.category]);
 
   if (isFetchingProduct || (isLoadingProducts && !product)) {
     return (
@@ -249,183 +453,6 @@ export const ProductDetailPage: React.FC = () => {
       </div>
     );
   }
-
-  // Calculate pricing & discount
-  const originalPrice = product.originalPrice || Math.round(product.price * 1.35);
-  const discountPercent = Math.max(10, Math.round(((originalPrice - product.price) / originalPrice) * 100));
-
-  // Variants & Options
-  const allSizes = Array.from(new Set(product.variants?.map(v => v.size) || ['38R', '40R', '42R', '44R']));
-  const extractedColors = useMemo(() => extractProductColors(product), [product]);
-  const allColors = useMemo(() => extractedColors.map(c => c.name), [extractedColors]);
-
-  const currentSize = selectedSize || allSizes[0] || 'Standard';
-  const currentColor = selectedColor || allColors[0] || 'Midnight Navy';
-
-  const matchedVariant = product.variants?.find(
-    v => v.size === currentSize && (v.color || '').toLowerCase() === currentColor.toLowerCase()
-  ) || product.variants?.find(v => v.size === currentSize);
-
-  const availableStock = matchedVariant ? matchedVariant.stock : (product.totalStock ?? 12);
-  const isOutOfStock = availableStock <= 0;
-  const isLowStock = availableStock > 0 && availableStock <= 3;
-  const isWishlisted = isInWishlist(product.id);
-
-  // Category image fallback mapping
-  const categoryImageMap: Record<string, string> = {
-    'Suits': '/Suits_image.png',
-    'Blazers & Jackets': '/Blazers_jackets_image.png',
-    'Shirts': '/Shirts_image.png',
-    'Pants': '/Pants_image.png',
-    'Outerwear': '/Outwear_image.png',
-    'Sweaters & Knitwear': '/Sweaters_kintwear_image.png',
-    'Footwear': '/Footwear_image.png',
-    'Accessories': '/Accessories_image.png',
-    'Shorts': '/Shorts_image.png'
-  };
-
-  const primaryImage = product.colorImages?.[currentColor]?.[0] || product.images?.[0] || categoryImageMap[product.category];
-
-  // Dynamically resolve 3 to 5 view angles from productViews, images, or client uploads
-  const resolvedViews = useMemo(() => {
-    const list: { type: string; label: string; url: string; sub: string; isPdf?: boolean }[] = [];
-    const pv = product.productViews;
-
-    // 1. Front View (Primary)
-    const frontUrl = pv?.front || product.colorImages?.[currentColor]?.[0] || product.images?.[0] || categoryImageMap[product.category];
-    if (frontUrl) {
-      list.push({ type: 'front', label: 'Front View', url: frontUrl, sub: 'Front Silhouette & Lapels' });
-    }
-
-    // 2. Back View
-    const backUrl = pv?.back || product.images?.[1] || '';
-    if (backUrl) {
-      list.push({ type: 'back', label: 'Back View', url: backUrl, sub: 'Rear Drape & Tailored Vents' });
-    }
-
-    // 3. Left View
-    const leftUrl = pv?.left || product.images?.[2] || '';
-    if (leftUrl) {
-      list.push({ type: 'left', label: 'Left View', url: leftUrl, sub: 'Left Profile & Sleeve Pitch' });
-    }
-
-    // 4. Right View
-    const rightUrl = pv?.right || product.images?.[3] || '';
-    if (rightUrl) {
-      list.push({ type: 'right', label: 'Right View', url: rightUrl, sub: 'Right Profile & Stance' });
-    }
-
-    // 5. Detail / Fabric View
-    const detailUrl = pv?.detail || product.images?.[4] || '';
-    if (detailUrl) {
-      list.push({ type: 'detail', label: 'Detail View', url: detailUrl, sub: 'Textile Weave & Stitching' });
-    }
-
-    // If fewer than 4 views exist, provide standard angles
-    if (list.length < 4) {
-      const fallbacks = [
-        { type: 'back', label: 'Back View', sub: 'Rear Silhouette' },
-        { type: 'left', label: 'Left View', sub: 'Profile Angle' },
-        { type: 'right', label: 'Right View', sub: 'Sartorial Finish' }
-      ];
-      for (const fb of fallbacks) {
-        if (!list.some(v => v.type === fb.type)) {
-          list.push({ type: fb.type, label: fb.label, url: frontUrl, sub: fb.sub });
-        }
-      }
-    }
-
-    return list.slice(0, 5);
-  }, [product, currentColor]);
-
-  const currentDisplayImage = resolvedViews[activeImageIndex]?.url || primaryImage;
-
-  // Delivery ZIP Code Tax & Shipment Handler (Synchronized with Dashboard)
-  const handleCalculateTaxAndShipment = (overrideZip?: string) => {
-    setZipError('');
-    const targetZip = (overrideZip !== undefined ? overrideZip : zipInput).trim();
-    const cleanZip = targetZip.replace(/\D/g, '').slice(0, 5);
-
-    if (!cleanZip || cleanZip.length < 5) {
-      setZipError('Please enter a valid 5-digit US ZIP code (e.g. 10001, 90210, 75001).');
-      setZipEstimate(null);
-      return;
-    }
-
-    setIsCalculatingZip(true);
-
-    const result = estimateTaxAndShipmentByZip(cleanZip, product.price, quantity, product.shippingCharge);
-
-    setTimeout(() => {
-      setIsCalculatingZip(false);
-      if (result) {
-        setZipEstimate(result);
-        setZipInput(cleanZip);
-      } else {
-        setZipError(`ZIP code "${cleanZip}" could not be mapped to a US delivery territory.`);
-        setZipEstimate(null);
-      }
-    }, 180);
-  };
-
-  // Keep live estimate synced if price, quantity, product.shippingCharge, or Dashboard rates change
-  useEffect(() => {
-    const refreshEstimate = () => {
-      if (zipEstimate?.zip) {
-        const refreshed = estimateTaxAndShipmentByZip(zipEstimate.zip, product.price, quantity, product.shippingCharge);
-        if (refreshed) {
-          setZipEstimate(refreshed);
-        }
-      }
-    };
-
-    window.addEventListener('pa_rates_updated', refreshEstimate);
-    window.addEventListener('storage', refreshEstimate);
-    return () => {
-      window.removeEventListener('pa_rates_updated', refreshEstimate);
-      window.removeEventListener('storage', refreshEstimate);
-    };
-  }, [product.price, product.shippingCharge, quantity, zipEstimate?.zip]);
-
-  useEffect(() => {
-    if (zipEstimate?.zip) {
-      const refreshed = estimateTaxAndShipmentByZip(zipEstimate.zip, product.price, quantity, product.shippingCharge);
-      if (refreshed) {
-        setZipEstimate(refreshed);
-      }
-    }
-  }, [product.price, product.shippingCharge, quantity]);
-
-  const handleAddToCart = () => {
-    if (isOutOfStock) return;
-    addToCart(product, currentSize, currentColor, quantity);
-    showToast(`Added ${product.name} (${currentSize} • ${currentColor}) to your bag.`, 'success');
-  };
-
-  const handleShare = async () => {
-    const shareUrl = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Park Avenue — ${product.name}`,
-          text: `Check out ${product.name} on Park Avenue Menswear`,
-          url: shareUrl,
-        });
-        return;
-      } catch (err) {
-        // User cancelled or share not supported
-      }
-    }
-    navigator.clipboard.writeText(shareUrl);
-    showToast('Product link copied to clipboard!', 'success');
-  };
-
-  // Complementary products for Complete the Look
-  const complementaryProducts = useMemo(() => {
-    return products
-      .filter(p => p.id !== product.id)
-      .slice(0, 4);
-  }, [products, product.id]);
 
   return (
     <div className="min-h-screen bg-white text-[#111827] pb-24">

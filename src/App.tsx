@@ -7,6 +7,7 @@ import { CartDrawer } from './components/cart/CartDrawer';
 import { SearchModal } from './components/search/SearchModal';
 import { ToastContainer } from './components/common/ToastContainer';
 import { SeoHead } from './components/common/SeoHead';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // View Pages
 import { Hero } from './components/home/Hero';
@@ -81,8 +82,10 @@ const MainContent: React.FC = () => {
 
 export default function App() {
   return (
-    <ShopProvider>
-      <MainContent />
-    </ShopProvider>
+    <ErrorBoundary>
+      <ShopProvider>
+        <MainContent />
+      </ShopProvider>
+    </ErrorBoundary>
   );
 }

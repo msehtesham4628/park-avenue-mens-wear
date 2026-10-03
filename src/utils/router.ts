@@ -215,6 +215,10 @@ export function parseRoute(pathname?: string): RouteMatch {
       if (segments.length >= 3 && (segments[1] === 'products' || segments[1] === 'product')) {
         return { view: 'pdp', productId: segments[2] };
       }
+      // Handle /category/products or /category/product without sku
+      if (segments.length === 2 && (segments[1] === 'products' || segments[1] === 'product')) {
+        return { view: 'shop', category: 'All', categorySlug: 'all', isProductsSubpage: true };
+      }
       // Handle /category/:category/products/:sku
       if (segments.length >= 4 && (segments[2] === 'products' || segments[2] === 'product')) {
         const catSlug = segments[1];
@@ -376,10 +380,7 @@ export function buildUrl(params: {
 
     case 'pdp':
       if (productId) {
-        const catSlug = (category && category !== 'All' && category !== 'all')
-          ? getCategorySlug(category)
-          : 'category';
-        return `/${catSlug}/products/${encodeURIComponent(productId)}`;
+        return `/category/products/${encodeURIComponent(productId)}`;
       }
       return '/shop';
 

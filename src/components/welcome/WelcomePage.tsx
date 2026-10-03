@@ -15,7 +15,7 @@ export const WelcomePage: React.FC = () => {
 
   useEffect(() => {
     const started = Date.now();
-    const duration = 2600; // 2.6s elegant loading duration
+    const duration = 750; // Smooth snappy 750ms entry
 
     const timer = window.setInterval(() => {
       const elapsed = Date.now() - started;
@@ -26,12 +26,12 @@ export const WelcomePage: React.FC = () => {
         window.clearInterval(timer);
         handleEnter();
       }
-    }, 20);
+    }, 50);
 
-    // Guaranteed safety timeout: Never leave the user stuck on the welcome screen
+    // Guaranteed safety timeout
     const safetyTimer = window.setTimeout(() => {
       handleEnter();
-    }, 3200);
+    }, 950);
 
     return () => {
       window.clearInterval(timer);

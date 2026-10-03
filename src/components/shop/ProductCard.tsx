@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Heart, Eye, ShoppingBag, Truck } from 'lucide-react';
 import { Product, ProductVariant } from '../../types';
 import { useShop } from '../../context/ShopContext';
@@ -12,33 +12,55 @@ interface ProductCardProps {
   colorProducts?: Product[];
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, colorProducts = [] }) => {
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onQuickView, colorProducts = [] }) => {
   const { navigateToProduct, addToCart, toggleWishlist, isInWishlist } = useShop();
-  const groupedProducts = [product, ...colorProducts];
-  const colorOptions = groupedProducts.flatMap(p => {
-    const list: ProductVariant[] = [...(p.variants || [])];
-    (p.colors || []).forEach((c, idx) => {
-      if (!list.some(v => (v.color || '').toLowerCase() === c.toLowerCase())) {
-        list.push({
-          id: `col-${p.id}-${idx}`,
-          size: 'Standard',
-          color: c,
-          colorHex: getColorHex(c),
-          stock: 5,
-          sku: `${p.sku}-${c}`
-        });
-      }
-    });
-    return list;
-  }).reduce<ProductVariant[]>((acc, variant) => {
-    if (!acc.some(v => (v.color || 'Standard').toLowerCase() === (variant.color || 'Standard').toLowerCase())) acc.push(variant);
-    return acc;
-  }, []);
+  const groupedProducts = useMemo(() => [product, ...colorProducts], [product, colorProducts]);
+
+  const colorOptions = useMemo(() => {
+    return groupedProducts.flatMap(p => {
+      const list: ProductVariant[] = [...(p.variants || [])];
+      (p.colors || []).forEach((c, idx) => {
+        if (!c) return;
+        const cLower = String(c).toLowerCase();
+        if (!list.some(v => (v.color || '').toLowerCase() === cLower)) {
+          list.push({
+            id: `col-${p.id}-${idx}`,
+            size: 'Standard',
+            color: c,
+            colorHex: getColorHex(c),
+            stock: 5,
+            sku: `${p.sku}-${c}`
+          });
+        }
+      });
+      return list;
+    }).reduce<ProductVariant[]>((acc, variant) => {
+      const vCol = (variant.color || 'Standard').toLowerCase();
+      if (!acc.some(v => (v.color || 'Standard').toLowerCase() === vCol)) acc.push(variant);
+      return acc;
+    }, []);
+  }, [product, colorProducts]);
+
   const initialProductColor = product.variants?.[0]?.color || (product.colors && product.colors[0]) || 'Standard';
   const [selectedColor, setSelectedColor] = useState<string>(initialProductColor);
+
+  const categoryFallbackImage = useMemo(() => {
+    const cat = (product.category || '').toLowerCase();
+    if (cat.includes('suit')) return '/Suits_image.png';
+    if (cat.includes('shirt')) return '/Shirts_image.png';
+    if (cat.includes('pant') || cat.includes('trouser') || cat.includes('jean')) return '/Pants_image.png';
+    if (cat.includes('shoe') || cat.includes('boot') || cat.includes('loaf') || cat.includes('footwear')) return '/Footwear_image.png';
+    if (cat.includes('tie') || cat.includes('accessor')) return '/Accessories_image.png';
+    if (cat.includes('coat') || cat.includes('outerwear') || cat.includes('jacket')) return '/Outwear_image.png';
+    if (cat.includes('sweater') || cat.includes('knitwear')) return '/Sweaters_kintwear_image.png';
+    if (cat.includes('short')) return '/Shorts_image.png';
+    return '/Suits_image.png';
+  }, [product.category]);
+
   const primaryImg = product.colorImages?.[selectedColor]?.[0] || 
                      product.productViews?.front || 
-                     product.images?.[0];
+                     product.images?.[0] ||
+                     categoryFallbackImage;
   const secondaryImg = product.productViews?.back || 
                        product.images?.[1];
   const [isHovered, setIsHovered] = useState(false);
@@ -278,4 +300,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
       </div>
     </div>
   );
-};
+});
+
+ProductCard.displayName = 'ProductCard';

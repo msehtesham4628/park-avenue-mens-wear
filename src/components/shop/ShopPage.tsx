@@ -136,10 +136,11 @@ export const ShopPage: React.FC = () => {
         if (searchFilter.trim() !== '') {
           const q = searchFilter.toLowerCase();
           const match = 
-            product.name.toLowerCase().includes(q) ||
-            product.sku.toLowerCase().includes(q) ||
-            product.fabric.toLowerCase().includes(q) ||
-            product.category.toLowerCase().includes(q);
+            (product.name || '').toLowerCase().includes(q) ||
+            (product.sku || '').toLowerCase().includes(q) ||
+            (product.fabric || '').toLowerCase().includes(q) ||
+            (product.category || '').toLowerCase().includes(q) ||
+            (product.description || '').toLowerCase().includes(q);
           if (!match) return false;
         }
 
