@@ -137,6 +137,59 @@ function createPdfFallbackCanvas(fileName: string, pageNum = 1, viewLabel = 'Gar
 }
 
 /**
+ * Compress and resize an image file or data URL to standard sartorial presentation dimensions.
+ * Shrinks raw 5-15MB camera uploads down to ~80-150KB without visual loss of fabric detail.
+ */
+export async function compressImageFile(
+  fileOrDataUrl: File | string,
+  maxWidth = 1200,
+  maxHeight = 1600,
+  quality = 0.84
+): Promise<string> {
+  return new Promise((resolve) => {
+    const processImg = (src: string) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, width);
+        canvas.height = Math.max(1, height);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(src);
+          return;
+        }
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        try {
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        } catch (_) {
+          resolve(src);
+        }
+      };
+      img.onerror = () => resolve(src);
+      img.src = src;
+    };
+
+    if (typeof fileOrDataUrl === 'string') {
+      processImg(fileOrDataUrl);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => processImg(e.target?.result as string);
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(fileOrDataUrl);
+    }
+  });
+}
+
+/**
  * Render a specific page of a PDF file to an image data URL using PDF.js
  */
 export async function renderPdfPageToDataUrl(pdfData: ArrayBuffer | Uint8Array, pageNum = 1, fallbackName = 'Document.pdf', viewLabel = 'View'): Promise<string> {
@@ -154,23 +207,28 @@ export async function renderPdfPageToDataUrl(pdfData: ArrayBuffer | Uint8Array, 
     }
 
     const page = await pdfDoc.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 1.8 });
+    const unscaled = page.getViewport({ scale: 1.0 });
+    const targetScale = Math.min(1.5, Math.min(1200 / (unscaled.width || 600), 1600 / (unscaled.height || 800)));
+    const viewport = page.getViewport({ scale: Math.max(0.8, targetScale) });
 
     const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
+    canvas.width = Math.round(viewport.width);
+    canvas.height = Math.round(viewport.height);
     const ctx = canvas.getContext('2d');
 
     if (!ctx) {
       return createPdfFallbackCanvas(fallbackName, pageNum, viewLabel);
     }
 
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     await page.render({
       canvasContext: ctx,
       viewport
     }).promise;
 
-    return canvas.toDataURL('image/jpeg', 0.92);
+    return canvas.toDataURL('image/jpeg', 0.84);
   } catch (err) {
     console.warn('[PDF Processor] Page render error, using luxury canvas fallback:', err);
     return createPdfFallbackCanvas(fallbackName, pageNum, viewLabel);
@@ -188,22 +246,16 @@ export async function processProductFile(
   const label = VIEW_CONFIGS.find(v => v.type === viewType)?.label || 'Product View';
 
   if (!isPdf) {
-    // Normal image file (JPG, PNG, WEBP)
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        resolve({
-          viewType,
-          label,
-          previewUrl: e.target?.result as string,
-          fileName: file.name,
-          fileSize: formatBytes(file.size),
-          isPdf: false
-        });
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+    // Normal image file (JPG, PNG, WEBP) — compress immediately to eliminate quota bloat
+    const compressedPreview = await compressImageFile(file, 1200, 1600, 0.84);
+    return {
+      viewType,
+      label,
+      previewUrl: compressedPreview,
+      fileName: file.name,
+      fileSize: formatBytes(file.size),
+      isPdf: false
+    };
   }
 
   // Handle PDF file

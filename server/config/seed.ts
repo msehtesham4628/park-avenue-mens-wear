@@ -5,6 +5,7 @@ import { AlterationModel } from '../models/Alteration.js';
 import { ReturnModel } from '../models/Return.js';
 import { AuditLogModel } from '../models/AuditLog.js';
 import { authService } from '../services/authService.js';
+import { productService } from '../services/productService.js';
 
 export async function seedInitialData() {
   try {
@@ -469,7 +470,11 @@ export async function seedInitialData() {
       for (const item of initialGarments) {
         await ProductModel.create(item);
       }
+      productService.syncMemoryStore(initialGarments);
       console.info(`[Park Avenue DB Seed] Seeded ${initialGarments.length} bespoke garments with live variant stock.`);
+    } else {
+      const existing = await ProductModel.find().lean();
+      productService.syncMemoryStore(existing);
     }
 
     // 3. Seed Sample Orders and Alterations if empty

@@ -481,39 +481,45 @@ export const ProductDetailPage: React.FC = () => {
             </div>
 
             {/* Client Attached PDF Lookbook / Spec Documents */}
-            {product.pdfDocuments && product.pdfDocuments.length > 0 && (
-              <div className="p-3.5 bg-[#F9F9F8] border border-[#936B34]/30 mt-4 space-y-2 shadow-xs">
-                <div className="flex items-center justify-between border-b border-gray-200 pb-2">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-[#936B34]" />
-                    <span className="text-xs font-mono uppercase tracking-wider text-[#111827] font-semibold">
-                      ATELIER PDF LOOKBOOK &amp; SPECIFICATIONS
+            {product.pdfDocuments && product.pdfDocuments.length > 0 && (() => {
+              const uniquePdfs = product.pdfDocuments.filter((pdf, index, arr) => 
+                arr.findIndex(p => p.url === pdf.url || (p.fileName && p.fileName === pdf.fileName)) === index
+              );
+              if (uniquePdfs.length === 0) return null;
+              return (
+                <div className="p-3.5 bg-[#F9F9F8] border border-[#936B34]/30 mt-4 space-y-2 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-[#936B34]" />
+                      <span className="text-xs font-mono uppercase tracking-wider text-[#111827] font-semibold">
+                        ATELIER PDF LOOKBOOK &amp; SPECIFICATIONS
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-[#936B34] font-bold">
+                      {uniquePdfs.length} Document(s)
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-[#936B34] font-bold">
-                    {product.pdfDocuments.length} Document(s)
-                  </span>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {uniquePdfs.map(pdf => (
+                      <button
+                        key={pdf.id}
+                        type="button"
+                        onClick={() => setSelectedPdfDoc({
+                          url: pdf.url,
+                          title: `${product.name} — ${pdf.title || pdf.fileName}`,
+                          fileName: pdf.fileName
+                        })}
+                        className="px-3 py-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-xs font-mono text-[#111827] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs font-medium"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-[#936B34]" />
+                        <span className="truncate max-w-[200px]">{pdf.title || pdf.fileName}</span>
+                        <span className="text-[10px] text-gray-400">· View PDF</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {product.pdfDocuments.map(pdf => (
-                    <button
-                      key={pdf.id}
-                      type="button"
-                      onClick={() => setSelectedPdfDoc({
-                        url: pdf.url,
-                        title: `${product.name} — ${pdf.title || pdf.fileName}`,
-                        fileName: pdf.fileName
-                      })}
-                      className="px-3 py-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-xs font-mono text-[#111827] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs font-medium"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-[#936B34]" />
-                      <span className="truncate max-w-[200px]">{pdf.title || pdf.fileName}</span>
-                      <span className="text-[10px] text-gray-400">· View PDF</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Atelier Craftsmanship Quality Guarantee (Anti-AI Slop luxury provenance) */}
             <div className="p-4 sm:p-5 bg-[#F9F9F8] border border-gray-200 mt-6 flex items-start gap-3.5">

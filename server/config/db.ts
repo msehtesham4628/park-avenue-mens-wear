@@ -63,6 +63,13 @@ export async function connectDB(): Promise<boolean> {
       }
     }
 
+    // In serverless environments (e.g. Vercel) without external MONGODB_URI, skip spawning MongoMemoryServer binary
+    const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+    if (isServerless && isLocalOrEmpty) {
+      console.info('[Park Avenue DB] Running in serverless mode without external MONGODB_URI; using resilient memory ledger.');
+      return false;
+    }
+
     // Use In-Memory MongoDB Server for development, tests, or offline resilience
     if (!cache.memoryServer) {
       const { MongoMemoryServer } = await import('mongodb-memory-server');

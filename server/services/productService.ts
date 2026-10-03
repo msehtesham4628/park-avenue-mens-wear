@@ -41,7 +41,21 @@ export function generateSlug(name: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+let inMemoryStore: any[] = [];
+
 export const productService = {
+  /**
+   * Synchronize seed data to memory store
+   */
+  syncMemoryStore(items: any[]) {
+    if (Array.isArray(items)) {
+      const map = new Map<string, any>();
+      inMemoryStore.forEach(i => map.set(i.productId || i.sku, i));
+      items.forEach(i => map.set(i.productId || i.sku, i));
+      inMemoryStore = Array.from(map.values());
+    }
+  },
+
   /**
    * Query products with robust filtering, sorting and pagination
    */
@@ -127,10 +141,27 @@ export const productService = {
     else if (filters.sortBy === 'name_asc') sort = { name: 1 };
     else if (filters.sortBy === 'featured') sort = { isFeatured: -1, createdAt: -1 };
 
-    const [products, total] = await Promise.all([
-      ProductModel.find(query).sort(sort).skip(skip).limit(limit).lean(),
-      ProductModel.countDocuments(query)
-    ]);
+    let products: any[] = [];
+    let total = 0;
+
+    try {
+      if (mongoose.connection.readyState === 1) {
+        [products, total] = await Promise.all([
+          ProductModel.find(query).sort(sort).skip(skip).limit(limit).lean(),
+          ProductModel.countDocuments(query)
+        ]);
+      }
+    } catch (queryErr) {
+      console.warn('[ProductService] Database query fallback:', queryErr);
+    }
+
+    if (products.length === 0 && inMemoryStore.length > 0) {
+      const filtered = filters.includeInactive 
+        ? inMemoryStore 
+        : inMemoryStore.filter(p => p.isActive !== false);
+      products = filtered.slice(skip, skip + limit);
+      total = filtered.length;
+    }
 
     return {
       products,
@@ -242,17 +273,28 @@ export const productService = {
       pdfDocuments: data.pdfDocuments || []
     });
 
-    await product.save();
+    try {
+      if (mongoose.connection.readyState === 1) {
+        await product.save();
+      }
+    } catch (saveErr: any) {
+      console.warn('[ProductService] Database save fallback:', saveErr?.message);
+    }
 
-    await auditService.record({
-      adminUser,
-      action: 'PRODUCT_CREATED',
-      entity: 'Product',
-      entityId: productId,
-      newValue: { name: product.name, sku: product.sku, price: product.price, stock: stockQuantity }
-    });
+    const plainProduct = product.toObject ? product.toObject() : product;
+    inMemoryStore = [plainProduct, ...inMemoryStore.filter(p => p.sku !== plainProduct.sku && p.productId !== plainProduct.productId)];
 
-    return product;
+    try {
+      await auditService.record({
+        adminUser,
+        action: 'PRODUCT_CREATED',
+        entity: 'Product',
+        entityId: productId,
+        newValue: { name: product.name, sku: product.sku, price: product.price, stock: stockQuantity }
+      });
+    } catch (_) {}
+
+    return plainProduct;
   },
 
   /**

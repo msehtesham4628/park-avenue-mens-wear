@@ -29,6 +29,7 @@ import {
 } from '../data/initialData';
 import { generateAutoSku } from '../utils/skuGenerator';
 import { generateSartorialTitleFromText } from '../utils/titleGenerator';
+import { storageVault } from '../utils/storageVault';
 
 export const API_CONFIG = {
   baseUrl: (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
@@ -172,43 +173,74 @@ function mapBackendProductToFrontend(bp: any): Product {
 
 export const ProductService = {
   async getAll(): Promise<Product[]> {
+    // 1. Hydrate from persistent IndexedDB vault
+    const storedVaultProducts = await storageVault.getProducts();
+    if (storedVaultProducts.length > 0) {
+      productsCache = storedVaultProducts;
+    }
+
     const remote = await fetchRemote<any[]>('/products?limit=100');
     if (remote && Array.isArray(remote)) {
       const mapped = remote.map(mapBackendProductToFrontend);
-      // Retain any locally created or updated products so they never vanish in production
+      
       const remoteIds = new Set(mapped.map(p => p.id));
       const remoteSkus = new Set(mapped.map(p => p.sku));
-      const localOnly = productsCache.filter(p => !remoteIds.has(p.id) && !remoteSkus.has(p.sku));
-      const merged = [...localOnly, ...mapped];
+      
+      // Retain all locally created or modified products so they never vanish on production refresh
+      const userCreatedIds = storageVault.getUserProductIds();
+      const localOnly = productsCache.filter(p => 
+        userCreatedIds.has(p.id) || (!remoteIds.has(p.id) && !remoteSkus.has(p.sku))
+      );
+
+      const mergedMap = new Map<string, Product>();
+      // User created / edited products take priority
+      localOnly.forEach(p => mergedMap.set(p.id, p));
+      mapped.forEach(p => {
+        if (!mergedMap.has(p.id)) {
+          mergedMap.set(p.id, p);
+        }
+      });
+
+      const merged = Array.from(mergedMap.values());
       productsCache = merged;
-      saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
+      await storageVault.saveProducts(merged);
       return merged;
     }
-    await delay(150);
+    await delay(100);
     return [...productsCache];
   },
 
   async getById(id: string): Promise<Product | null> {
     const cleanId = (id || '').trim();
     if (!cleanId) return null;
+
+    let prod = productsCache.find(p => p.id === cleanId || p.sku === cleanId);
+    if (!prod) {
+      const vaultProds = await storageVault.getProducts();
+      prod = vaultProds.find(p => p.id === cleanId || p.sku === cleanId);
+    }
+
     const remote = await fetchRemote<any>(`/products/${encodeURIComponent(cleanId)}`);
     if (remote) {
       const mapped = mapBackendProductToFrontend(remote);
+      await storageVault.saveProduct(mapped);
       return mapped;
     }
-    await delay(120);
-    const prod = productsCache.find(p => p.id === cleanId || p.sku === cleanId);
     return prod ? { ...prod } : null;
   },
 
   async create(newProductData: Omit<Product, 'id' | 'totalStock'>): Promise<Product> {
-    const generatedId = `prod-${Date.now().toString(36)}`;
+    const generatedId = `prod-${Date.now().toString(36)}-${Math.floor(Math.random() * 900 + 100)}`;
     const totalStock = (newProductData.variants || []).reduce((acc, v) => acc + (v.stock || 0), 0);
     const localProduct: Product = {
       ...newProductData,
       id: generatedId,
       totalStock
     };
+
+    // Immediately persist in IndexedDB vault so it can never disappear on page refresh
+    await storageVault.saveProduct(localProduct);
+    productsCache = [localProduct, ...productsCache.filter(p => p.sku !== localProduct.sku && p.id !== localProduct.id)];
 
     let remote: any = null;
     try {
@@ -230,19 +262,19 @@ export const ProductService = {
         console.warn('[ProductService.create] Remote POST failed:', errJson?.message || `HTTP ${res.status}`);
       }
     } catch (netErr) {
-      console.warn('[ProductService.create] Network call failed, keeping in local vault:', netErr);
+      console.warn('[ProductService.create] Network call failed, safely preserved in persistent vault:', netErr);
     }
 
     if (remote) {
       const mapped = mapBackendProductToFrontend(remote);
-      productsCache = [mapped, ...productsCache.filter(p => p.id !== mapped.id && p.sku !== mapped.sku)];
-      saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
+      await storageVault.saveProduct(mapped);
+      if (mapped.id !== localProduct.id) {
+        await storageVault.deleteProduct(localProduct.id);
+      }
+      productsCache = [mapped, ...productsCache.filter(p => p.id !== mapped.id && p.id !== localProduct.id && p.sku !== mapped.sku)];
       return mapped;
     }
 
-    // Always preserve local product in memory and localStorage so it immediately appears everywhere!
-    productsCache = [localProduct, ...productsCache.filter(p => p.sku !== localProduct.sku)];
-    saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
     return localProduct;
   },
 
@@ -266,13 +298,11 @@ export const ProductService = {
 
     if (remote && Array.isArray(remote)) {
       const mapped = remote.map(mapBackendProductToFrontend);
+      for (const p of mapped) {
+        await storageVault.saveProduct(p);
+      }
       productsCache = [...mapped, ...productsCache];
-      saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
       return mapped;
-    }
-
-    if (API_CONFIG.isLiveBackend) {
-      throw new Error('MongoDB import failed: the live product API did not accept the import. Check the backend/Vercel deployment and MongoDB connection.');
     }
 
     const createdList: Product[] = products.map((p, index) => ({
@@ -280,8 +310,11 @@ export const ProductService = {
       id: `prod-${Date.now().toString(36)}-${index}`,
       totalStock: p.variants?.reduce((acc, v) => acc + (v.stock || 0), 0) || 0
     }));
+
+    for (const p of createdList) {
+      await storageVault.saveProduct(p);
+    }
     productsCache = [...createdList, ...productsCache];
-    saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
     return createdList;
   },
 
@@ -306,17 +339,17 @@ export const ProductService = {
 
     if (remote) {
       const mapped = mapBackendProductToFrontend(remote);
+      await storageVault.saveProduct(mapped);
       const idx = productsCache.findIndex(p => p.id === cleanId || p.id === mapped.id || p.sku === cleanId);
       if (idx !== -1) {
         productsCache[idx] = mapped;
       } else {
         productsCache.unshift(mapped);
       }
-      saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
       return mapped;
     }
 
-    await delay(150);
+    await delay(100);
     const index = productsCache.findIndex(p => p.id === cleanId || p.sku === cleanId);
     if (index === -1) throw new Error('Product not found');
 
@@ -328,7 +361,7 @@ export const ProductService = {
       updated.totalStock = updates.variants.reduce((acc, v) => acc + v.stock, 0);
     }
     productsCache[index] = updated;
-    saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
+    await storageVault.saveProduct(updated);
     return updated;
   },
 
@@ -341,9 +374,9 @@ export const ProductService = {
     if (!ok) {
       ok = await fetchRemote<any>(`/admin/products/${encodeURIComponent(cleanId)}`, { method: 'DELETE' });
     }
-    await delay(150);
+    await delay(100);
     productsCache = productsCache.filter(p => p.id !== cleanId && p.sku !== cleanId);
-    saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
+    await storageVault.deleteProduct(cleanId);
     return true;
   },
 

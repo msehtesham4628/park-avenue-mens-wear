@@ -36,14 +36,15 @@ let initialization: Promise<void> | null = null;
 async function initialize() {
   if (!initialization) {
     initialization = (async () => {
-      const ok = await connectDB();
-      if (ok) {
-        await seedInitialData();
+      try {
+        const ok = await connectDB();
+        if (ok) {
+          await seedInitialData();
+        }
+      } catch (error) {
+        console.warn('[Park Avenue API] DB initialization warning, continuing with service fallback:', error);
       }
-    })().catch((error) => {
-      initialization = null;
-      throw error;
-    });
+    })();
   }
   return initialization;
 }
@@ -53,13 +54,7 @@ export default async function handler(req: express.Request, res: express.Respons
     await initialize();
     return app(req, res);
   } catch (error: any) {
-    console.error('[Park Avenue API] Initialization failed:', error);
-    return res.status(503).json({
-      success: false,
-      status: 'offline',
-      database: 'disconnected',
-      message: error?.message || 'Database connection failed.',
-      path: req.originalUrl
-    });
+    console.error('[Park Avenue API] Request handler fallback:', error);
+    return app(req, res);
   }
 }

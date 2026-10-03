@@ -95,15 +95,19 @@ export const ProductViewsUploader: React.FC<ProductViewsUploaderProps> = ({
       results.forEach((res) => {
         nextViews[res.viewType] = res.previewUrl;
         if (res.isPdf && res.pdfUrl) {
-          nextPdfs.push({
-            id: `pdf-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-            title: `${productName} — ${res.label}`,
-            fileName: res.fileName,
-            url: res.pdfUrl,
-            uploadedAt: new Date().toISOString(),
-            viewType: res.viewType,
-            fileSize: res.fileSize
-          });
+          const cleanFileName = (res.fileName || '').replace(/\s*\(P\.\d+\)/, '');
+          const alreadyExists = nextPdfs.some(p => p.fileName === cleanFileName || p.fileName === res.fileName || p.url === res.pdfUrl);
+          if (!alreadyExists) {
+            nextPdfs.push({
+              id: `pdf-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              title: `${productName} — Lookbook & Specifications`,
+              fileName: cleanFileName || res.fileName,
+              url: res.pdfUrl,
+              uploadedAt: new Date().toISOString(),
+              viewType: res.viewType,
+              fileSize: res.fileSize
+            });
+          }
         }
       });
 
@@ -136,15 +140,18 @@ export const ProductViewsUploader: React.FC<ProductViewsUploaderProps> = ({
       const nextPdfs = [...pdfDocuments];
 
       if (res.isPdf && res.pdfUrl) {
-        nextPdfs.push({
-          id: `pdf-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          title: `${productName} — ${res.label}`,
-          fileName: res.fileName,
-          url: res.pdfUrl,
-          uploadedAt: new Date().toISOString(),
-          viewType,
-          fileSize: res.fileSize
-        });
+        const alreadyExists = nextPdfs.some(p => p.fileName === res.fileName || p.url === res.pdfUrl);
+        if (!alreadyExists) {
+          nextPdfs.push({
+            id: `pdf-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            title: `${productName} — ${res.label}`,
+            fileName: res.fileName,
+            url: res.pdfUrl,
+            uploadedAt: new Date().toISOString(),
+            viewType,
+            fileSize: res.fileSize
+          });
+        }
       }
 
       setViews(nextViews);
