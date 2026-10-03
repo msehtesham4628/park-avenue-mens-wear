@@ -98,34 +98,79 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
           <div className="grid grid-cols-1 md:grid-cols-2">
             
-            {/* Gallery Left: MediaPlaceholder */}
-            <div className="relative bg-[#F8F9FA] p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-gray-200">
-              <div className="aspect-[3/4] overflow-hidden bg-white relative shadow-lg">
-                <MediaPlaceholder
-                  label="PARK AVENUE MENSWEAR"
-                  category={product.category}
-                  aspectRatio="auto"
-                  className="w-full h-full min-h-[300px]"
-                  subtext={product.name}
-                />
-              </div>
+            {/* Gallery Left: Real Garment Image or MediaPlaceholder */}
+            {(() => {
+              const views: { label: string; url?: string }[] = [];
+              if (product.productViews?.front || product.images?.[0]) {
+                views.push({ label: 'Front View', url: product.productViews?.front || product.images?.[0] });
+              }
+              if (product.productViews?.back || product.images?.[1]) {
+                views.push({ label: 'Back View', url: product.productViews?.back || product.images?.[1] });
+              }
+              if (product.productViews?.left || product.images?.[2]) {
+                views.push({ label: 'Left View', url: product.productViews?.left || product.images?.[2] });
+              }
+              if (product.productViews?.right || product.images?.[3]) {
+                views.push({ label: 'Right View', url: product.productViews?.right || product.images?.[3] });
+              }
+              if (product.productViews?.detail || product.images?.[4]) {
+                views.push({ label: 'Detail View', url: product.productViews?.detail || product.images?.[4] });
+              }
 
-              {/* Angles / Thumbnails */}
-              <div className="grid grid-cols-3 gap-2 mt-4">
-                {['FRONT SILHOUETTE', 'LAPEL DETAIL', 'WEAVE TEXTURE'].map((angle, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImageIndex(idx)}
-                    className={`p-2 border text-center transition-colors cursor-pointer ${
-                      activeImageIndex === idx ? 'border-[#936B34] bg-[#F3F4F6]' : 'border-gray-200 opacity-70 hover:opacity-100 bg-[#F9F9F8]'
-                    }`}
-                  >
-                    <span className="font-mono text-[9px] text-[#936B34] block font-medium">0{idx + 1}</span>
-                    <span className="text-[8px] font-mono uppercase text-gray-500">{angle}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+              const displayViews = views.length > 0 ? views : [
+                { label: 'Front Silhouette', url: undefined },
+                { label: 'Lapel Detail', url: undefined },
+                { label: 'Weave Texture', url: undefined }
+              ];
+              const safeIndex = Math.min(activeImageIndex, displayViews.length - 1);
+              const currentView = displayViews[safeIndex];
+
+              return (
+                <div className="relative bg-[#F8F9FA] p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-gray-200">
+                  <div className="aspect-[3/4] overflow-hidden bg-white relative shadow-lg">
+                    {currentView?.url ? (
+                      <img
+                        src={currentView.url}
+                        alt={`${product.name} - ${currentView.label}`}
+                        className="w-full h-full object-cover transition-all duration-300"
+                      />
+                    ) : (
+                      <MediaPlaceholder
+                        label="PARK AVENUE MENSWEAR"
+                        category={product.category}
+                        aspectRatio="auto"
+                        className="w-full h-full min-h-[300px]"
+                        subtext={product.name}
+                      />
+                    )}
+                    <div className="absolute top-2 left-2 bg-[#111827] text-white text-[9px] font-mono px-2 py-0.5 uppercase tracking-wider">
+                      {currentView?.label || 'Garment View'}
+                    </div>
+                  </div>
+
+                  {/* 3 to 5 Angles / Thumbnails */}
+                  <div className={`grid grid-cols-${Math.min(displayViews.length, 5)} gap-2 mt-4`} style={{ gridTemplateColumns: `repeat(${Math.min(displayViews.length, 5)}, minmax(0, 1fr))` }}>
+                    {displayViews.map((v, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveImageIndex(idx)}
+                        className={`p-1.5 border text-center transition-colors cursor-pointer ${
+                          safeIndex === idx ? 'border-[#936B34] bg-[#F3F4F6] ring-1 ring-[#936B34]' : 'border-gray-200 opacity-70 hover:opacity-100 bg-[#F9F9F8]'
+                        }`}
+                      >
+                        {v.url ? (
+                          <div className="aspect-[3/4] mb-1 bg-gray-100 overflow-hidden">
+                            <img src={v.url} alt={v.label} className="w-full h-full object-cover" />
+                          </div>
+                        ) : null}
+                        <span className="font-mono text-[9px] text-[#936B34] block font-medium">0{idx + 1}</span>
+                        <span className="text-[8px] font-mono uppercase text-gray-500 truncate block">{v.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Product Details Right */}
             <div className="p-6 md:p-8 flex flex-col justify-between bg-[#F9F9F8]">

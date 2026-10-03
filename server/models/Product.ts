@@ -61,6 +61,21 @@ export interface IProduct extends Document {
   fit?: string;
   shippingCharge?: number;
   careInstructions?: string[];
+  productViews?: {
+    front?: string;
+    back?: string;
+    left?: string;
+    right?: string;
+    detail?: string;
+  };
+  pdfDocuments?: {
+    id: string;
+    title: string;
+    fileName: string;
+    url: string;
+    uploadedAt: string;
+    viewType?: string;
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -131,7 +146,22 @@ const ProductSchema = new Schema<IProduct>({
   fabric: { type: String },
   fit: { type: String },
   shippingCharge: { type: Number, default: 15, min: 0 },
-  careInstructions: [{ type: String }]
+  careInstructions: [{ type: String }],
+  productViews: {
+    front: { type: String },
+    back: { type: String },
+    left: { type: String },
+    right: { type: String },
+    detail: { type: String }
+  },
+  pdfDocuments: [{
+    id: { type: String },
+    title: { type: String },
+    fileName: { type: String },
+    url: { type: String },
+    uploadedAt: { type: String },
+    viewType: { type: String }
+  }]
 }, {
   timestamps: true
 });

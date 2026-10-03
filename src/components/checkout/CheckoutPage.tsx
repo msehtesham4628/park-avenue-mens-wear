@@ -36,11 +36,21 @@ const STATES = [
 const money = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export const CheckoutPage: React.FC = () => {
-  const { cart, cartSubtotal, currentCustomer, currentOrder, setActiveView, showToast, clearCart, setCurrentOrder } = useShop();
+  const { 
+    cart, 
+    cartSubtotal, 
+    currentCustomer, 
+    currentOrder, 
+    setActiveView, 
+    showToast, 
+    clearCart, 
+    setCurrentOrder,
+    isPaymentGatewayHidden
+  } = useShop();
   
   // Step 1: Shipment & Contact Confirmation
   // Step 2: Dedicated Order Summary Page (All details + confirmation checkbox)
-  // Step 3: Dedicated Stripe Payment Page
+  // Step 3: Dedicated Stripe Payment Page (Bypassed when payment is hidden)
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -151,6 +161,86 @@ export const CheckoutPage: React.FC = () => {
     setStep(2);
     setIsOrderConfirmedAndAgreed(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Place order directly when online payment is temporarily suspended
+  const handlePlaceOrderDirectly = async () => {
+    if (!isOrderConfirmedAndAgreed) {
+      setError('Please confirm that all shipping, order details, and alterations are correct.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+
+    try {
+      const orderNumber = Math.floor(10000 + Math.random() * 90000);
+      const generatedOrderId = `PA-ORD-${orderNumber}`;
+
+      const orderPayload: any = {
+        orderId: generatedOrderId,
+        customerName: `${contact.firstName} ${contact.lastName}`.trim(),
+        customerEmail: contact.email.trim(),
+        customerPhone: contact.phone.trim(),
+        shippingAddress: {
+          street: address.street,
+          apartment: address.apartment,
+          city: address.city,
+          state: address.state,
+          postalCode: address.postalCode,
+          country: 'United States'
+        },
+        shippingInfo: {
+          street: address.street,
+          apartment: address.apartment,
+          city: address.city,
+          state: address.state,
+          postalCode: address.postalCode,
+          country: 'United States',
+          shippingMethod: selectedShippingOption.name,
+          shippingCarrier: selectedShippingOption.carrier,
+          shippingFee: shippingAmount,
+          recipientName: `${contact.firstName} ${contact.lastName}`.trim(),
+          phone: contact.phone.trim(),
+          email: contact.email.trim()
+        },
+        shippingMethod: selectedShippingOption.name,
+        shippingFee: shippingAmount,
+        subtotal: cartSubtotal,
+        tax: taxAmount,
+        total: grandTotal,
+        paymentStatus: 'Invoice',
+        paymentMethod: 'Atelier Concierge Billing (Card Payment Suspended)',
+        paymentTransactionId: `inv_concierge_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        orderStatus: 'Order Confirmed',
+        trackingNumber: undefined,
+        carrier: selectedShippingOption.carrier,
+        items: cart.map(i => ({
+          productId: i.productId,
+          productName: i.product.name,
+          category: i.product.category,
+          size: i.selectedSize,
+          color: i.selectedColor,
+          quantity: i.quantity,
+          price: i.price,
+          sku: i.product.sku,
+          image: i.product.images?.[0]
+        })),
+        alterationRequested: Boolean(alterationNotes.trim()),
+        alterationNotes: alterationNotes.trim() || undefined
+      };
+
+      const created = await OrderService.create(orderPayload);
+      clearCart();
+      setCurrentOrder(created);
+      setPlacedOrder(created);
+      showToast(`Consignment ${created.id || generatedOrderId} confirmed! Online payment is temporarily suspended.`, 'success');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      console.error('Order placement failed:', err);
+      setError(err.message || 'Failed to place order.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Step 2 Validation -> Advances to Dedicated Step 3 (Stripe Payment Page)
@@ -310,8 +400,13 @@ export const CheckoutPage: React.FC = () => {
               <strong className="text-[#111827]">{selectedShippingOption.name}</strong>
             </div>
             <div className="flex justify-between text-[#111827] font-semibold pt-2 border-t border-gray-100">
-              <span>Total Amount Paid via Stripe:</span>
-              <strong className="text-base text-[#936B34]">{money(grandTotal)}</strong>
+              <span>{placedOrder.paymentMethod?.includes('Suspended') || isPaymentGatewayHidden ? 'Order Total (Concierge Invoice):' : 'Total Amount Paid via Stripe:'}</span>
+              <div className="text-right">
+                <strong className="text-base text-[#936B34] block">{money(grandTotal)}</strong>
+                {(placedOrder.paymentMethod?.includes('Suspended') || isPaymentGatewayHidden) && (
+                  <span className="text-[10px] font-mono text-gray-500 font-normal">Card payment suspended · Invoiced on delivery</span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -396,14 +491,18 @@ export const CheckoutPage: React.FC = () => {
               <span className={`px-3 py-1 border transition-colors ${
                 step === 2 ? 'border-[#936B34] bg-[#936B34] text-white font-bold' : 'border-gray-200 bg-gray-50 text-gray-500'
               }`}>
-                2. SUMMARY
+                {isPaymentGatewayHidden ? '2. REVIEW & CONFIRM' : '2. SUMMARY'}
               </span>
-              <span className="text-gray-300">→</span>
-              <span className={`px-3 py-1 border transition-colors ${
-                step === 3 ? 'border-[#936B34] bg-[#936B34] text-white font-bold' : 'border-gray-200 bg-gray-50 text-gray-500'
-              }`}>
-                3. STRIPE
-              </span>
+              {!isPaymentGatewayHidden && (
+                <>
+                  <span className="text-gray-300">→</span>
+                  <span className={`px-3 py-1 border transition-colors ${
+                    step === 3 ? 'border-[#936B34] bg-[#936B34] text-white font-bold' : 'border-gray-200 bg-gray-50 text-gray-500'
+                  }`}>
+                    3. STRIPE
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -810,6 +909,21 @@ export const CheckoutPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Atelier Concierge Billing Banner when payment is temporarily suspended */}
+            {isPaymentGatewayHidden && (
+              <div className="p-4 bg-amber-50/90 border border-amber-200 text-amber-950 text-xs font-mono flex items-start gap-3 shadow-xs">
+                <ShieldCheck className="w-5 h-5 text-[#936B34] shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="font-bold text-[#936B34] uppercase tracking-wider block">
+                    ONLINE CARD PAYMENT TEMPORARILY SUSPENDED · CONCIERGE BILLING
+                  </span>
+                  <p className="font-sans leading-relaxed text-amber-900">
+                    Online card checkout is temporarily paused upon client request. No payment or credit card is required today. Your garments will be reserved in our private atelier vault, and an invoice will be provided upon concierge confirmation and fitting delivery.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Mandatory Confirmation Checkbox */}
             <div className="p-5 border-2 border-[#936B34] bg-[#FBF9F5] shadow-xs">
               <label className="flex items-start gap-3 cursor-pointer">
@@ -823,7 +937,15 @@ export const CheckoutPage: React.FC = () => {
                   <strong className="text-[#111827] font-semibold block mb-0.5">
                     CONFIRMATION &amp; ATELIER AGREEMENT:
                   </strong>
-                  I confirm that all shipping destination details, selected garment sizes, colors, and alteration specifications listed above are correct. I agree to proceed to the secure Stripe payment page to authorize <strong>{money(grandTotal)}</strong>.
+                  {isPaymentGatewayHidden ? (
+                    <span>
+                      I confirm that all shipping destination details, selected garment sizes, colors, and alteration specifications listed above are correct. I agree to place this bespoke consignment with total amount <strong>{money(grandTotal)}</strong> to be invoiced upon salon concierge delivery.
+                    </span>
+                  ) : (
+                    <span>
+                      I confirm that all shipping destination details, selected garment sizes, colors, and alteration specifications listed above are correct. I agree to proceed to the secure Stripe payment page to authorize <strong>{money(grandTotal)}</strong>.
+                    </span>
+                  )}
                 </div>
               </label>
             </div>
@@ -837,15 +959,37 @@ export const CheckoutPage: React.FC = () => {
               >
                 Back to Edit Shipment
               </button>
-              <button
-                type="button"
-                disabled={!isOrderConfirmedAndAgreed}
-                onClick={handleProceedToStripe}
-                className="flex-1 py-4 px-6 bg-[#111827] hover:bg-[#936B34] text-white text-xs uppercase tracking-[0.25em] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <span>PROCEED TO STRIPE PAYMENT</span>
-                <ArrowRight className="w-4 h-4 text-[#936B34]" />
-              </button>
+
+              {isPaymentGatewayHidden ? (
+                <button
+                  type="button"
+                  disabled={!isOrderConfirmedAndAgreed || loading}
+                  onClick={handlePlaceOrderDirectly}
+                  className="flex-1 py-4 px-6 bg-[#111827] hover:bg-[#936B34] text-white text-xs uppercase tracking-[0.25em] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>CONFIRMING BESPOKE ORDER...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>CONFIRM &amp; PLACE BESPOKE ORDER</span>
+                      <ArrowRight className="w-4 h-4 text-[#936B34]" />
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!isOrderConfirmedAndAgreed}
+                  onClick={handleProceedToStripe}
+                  className="flex-1 py-4 px-6 bg-[#111827] hover:bg-[#936B34] text-white text-xs uppercase tracking-[0.25em] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <span>PROCEED TO STRIPE PAYMENT</span>
+                  <ArrowRight className="w-4 h-4 text-[#936B34]" />
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -27,7 +27,8 @@ export const CartPage: React.FC = () => {
     setActiveView,
     navigateToProduct,
     showToast,
-    currentCustomer
+    currentCustomer,
+    isPaymentGatewayHidden
   } = useShop();
 
   const [promoCode, setPromoCode] = useState('');
@@ -385,12 +386,14 @@ export const CartPage: React.FC = () => {
                     onClick={handleCheckout}
                     className="w-full py-4 bg-[#111827] text-white hover:bg-[#936B34] active:bg-[#7a5829] active:scale-[0.99] transition-all font-semibold text-xs uppercase tracking-[0.25em] flex items-center justify-center gap-2 cursor-pointer shadow-md"
                   >
-                    <span>PROCEED TO PAYMENT</span>
+                    <span>{isPaymentGatewayHidden ? 'PROCEED TO BESPOKE CHECKOUT' : 'PROCEED TO PAYMENT'}</span>
                     <ArrowRight className="w-4 h-4 text-[#936B34]" />
                   </button>
 
                   <p className="text-[10px] text-center font-mono text-gray-400 pt-1">
-                    Signature White-Glove Suit Bag Included With Every Order
+                    {isPaymentGatewayHidden 
+                      ? 'Online Card Payment Temporarily Suspended · Complimentary Reservation'
+                      : 'Signature White-Glove Suit Bag Included With Every Order'}
                   </p>
                 </div>
 

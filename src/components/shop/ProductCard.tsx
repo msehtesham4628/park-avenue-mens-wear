@@ -20,7 +20,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   }, []);
   const [selectedColor, setSelectedColor] = useState<string>(colorOptions[0]?.color || product.variants?.[0]?.color || 'Standard');
   const selectedColorProduct = groupedProducts.find(p => (p.variants || []).some(v => (v.color || '').toLowerCase() === (selectedColor || '').toLowerCase())) || product;
-  const selectedColorImage = selectedColorProduct.colorImages?.[selectedColor] || selectedColorProduct.images?.slice(0, 1) || [];
+  const primaryImg = selectedColorProduct.colorImages?.[selectedColor]?.[0] || 
+                     selectedColorProduct.productViews?.front || 
+                     selectedColorProduct.images?.[0];
+  const secondaryImg = selectedColorProduct.productViews?.back || 
+                       selectedColorProduct.images?.[1];
+  const [isHovered, setIsHovered] = useState(false);
   const [selectedSize, setSelectedSize] = useState<string>(
     product.variants?.find(v => v.stock > 0)?.size || product.variants?.[0]?.size || 'Standard'
   );
@@ -41,15 +46,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   return (
     <div
       onClick={() => navigateToProduct(product.id)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className="group flex flex-col bg-white border border-gray-200 hover:border-[#936B34] hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden rounded-2xl"
     >
       {/* Product Media Area (Strictly Luxury Media Placeholder) */}
       <div className="relative aspect-[3/4] bg-[#F8F9FA] overflow-hidden">
-        {selectedColorImage[0] ? (
+        {primaryImg ? (
           <img
-            src={selectedColorImage[0]}
+            src={isHovered && secondaryImg ? secondaryImg : primaryImg}
             alt={product.name + ' - ' + selectedColor}
-            className="w-full h-full object-cover transition-opacity duration-300"
+            className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
             loading="lazy"
           />
         ) : (

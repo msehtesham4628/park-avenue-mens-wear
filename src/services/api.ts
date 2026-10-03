@@ -158,7 +158,9 @@ function mapBackendProductToFrontend(bp: any): Product {
     isNewArrival: Boolean(bp.isNewArrival),
     alterationEligible: true,
     totalStock,
-    shippingCharge: bp.shippingCharge !== undefined ? Number(bp.shippingCharge) : (bp.price >= 300 ? 0 : 15)
+    shippingCharge: bp.shippingCharge !== undefined ? Number(bp.shippingCharge) : (bp.price >= 300 ? 0 : 15),
+    productViews: bp.productViews || undefined,
+    pdfDocuments: bp.pdfDocuments || []
   };
 }
 

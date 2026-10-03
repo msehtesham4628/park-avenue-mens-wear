@@ -175,7 +175,10 @@ export const productService = {
     isNewArrival?: boolean;
     fabric?: string;
     fit?: string;
+    shippingCharge?: number;
     careInstructions?: string[];
+    productViews?: { front?: string; back?: string; left?: string; right?: string; detail?: string };
+    pdfDocuments?: any[];
   }, adminUser: { id: string; name: string; email: string; role: string }): Promise<IProduct> {
     const existingSku = await ProductModel.findOne({ sku: data.sku });
     if (existingSku) {
@@ -225,7 +228,10 @@ export const productService = {
       isActive: true,
       fabric: data.fabric,
       fit: data.fit,
-      careInstructions: data.careInstructions || []
+      shippingCharge: data.shippingCharge !== undefined ? data.shippingCharge : 15,
+      careInstructions: data.careInstructions || [],
+      productViews: data.productViews,
+      pdfDocuments: data.pdfDocuments || []
     });
 
     await product.save();
@@ -273,7 +279,8 @@ export const productService = {
     const fieldsToUpdate = [
       'description', 'category', 'subcategory', 'price', 'salePrice', 
       'images', 'colorImages', 'lowStockThreshold', 'isFeatured', 'isNewArrival', 
-      'isActive', 'fabric', 'fit', 'careInstructions'
+      'isActive', 'fabric', 'fit', 'careInstructions', 'shippingCharge',
+      'productViews', 'pdfDocuments'
     ];
 
     fieldsToUpdate.forEach(field => {

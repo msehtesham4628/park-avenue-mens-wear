@@ -42,8 +42,18 @@ import {
   Sparkles,
   Search,
   Share2,
-  Award
+  Award,
+  UploadCloud,
+  Image as ImageIcon
 } from 'lucide-react';
+import { 
+  VIEW_CONFIGS, 
+  processMultiFileDrop, 
+  processSingleFile, 
+  ProcessedViewResult, 
+  formatBytes 
+} from '../../utils/pdfUploadUtils';
+import { PdfViewerModal } from '../common/PdfViewerModal';
 import { useShop } from '../../context/ShopContext';
 import { 
   ProductService, 
@@ -105,7 +115,9 @@ export const AdminDashboard: React.FC = () => {
     isAdminLoggedIn, 
     login, 
     logout,
-    products
+    products,
+    isPaymentGatewayHidden,
+    togglePaymentGateway
   } = useShop();
 
   // Admin Authentication State for restricted access (/admin and /dashboard)
@@ -251,8 +263,54 @@ export const AdminDashboard: React.FC = () => {
     fabric: '',
     fit: '',
     shippingCharge: '15',
-    sizeStock: '38R:4, 40R:6, 42R:2'
+    sizeStock: '38R:4, 40R:6, 42R:2',
+    views: {
+      front: '',
+      back: '',
+      left: '',
+      right: '',
+      detail: ''
+    },
+    pdfDocuments: [] as Array<{
+      id: string;
+      title: string;
+      fileName: string;
+      url: string;
+      uploadedAt: string;
+      viewType?: string;
+      fileSize?: string;
+    }>
   });
+
+  // Dedicated 3 to 5 Views & PDF Upload State (for rapid client catalog updates)
+  const [isQuickViewsModalOpen, setIsQuickViewsModalOpen] = useState(false);
+  const [quickViewsProduct, setQuickViewsProduct] = useState<Product | null>(null);
+  const [quickViewsForm, setQuickViewsForm] = useState<{
+    front: string;
+    back: string;
+    left: string;
+    right: string;
+    detail: string;
+    pdfDocuments: Array<{
+      id: string;
+      title: string;
+      fileName: string;
+      url: string;
+      uploadedAt: string;
+      viewType?: string;
+      fileSize?: string;
+    }>;
+  }>({
+    front: '',
+    back: '',
+    left: '',
+    right: '',
+    detail: '',
+    pdfDocuments: []
+  });
+  const [activePdfPreview, setActivePdfPreview] = useState<{ url: string; title: string; fileName?: string } | null>(null);
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
 
   const [alterationForm, setAlterationForm] = useState({
     customerName: '',
@@ -478,6 +536,22 @@ export const AdminDashboard: React.FC = () => {
 
       const totalStock = parsedVariants.reduce((sum, v) => sum + v.stock, 0);
 
+      const viewsList = [
+        productForm.views.front,
+        productForm.views.back,
+        productForm.views.left,
+        productForm.views.right,
+        productForm.views.detail
+      ].filter(Boolean) as string[];
+
+      const productViewsObj = {
+        front: productForm.views.front || undefined,
+        back: productForm.views.back || undefined,
+        left: productForm.views.left || undefined,
+        right: productForm.views.right || undefined,
+        detail: productForm.views.detail || undefined
+      };
+
       if (editingProduct) {
         // Edit flow
         const updated: Product = {
@@ -491,7 +565,10 @@ export const AdminDashboard: React.FC = () => {
           fit: productForm.fit,
           shippingCharge: productForm.shippingCharge ? parseFloat(productForm.shippingCharge) : 15,
           variants: parsedVariants,
-          totalStock
+          totalStock,
+          images: viewsList.length > 0 ? viewsList : (editingProduct.images?.length ? editingProduct.images : []),
+          productViews: productViewsObj,
+          pdfDocuments: productForm.pdfDocuments
         };
         await ProductService.update(editingProduct.id, updated);
         showToast(`Product ${updated.name} updated successfully`, 'success');
@@ -509,7 +586,9 @@ export const AdminDashboard: React.FC = () => {
           fabric: productForm.fabric || '100% Super 150s Italian Virgin Wool',
           fit: productForm.fit || 'Contemporary Tailored Fit',
           care: ['Dry clean by specialist', 'Steam lightly between wears'],
-          images: [],
+          images: viewsList,
+          productViews: productViewsObj,
+          pdfDocuments: productForm.pdfDocuments,
           variants: parsedVariants,
           isFeatured: true,
           isNewArrival: true,
@@ -530,7 +609,9 @@ export const AdminDashboard: React.FC = () => {
         fabric: '',
         fit: '',
         shippingCharge: '15',
-        sizeStock: '38R:4, 40R:6, 42R:2'
+        sizeStock: '38R:4, 40R:6, 42R:2',
+        views: { front: '', back: '', left: '', right: '', detail: '' },
+        pdfDocuments: []
       });
       await loadAllData();
       await refreshProducts();
@@ -548,12 +629,215 @@ export const AdminDashboard: React.FC = () => {
       price: p.price.toString(),
       sku: p.sku,
       description: p.description,
-      fabric: p.fabric,
-      fit: p.fit,
+      fabric: p.fabric || '',
+      fit: p.fit || '',
       shippingCharge: p.shippingCharge !== undefined ? p.shippingCharge.toString() : '15',
-      sizeStock: sizeStockStr
+      sizeStock: sizeStockStr,
+      views: {
+        front: p.productViews?.front || p.images?.[0] || '',
+        back: p.productViews?.back || p.images?.[1] || '',
+        left: p.productViews?.left || p.images?.[2] || '',
+        right: p.productViews?.right || p.images?.[3] || '',
+        detail: p.productViews?.detail || p.images?.[4] || ''
+      },
+      pdfDocuments: p.pdfDocuments || []
     });
     setIsAddProductOpen(true);
+  };
+
+  // Quick 3-5 Views & PDF Upload Handlers
+  const handleOpenQuickViews = (p: Product) => {
+    setQuickViewsProduct(p);
+    setQuickViewsForm({
+      front: p.productViews?.front || p.images?.[0] || '',
+      back: p.productViews?.back || p.images?.[1] || '',
+      left: p.productViews?.left || p.images?.[2] || '',
+      right: p.productViews?.right || p.images?.[3] || '',
+      detail: p.productViews?.detail || p.images?.[4] || '',
+      pdfDocuments: p.pdfDocuments || []
+    });
+    setIsQuickViewsModalOpen(true);
+  };
+
+  const handleSaveQuickViews = async () => {
+    if (!quickViewsProduct) return;
+    try {
+      const viewsList = [
+        quickViewsForm.front,
+        quickViewsForm.back,
+        quickViewsForm.left,
+        quickViewsForm.right,
+        quickViewsForm.detail
+      ].filter(Boolean) as string[];
+
+      const productViewsObj = {
+        front: quickViewsForm.front || undefined,
+        back: quickViewsForm.back || undefined,
+        left: quickViewsForm.left || undefined,
+        right: quickViewsForm.right || undefined,
+        detail: quickViewsForm.detail || undefined
+      };
+
+      const updated: Product = {
+        ...quickViewsProduct,
+        images: viewsList.length > 0 ? viewsList : (quickViewsProduct.images || []),
+        productViews: productViewsObj,
+        pdfDocuments: quickViewsForm.pdfDocuments
+      };
+
+      await ProductService.update(quickViewsProduct.id, updated);
+      showToast(`Updated 3-5 views and PDFs for ${quickViewsProduct.name}`, 'success');
+      setIsQuickViewsModalOpen(false);
+      setQuickViewsProduct(null);
+      await loadAllData();
+      await refreshProducts();
+    } catch (err: any) {
+      showToast('Failed to update views: ' + (err.message || 'Error'), 'error');
+    }
+  };
+
+  // File Upload Processors
+  const handleBatchUploadForProductForm = async (files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
+    setIsProcessingFiles(true);
+    setProcessingStatus('Processing 3-5 garment view files and rendering PDFs...');
+    try {
+      const results = await processMultiFileDrop(files);
+      setProductForm(prev => {
+        const nextViews = { ...prev.views };
+        const newPdfDocs = [...prev.pdfDocuments];
+
+        results.forEach(res => {
+          nextViews[res.viewType] = res.previewUrl;
+          if (res.isPdf && res.pdfUrl) {
+            newPdfDocs.push({
+              id: `pdf-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              title: `${prev.name || 'Garment'} — ${res.label}`,
+              fileName: res.fileName,
+              url: res.pdfUrl,
+              uploadedAt: new Date().toISOString(),
+              viewType: res.viewType,
+              fileSize: res.fileSize
+            });
+          }
+        });
+
+        return {
+          ...prev,
+          views: nextViews,
+          pdfDocuments: newPdfDocs
+        };
+      });
+      showToast(`Processed ${results.length} view angle(s) successfully!`, 'success');
+    } catch (err: any) {
+      showToast('Failed to process uploaded files: ' + (err.message || 'Error'), 'error');
+    } finally {
+      setIsProcessingFiles(false);
+      setProcessingStatus('');
+    }
+  };
+
+  const handleSingleViewUploadForProductForm = async (file: File, viewType: 'front' | 'back' | 'left' | 'right' | 'detail') => {
+    if (!file) return;
+    setIsProcessingFiles(true);
+    setProcessingStatus(`Rendering ${viewType} view...`);
+    try {
+      const res = await processSingleFile(file, viewType);
+      setProductForm(prev => {
+        const nextViews = { ...prev.views, [viewType]: res.previewUrl };
+        const newPdfDocs = [...prev.pdfDocuments];
+        if (res.isPdf && res.pdfUrl) {
+          newPdfDocs.push({
+            id: `pdf-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            title: `${prev.name || 'Garment'} — ${res.label}`,
+            fileName: res.fileName,
+            url: res.pdfUrl,
+            uploadedAt: new Date().toISOString(),
+            viewType: res.viewType,
+            fileSize: res.fileSize
+          });
+        }
+        return {
+          ...prev,
+          views: nextViews,
+          pdfDocuments: newPdfDocs
+        };
+      });
+      showToast(`Updated ${res.label} successfully!`, 'success');
+    } catch (err: any) {
+      showToast('Error processing file: ' + (err.message || 'Error'), 'error');
+    } finally {
+      setIsProcessingFiles(false);
+      setProcessingStatus('');
+    }
+  };
+
+  const handleBatchUploadForQuickViews = async (files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
+    setIsProcessingFiles(true);
+    setProcessingStatus('Processing 3-5 garment view files and rendering PDFs...');
+    try {
+      const results = await processMultiFileDrop(files);
+      setQuickViewsForm(prev => {
+        const next = { ...prev };
+        const newPdfDocs = [...prev.pdfDocuments];
+
+        results.forEach(res => {
+          (next as any)[res.viewType] = res.previewUrl;
+          if (res.isPdf && res.pdfUrl) {
+            newPdfDocs.push({
+              id: `pdf-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              title: `${quickViewsProduct?.name || 'Garment'} — ${res.label}`,
+              fileName: res.fileName,
+              url: res.pdfUrl,
+              uploadedAt: new Date().toISOString(),
+              viewType: res.viewType,
+              fileSize: res.fileSize
+            });
+          }
+        });
+        next.pdfDocuments = newPdfDocs;
+        return next;
+      });
+      showToast(`Processed ${results.length} view angle(s) successfully!`, 'success');
+    } catch (err: any) {
+      showToast('Failed to process files: ' + (err.message || 'Error'), 'error');
+    } finally {
+      setIsProcessingFiles(false);
+      setProcessingStatus('');
+    }
+  };
+
+  const handleSingleViewUploadForQuickViews = async (file: File, viewType: 'front' | 'back' | 'left' | 'right' | 'detail') => {
+    if (!file) return;
+    setIsProcessingFiles(true);
+    setProcessingStatus(`Rendering ${viewType} view...`);
+    try {
+      const res = await processSingleFile(file, viewType);
+      setQuickViewsForm(prev => {
+        const next = { ...prev, [viewType]: res.previewUrl };
+        const newPdfDocs = [...prev.pdfDocuments];
+        if (res.isPdf && res.pdfUrl) {
+          newPdfDocs.push({
+            id: `pdf-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            title: `${quickViewsProduct?.name || 'Garment'} — ${res.label}`,
+            fileName: res.fileName,
+            url: res.pdfUrl,
+            uploadedAt: new Date().toISOString(),
+            viewType: res.viewType,
+            fileSize: res.fileSize
+          });
+        }
+        next.pdfDocuments = newPdfDocs;
+        return next;
+      });
+      showToast(`Updated ${res.label} successfully!`, 'success');
+    } catch (err: any) {
+      showToast('Error processing file: ' + (err.message || 'Error'), 'error');
+    } finally {
+      setIsProcessingFiles(false);
+      setProcessingStatus('');
+    }
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -973,7 +1257,30 @@ export const AdminDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Online Payment Visibility Controller (Temporary Suspension Requirement) */}
+            <button
+              type="button"
+              onClick={() => {
+                togglePaymentGateway();
+                showToast(
+                  isPaymentGatewayHidden
+                    ? 'Online card payments activated.'
+                    : 'Online payments temporarily hidden / suspended.',
+                  'info'
+                );
+              }}
+              className={`px-3 py-2 text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs border ${
+                isPaymentGatewayHidden
+                  ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                  : 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100'
+              }`}
+              title="Click to toggle temporary online card payment hiding"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-[#936B34]" />
+              <span className="font-semibold">{isPaymentGatewayHidden ? 'PAYMENTS: HIDDEN' : 'PAYMENTS: ACTIVE'}</span>
+            </button>
+
             <button
               onClick={loadAllData}
               className="px-3.5 py-2 bg-[#F9F9F8] border border-gray-200 text-xs font-mono text-[#111827] hover:border-[#936B34] flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
@@ -1334,7 +1641,9 @@ export const AdminDashboard: React.FC = () => {
                       fabric: '',
                       fit: '',
                       shippingCharge: '15',
-                      sizeStock: '38R:4, 40R:6, 42R:2'
+                      sizeStock: '38R:4, 40R:6, 42R:2',
+                      views: { front: '', back: '', left: '', right: '', detail: '' },
+                      pdfDocuments: []
                     });
                     setIsAddProductOpen(true);
                   }}
@@ -1355,6 +1664,7 @@ export const AdminDashboard: React.FC = () => {
                       <th className="p-4">GARMENT NAME</th>
                       <th className="p-4">CATEGORY</th>
                       <th className="p-4">PRICE</th>
+                      <th className="p-4">3-5 VIEWS &amp; PDF</th>
                       <th className="p-4">VARIANTS / STOCK</th>
                       <th className="p-4 text-right">ACTIONS</th>
                     </tr>
@@ -1366,10 +1676,31 @@ export const AdminDashboard: React.FC = () => {
                         <td className="p-4 text-[#111827] font-serif text-sm font-light">{prod.name}</td>
                         <td className="p-4 uppercase text-gray-500">{prod.category}</td>
                         <td className="p-4 tabular-nums font-semibold">${prod.price.toLocaleString()}</td>
+                        <td className="p-4">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenQuickViews(prod)}
+                            className="px-2.5 py-1 bg-white hover:bg-[#FAF8F5] border border-gray-300 hover:border-[#936B34] text-[#111827] hover:text-[#936B34] text-[10px] font-mono uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                            title="Upload or update 3-5 view photos & PDFs"
+                          >
+                            <FileUp className="w-3.5 h-3.5 text-[#936B34]" />
+                            <span>
+                              {Object.values(prod.productViews || {}).filter(Boolean).length || prod.images?.length || 0}/5 Views
+                              {prod.pdfDocuments && prod.pdfDocuments.length > 0 ? ` · ${prod.pdfDocuments.length} PDF` : ''}
+                            </span>
+                          </button>
+                        </td>
                         <td className="p-4 text-gray-500">
                           {prod.variants?.map(v => `${v.size} (${v.stock})`).join(', ') || 'None'}
                         </td>
                         <td className="p-4 text-right space-x-2">
+                          <button
+                            onClick={() => handleOpenQuickViews(prod)}
+                            className="p-1.5 text-[#936B34] hover:text-[#7A5726] transition-colors cursor-pointer"
+                            title="Manage 3-5 Views & PDFs"
+                          >
+                            <FileUp className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => handleOpenEdit(prod)}
                             className="p-1.5 text-gray-500 hover:text-[#936B34] transition-colors cursor-pointer"
@@ -3681,7 +4012,7 @@ export const AdminDashboard: React.FC = () => {
       {/* MODAL: ADD / EDIT PRODUCT */}
       {isAddProductOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs p-4 sm:p-6 flex justify-center items-start">
-          <div className="w-full max-w-xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 sm:my-12 shadow-2xl">
+          <div className="w-full max-w-3xl bg-[#F9F9F8] border border-gray-200 p-6 sm:p-8 space-y-6 relative my-8 sm:my-12 shadow-2xl">
             <button
               onClick={() => setIsAddProductOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-[#111827] cursor-pointer"
@@ -3939,6 +4270,274 @@ export const AdminDashboard: React.FC = () => {
                 )}
               </div>
 
+              {/* 3 to 5 VIEW ANGLES & PDF UPLOAD SECTION */}
+              <div className="border border-[#936B34]/30 bg-white p-5 space-y-4 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-gray-100 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-[#936B34]" />
+                      <h4 className="font-serif text-base text-[#111827] uppercase tracking-wide">
+                        3 TO 5 GARMENT VIEW ANGLES &amp; PDF UPLOADS
+                      </h4>
+                    </div>
+                    <p className="text-[11px] font-mono text-gray-500 mt-0.5">
+                      Upload 3 to 5 angles (Front, Back, Left, Right, Detail). Supports Photos and PDF documents.
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-mono bg-[#936B34]/10 text-[#936B34] px-2 py-0.5 font-bold uppercase self-start sm:self-auto">
+                    {Object.values(productForm.views).filter(Boolean).length}/5 Angles Configured
+                  </span>
+                </div>
+
+                {/* Batch Dropzone (Drop 3-5 PDFs or images all at once) */}
+                <div 
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                      handleBatchUploadForProductForm(e.dataTransfer.files);
+                    }
+                  }}
+                  className="border-2 border-dashed border-[#936B34]/40 bg-[#FAF8F5] p-5 text-center transition-colors hover:border-[#936B34] cursor-pointer group relative"
+                  onClick={() => {
+                    const input = document.getElementById('batch-upload-productform') as HTMLInputElement;
+                    if (input) input.click();
+                  }}
+                >
+                  <input
+                    type="file"
+                    id="batch-upload-productform"
+                    multiple
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleBatchUploadForProductForm(e.target.files);
+                      }
+                    }}
+                  />
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <div className="w-10 h-10 rounded-full bg-[#111827] text-[#D4AF37] flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <UploadCloud className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#111827] block">
+                        CLICK OR DROP 3-5 PDFs / PHOTOS (FRONT, BACK, LEFT, RIGHT, DETAIL)
+                      </span>
+                      <span className="text-[11px] font-mono text-gray-500 block mt-1">
+                        Client sent PDFs or photos? Multi-page PDFs (Page 1 = Front, Page 2 = Back, Page 3 = Left, Page 4 = Right, Page 5 = Detail) or multiple files are automatically converted &amp; assigned!
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {isProcessingFiles && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-mono flex items-center gap-2 animate-pulse">
+                    <RefreshCw className="w-4 h-4 animate-spin text-[#936B34]" />
+                    <span>{processingStatus || 'Processing uploaded garment documents...'}</span>
+                  </div>
+                )}
+
+                {/* 5 View Angle Slots Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2">
+                  {VIEW_CONFIGS.map((cfg) => {
+                    const currentVal = (productForm.views as any)[cfg.type] || '';
+                    const isPdf = currentVal.startsWith('data:application/pdf') || currentVal.toLowerCase().endsWith('.pdf');
+                    return (
+                      <div 
+                        key={cfg.type}
+                        className={`border p-3 flex flex-col justify-between space-y-2.5 bg-[#F9F9F8] transition-colors ${
+                          currentVal ? 'border-[#936B34]/60 bg-white ring-1 ring-[#936B34]/20' : 'border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#111827]">
+                            {cfg.label}
+                          </span>
+                          <span className={`text-[9px] font-mono px-1.5 py-0.2 uppercase ${
+                            cfg.required 
+                              ? (currentVal ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')
+                              : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {cfg.required ? (currentVal ? '✓ Loaded' : 'Required') : (currentVal ? '✓ Loaded' : 'Optional')}
+                          </span>
+                        </div>
+
+                        {/* Thumbnail Preview Area */}
+                        <div className="aspect-[3/4] bg-gray-100 border border-gray-200 relative overflow-hidden flex items-center justify-center group">
+                          {currentVal ? (
+                            <>
+                              <img 
+                                src={currentVal} 
+                                alt={cfg.label} 
+                                className="w-full h-full object-cover" 
+                              />
+                              {isPdf && (
+                                <div className="absolute top-1.5 left-1.5 bg-[#936B34] text-white text-[9px] font-mono px-1.5 py-0.5 flex items-center gap-1 shadow-xs">
+                                  <FileText className="w-3 h-3" />
+                                  <span>PDF</span>
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                {isPdf && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setActivePdfPreview({
+                                      url: currentVal,
+                                      title: `${productForm.name || 'Garment'} — ${cfg.label}`,
+                                      fileName: `${cfg.type}_view.pdf`
+                                    })}
+                                    className="p-1.5 bg-white text-gray-900 text-xs font-mono hover:bg-[#936B34] hover:text-white transition-colors cursor-pointer"
+                                    title="Inspect PDF Document"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setProductForm(prev => ({
+                                    ...prev,
+                                    views: { ...prev.views, [cfg.type]: '' }
+                                  }))}
+                                  className="p-1.5 bg-red-600 text-white text-xs font-mono hover:bg-red-700 transition-colors cursor-pointer"
+                                  title="Remove view"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center p-3 text-center space-y-1">
+                              <ImageIcon className="w-6 h-6 text-gray-300" />
+                              <span className="text-[10px] font-mono text-gray-400">No {cfg.label}</span>
+                              <span className="text-[9px] font-mono text-gray-400 italic">{cfg.description}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Upload Controls */}
+                        <div className="space-y-1.5 pt-1">
+                          <label className="w-full py-1.5 px-2 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] hover:text-[#936B34] text-[10px] font-mono uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs font-semibold">
+                            <Upload className="w-3 h-3 text-[#936B34]" />
+                            <span>UPLOAD PDF / IMAGE</span>
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleSingleViewUploadForProductForm(file, cfg.type);
+                              }}
+                            />
+                          </label>
+
+                          <input
+                            type="text"
+                            value={currentVal}
+                            onChange={(e) => setProductForm(prev => ({
+                              ...prev,
+                              views: { ...prev.views, [cfg.type]: e.target.value }
+                            }))}
+                            placeholder="or paste image/PDF URL"
+                            className="w-full bg-white border border-gray-200 px-2 py-1 text-[10px] text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Attached Technical PDF Documents Section */}
+                <div className="mt-4 pt-4 border-t border-gray-100 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-[#936B34]" />
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#111827]">
+                        ATTACHED CLIENT PDF SPECIFICATIONS &amp; LOOKBOOKS
+                      </span>
+                    </div>
+                    <label className="px-2.5 py-1 bg-[#111827] text-white hover:bg-[#936B34] text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors font-medium">
+                      <Plus className="w-3 h-3" />
+                      <span>ATTACH PDF</span>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            const dataUrl = reader.result as string;
+                            setProductForm(prev => ({
+                              ...prev,
+                              pdfDocuments: [
+                                ...prev.pdfDocuments,
+                                {
+                                  id: `pdf-${Date.now()}`,
+                                  title: file.name.replace(/\.[^/.]+$/, ''),
+                                  fileName: file.name,
+                                  url: dataUrl,
+                                  uploadedAt: new Date().toISOString(),
+                                  fileSize: formatBytes(file.size)
+                                }
+                              ]
+                            }));
+                            showToast(`Attached PDF document ${file.name}`, 'success');
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {productForm.pdfDocuments && productForm.pdfDocuments.length > 0 ? (
+                    <div className="divide-y divide-gray-100 border border-gray-200 bg-[#F9F9F8]">
+                      {productForm.pdfDocuments.map(pdf => (
+                        <div key={pdf.id} className="p-2.5 flex items-center justify-between gap-3 text-xs font-mono">
+                          <div className="flex items-center gap-2 truncate">
+                            <FileText className="w-4 h-4 text-[#936B34] shrink-0" />
+                            <div className="truncate">
+                              <span className="font-semibold text-[#111827] block truncate">{pdf.title || pdf.fileName}</span>
+                              <span className="text-[10px] text-gray-500">{pdf.fileSize || 'PDF Document'} · {new Date(pdf.uploadedAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setActivePdfPreview({
+                                url: pdf.url,
+                                title: pdf.title || pdf.fileName,
+                                fileName: pdf.fileName
+                              })}
+                              className="px-2 py-1 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] text-[10px] uppercase font-mono cursor-pointer"
+                            >
+                              VIEW
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setProductForm(prev => ({
+                                ...prev,
+                                pdfDocuments: prev.pdfDocuments.filter(d => d.id !== pdf.id)
+                              }))}
+                              className="p-1 text-red-500 hover:text-red-700 cursor-pointer"
+                              title="Delete PDF"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] font-mono text-gray-400 italic">
+                      No supplementary PDF documents attached yet.
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div className="pt-2">
                 <button
                   type="submit"
@@ -3951,6 +4550,303 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* MODAL: RAPID 3-5 VIEWS & PDF UPLOADER */}
+      {isQuickViewsModalOpen && quickViewsProduct && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs p-4 sm:p-6 flex justify-center items-start">
+          <div className="w-full max-w-4xl bg-[#F9F9F8] border border-[#936B34]/50 p-6 sm:p-8 space-y-6 relative my-8 shadow-2xl">
+            <button
+              onClick={() => {
+                setIsQuickViewsModalOpen(false);
+                setQuickViewsProduct(null);
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-[#111827] cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold">
+                  PARK AVENUE ATELIER · 3-5 VIEWS &amp; PDF MANAGER
+                </span>
+                <span className="text-[10px] font-mono bg-[#936B34] text-white px-2 py-0.5">
+                  SKU: {quickViewsProduct.sku}
+                </span>
+              </div>
+              <h3 className="font-serif text-2xl text-[#111827] uppercase font-light mt-1">
+                {quickViewsProduct.name}
+              </h3>
+              <p className="text-xs text-gray-500 font-mono mt-0.5">
+                Client provided 3 to 5 view photos or PDF files (Front, Back, Left, Right, Detail). Drag and drop or upload below.
+              </p>
+            </div>
+
+            {/* Batch Dropzone in Quick Views Modal */}
+            <div 
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  handleBatchUploadForQuickViews(e.dataTransfer.files);
+                }
+              }}
+              className="border-2 border-dashed border-[#936B34] bg-white p-6 text-center hover:bg-[#FAF8F5] transition-colors cursor-pointer group"
+              onClick={() => {
+                const el = document.getElementById('batch-upload-quickviews') as HTMLInputElement;
+                if (el) el.click();
+              }}
+            >
+              <input
+                type="file"
+                id="batch-upload-quickviews"
+                multiple
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleBatchUploadForQuickViews(e.target.files);
+                  }
+                }}
+              />
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <div className="w-12 h-12 rounded-full bg-[#111827] text-[#D4AF37] flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <UploadCloud className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-sm font-mono font-bold uppercase tracking-wider text-[#111827] block">
+                    DRAG &amp; DROP 3-5 PDFs OR PHOTOS (FRONT, BACK, LEFT, RIGHT, DETAIL)
+                  </span>
+                  <span className="text-xs font-mono text-gray-500 block mt-1">
+                    Multi-page PDFs or batch files are automatically sorted into Front View, Back View, Left View, Right View, and Detail View.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {isProcessingFiles && (
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-mono flex items-center gap-2 animate-pulse">
+                <RefreshCw className="w-4 h-4 animate-spin text-[#936B34]" />
+                <span>{processingStatus || 'Processing view files...'}</span>
+              </div>
+            )}
+
+            {/* 5 View Angle Slots */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              {VIEW_CONFIGS.map((cfg) => {
+                const currentVal = (quickViewsForm as any)[cfg.type] || '';
+                const isPdf = currentVal.startsWith('data:application/pdf') || currentVal.toLowerCase().endsWith('.pdf');
+                return (
+                  <div 
+                    key={cfg.type}
+                    className={`border p-2.5 flex flex-col justify-between space-y-2 bg-white ${
+                      currentVal ? 'border-[#936B34] ring-1 ring-[#936B34]/30' : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#111827] truncate">
+                        {cfg.label}
+                      </span>
+                      <span className={`text-[8px] font-mono px-1 py-0.2 uppercase ${
+                        cfg.required 
+                          ? (currentVal ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')
+                          : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {currentVal ? '✓' : (cfg.required ? 'Req' : 'Opt')}
+                      </span>
+                    </div>
+
+                    {/* Preview Thumbnail */}
+                    <div className="aspect-[3/4] bg-gray-100 border border-gray-200 relative overflow-hidden flex items-center justify-center group">
+                      {currentVal ? (
+                        <>
+                          <img 
+                            src={currentVal} 
+                            alt={cfg.label} 
+                            className="w-full h-full object-cover" 
+                          />
+                          {isPdf && (
+                            <div className="absolute top-1 left-1 bg-[#936B34] text-white text-[8px] font-mono px-1 py-0.5 flex items-center gap-1 shadow-xs">
+                              <FileText className="w-2.5 h-2.5" />
+                              <span>PDF</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                            {isPdf && (
+                              <button
+                                type="button"
+                                onClick={() => setActivePdfPreview({
+                                  url: currentVal,
+                                  title: `${quickViewsProduct.name} — ${cfg.label}`,
+                                  fileName: `${cfg.type}_view.pdf`
+                                })}
+                                className="p-1 bg-white text-gray-900 text-xs font-mono hover:bg-[#936B34] hover:text-white cursor-pointer"
+                                title="Inspect PDF"
+                              >
+                                <Eye className="w-3 h-3" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setQuickViewsForm(prev => ({ ...prev, [cfg.type]: '' }))}
+                              className="p-1 bg-red-600 text-white text-xs font-mono hover:bg-red-700 cursor-pointer"
+                              title="Remove"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-2 text-center">
+                          <ImageIcon className="w-5 h-5 text-gray-300 mb-1" />
+                          <span className="text-[9px] font-mono text-gray-400">{cfg.label}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Slot Upload Button */}
+                    <div className="space-y-1">
+                      <label className="w-full py-1.5 bg-[#FAF8F5] border border-gray-300 hover:border-[#936B34] text-[#111827] text-[9px] font-mono uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer transition-colors font-medium">
+                        <Upload className="w-2.5 h-2.5 text-[#936B34]" />
+                        <span>Upload File</span>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleSingleViewUploadForQuickViews(file, cfg.type);
+                          }}
+                        />
+                      </label>
+                      <input
+                        type="text"
+                        value={currentVal}
+                        onChange={(e) => setQuickViewsForm(prev => ({ ...prev, [cfg.type]: e.target.value }))}
+                        placeholder="or paste URL"
+                        className="w-full bg-[#F9F9F8] border border-gray-200 px-1.5 py-0.5 text-[9px] font-mono text-[#111827] focus:outline-none focus:border-[#936B34]"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Attached PDF Specifications */}
+            <div className="border border-gray-200 bg-white p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#111827] uppercase">
+                  <FileText className="w-4 h-4 text-[#936B34]" />
+                  <span>Product Technical PDF Documents ({quickViewsForm.pdfDocuments.length})</span>
+                </div>
+                <label className="px-2.5 py-1 bg-[#111827] text-white hover:bg-[#936B34] text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors font-medium">
+                  <Plus className="w-3 h-3" />
+                  <span>Attach PDF</span>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const dataUrl = reader.result as string;
+                        setQuickViewsForm(prev => ({
+                          ...prev,
+                          pdfDocuments: [
+                            ...prev.pdfDocuments,
+                            {
+                              id: `pdf-${Date.now()}`,
+                              title: file.name.replace(/\.[^/.]+$/, ''),
+                              fileName: file.name,
+                              url: dataUrl,
+                              uploadedAt: new Date().toISOString(),
+                              fileSize: formatBytes(file.size)
+                            }
+                          ]
+                        }));
+                        showToast(`Attached PDF document ${file.name}`, 'success');
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+              </div>
+
+              {quickViewsForm.pdfDocuments.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {quickViewsForm.pdfDocuments.map(pdf => (
+                    <div key={pdf.id} className="py-2 flex items-center justify-between gap-3 text-xs font-mono">
+                      <div className="flex items-center gap-2 truncate">
+                        <FileText className="w-3.5 h-3.5 text-[#936B34] shrink-0" />
+                        <span className="font-medium text-[#111827] truncate">{pdf.title || pdf.fileName}</span>
+                        <span className="text-[10px] text-gray-400">({pdf.fileSize || 'PDF'})</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setActivePdfPreview({
+                            url: pdf.url,
+                            title: pdf.title || pdf.fileName,
+                            fileName: pdf.fileName
+                          })}
+                          className="px-2 py-0.5 bg-gray-100 hover:bg-[#936B34] hover:text-white text-[10px] font-mono uppercase transition-colors cursor-pointer"
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setQuickViewsForm(prev => ({
+                            ...prev,
+                            pdfDocuments: prev.pdfDocuments.filter(d => d.id !== pdf.id)
+                          }))}
+                          className="p-1 text-red-500 hover:text-red-700 cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10px] font-mono text-gray-400 italic">No attached PDF documents.</p>
+              )}
+            </div>
+
+            {/* Save Button */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleSaveQuickViews}
+                className="flex-1 py-3.5 bg-[#111827] hover:bg-[#936B34] text-white font-semibold text-xs uppercase tracking-widest transition-colors cursor-pointer shadow-md text-center"
+              >
+                SAVE 3-5 VIEWS &amp; PDFS TO CATALOG
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsQuickViewsModalOpen(false);
+                  setQuickViewsProduct(null);
+                }}
+                className="px-6 py-3.5 border border-gray-300 text-gray-700 text-xs font-mono uppercase tracking-wider hover:bg-white transition-colors cursor-pointer"
+              >
+                CANCEL
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF DOCUMENT VIEWER MODAL */}
+      <PdfViewerModal
+        isOpen={Boolean(activePdfPreview)}
+        onClose={() => setActivePdfPreview(null)}
+        pdfUrl={activePdfPreview?.url || ''}
+        title={activePdfPreview?.title || 'Garment Specification'}
+        fileName={activePdfPreview?.fileName}
+      />
 
       {/* MODAL: ADJUST INVENTORY */}
       {adjustingInventory && (

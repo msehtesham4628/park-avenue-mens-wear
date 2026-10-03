@@ -131,6 +131,11 @@ interface ShopContextType {
   }) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
 
+  // Payment Gateway Visibility (Temporary Suspension)
+  isPaymentGatewayHidden: boolean;
+  setIsPaymentGatewayHidden: (hidden: boolean) => void;
+  togglePaymentGateway: () => void;
+
   // Feedback Toasts
   toasts: ToastMessage[];
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
@@ -227,6 +232,33 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Toast notifications
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Payment Gateway Visibility (Default: true -> payment hidden temporarily)
+  const [isPaymentGatewayHidden, setIsPaymentGatewayHiddenState] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('pa_payment_gateway_hidden');
+      return saved === null ? true : saved === 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const setIsPaymentGatewayHidden = useCallback((hidden: boolean) => {
+    setIsPaymentGatewayHiddenState(hidden);
+    try {
+      localStorage.setItem('pa_payment_gateway_hidden', hidden ? 'true' : 'false');
+    } catch (_) {}
+  }, []);
+
+  const togglePaymentGateway = useCallback(() => {
+    setIsPaymentGatewayHiddenState(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('pa_payment_gateway_hidden', next ? 'true' : 'false');
+      } catch (_) {}
+      return next;
+    });
+  }, []);
 
   const continueFromWelcome = useCallback(() => {
     const rawDest = sessionStorage.getItem('pa_entry_path') || '/';
@@ -621,6 +653,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         register,
         logout,
+        isPaymentGatewayHidden,
+        setIsPaymentGatewayHidden,
+        togglePaymentGateway,
         toasts,
         showToast,
         dismissToast

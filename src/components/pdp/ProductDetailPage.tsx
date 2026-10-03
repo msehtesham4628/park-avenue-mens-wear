@@ -20,12 +20,14 @@ import {
   Maximize2,
   X,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  FileText
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { SizeGuideModal } from './SizeGuideModal';
+import { PdfViewerModal } from '../common/PdfViewerModal';
 import { estimateTaxAndShipmentByZip, ZipTaxAndShipmentEstimate } from '../../services/taxEngine';
 import { Product } from '../../types';
 
@@ -51,6 +53,7 @@ export const ProductDetailPage: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
+  const [selectedPdfDoc, setSelectedPdfDoc] = useState<{ url: string; title: string; fileName?: string } | null>(null);
 
   // Accordion open states
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -184,13 +187,59 @@ export const ProductDetailPage: React.FC = () => {
 
   const primaryImage = product.colorImages?.[currentColor]?.[0] || product.images?.[0] || categoryImageMap[product.category];
 
-  // Gallery angles
-  const galleryAngles = [
-    { label: 'Front Silhouette', sub: 'Classic Proportions' },
-    { label: 'Collar & Shoulder', sub: 'Hand-finished Lapel' },
-    { label: 'Fabric Weave', sub: 'Tactile Texture' },
-    { label: 'Tailored Silhouette', sub: 'Atelier Fit' }
-  ];
+  // Dynamically resolve 3 to 5 view angles from productViews, images, or client uploads
+  const resolvedViews = useMemo(() => {
+    const list: { type: string; label: string; url: string; sub: string; isPdf?: boolean }[] = [];
+    const pv = product.productViews;
+
+    // 1. Front View (Primary)
+    const frontUrl = pv?.front || product.colorImages?.[currentColor]?.[0] || product.images?.[0] || categoryImageMap[product.category];
+    if (frontUrl) {
+      list.push({ type: 'front', label: 'Front View', url: frontUrl, sub: 'Front Silhouette & Lapels' });
+    }
+
+    // 2. Back View
+    const backUrl = pv?.back || product.images?.[1] || '';
+    if (backUrl) {
+      list.push({ type: 'back', label: 'Back View', url: backUrl, sub: 'Rear Drape & Tailored Vents' });
+    }
+
+    // 3. Left View
+    const leftUrl = pv?.left || product.images?.[2] || '';
+    if (leftUrl) {
+      list.push({ type: 'left', label: 'Left View', url: leftUrl, sub: 'Left Profile & Sleeve Pitch' });
+    }
+
+    // 4. Right View
+    const rightUrl = pv?.right || product.images?.[3] || '';
+    if (rightUrl) {
+      list.push({ type: 'right', label: 'Right View', url: rightUrl, sub: 'Right Profile & Stance' });
+    }
+
+    // 5. Detail / Fabric View
+    const detailUrl = pv?.detail || product.images?.[4] || '';
+    if (detailUrl) {
+      list.push({ type: 'detail', label: 'Detail View', url: detailUrl, sub: 'Textile Weave & Stitching' });
+    }
+
+    // If fewer than 4 views exist, provide standard angles
+    if (list.length < 4) {
+      const fallbacks = [
+        { type: 'back', label: 'Back View', sub: 'Rear Silhouette' },
+        { type: 'left', label: 'Left View', sub: 'Profile Angle' },
+        { type: 'right', label: 'Right View', sub: 'Sartorial Finish' }
+      ];
+      for (const fb of fallbacks) {
+        if (!list.some(v => v.type === fb.type)) {
+          list.push({ type: fb.type, label: fb.label, url: frontUrl, sub: fb.sub });
+        }
+      }
+    }
+
+    return list.slice(0, 5);
+  }, [product, currentColor]);
+
+  const currentDisplayImage = resolvedViews[activeImageIndex]?.url || primaryImage;
 
   // Delivery ZIP Code Tax & Shipment Handler (Synchronized with Dashboard)
   const handleCalculateTaxAndShipment = (overrideZip?: string) => {
@@ -354,10 +403,10 @@ export const ProductDetailPage: React.FC = () => {
             
             {/* Primary Main Image Frame */}
             <div className="relative aspect-[3/4] bg-[#F8F9FA] overflow-hidden border border-gray-200 group">
-              {primaryImage ? (
+              {currentDisplayImage ? (
                 <img
-                  src={primaryImage}
-                  alt={`${product.name} - view ${activeImageIndex + 1}`}
+                  src={currentDisplayImage}
+                  alt={`${product.name} - ${resolvedViews[activeImageIndex]?.label || 'view'}`}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-zoom-in"
                   onClick={() => setIsZoomModalOpen(true)}
                 />
@@ -367,7 +416,7 @@ export const ProductDetailPage: React.FC = () => {
                   category={product.category}
                   aspectRatio="auto"
                   className="w-full h-full min-h-[460px]"
-                  subtext={galleryAngles[activeImageIndex]?.label || product.name}
+                  subtext={resolvedViews[activeImageIndex]?.label || product.name}
                 />
               )}
 
@@ -381,11 +430,16 @@ export const ProductDetailPage: React.FC = () => {
                 <span className="text-[9px] uppercase tracking-[0.2em] font-mono font-medium text-[#111827] bg-white/95 backdrop-blur-xs px-2.5 py-0.5 border border-gray-200 shadow-xs">
                   {product.category.toUpperCase()}
                 </span>
+                {resolvedViews[activeImageIndex] && (
+                  <span className="text-[9px] uppercase tracking-[0.2em] font-mono font-bold text-[#936B34] bg-white/95 backdrop-blur-xs px-2.5 py-1 border border-[#936B34]/30 shadow-xs">
+                    {resolvedViews[activeImageIndex].label}
+                  </span>
+                )}
               </div>
 
               {/* Image Counter Badge */}
               <div className="absolute bottom-3 right-3 z-10 bg-black/75 backdrop-blur-xs text-white text-[11px] font-mono px-2.5 py-1 tracking-wider">
-                0{activeImageIndex + 1} / 0{galleryAngles.length}
+                0{activeImageIndex + 1} / 0{resolvedViews.length}
               </div>
 
               {/* Tap to Zoom prompt button */}
@@ -398,38 +452,79 @@ export const ProductDetailPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Horizontal Angle Thumbnails Strip */}
-            <div className="grid grid-cols-4 gap-2 sm:gap-3">
-              {galleryAngles.map((angle, idx) => (
+            {/* Horizontal Angle Thumbnails Strip (3 to 5 Views) */}
+            <div className={`grid grid-cols-${Math.min(resolvedViews.length, 5)} gap-2 sm:gap-3`} style={{ gridTemplateColumns: `repeat(${Math.min(resolvedViews.length, 5)}, minmax(0, 1fr))` }}>
+              {resolvedViews.map((view, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
-                  className={`aspect-[3/4] bg-[#F8F9FA] border p-2 text-center flex flex-col items-center justify-center transition-all cursor-pointer relative overflow-hidden ${
+                  className={`aspect-[3/4] bg-[#F8F9FA] border p-1 sm:p-1.5 text-center flex flex-col items-center justify-between transition-all cursor-pointer relative overflow-hidden ${
                     activeImageIndex === idx
-                      ? 'border-[#111827] ring-1 ring-[#111827] bg-[#F0F2F5]'
+                      ? 'border-[#936B34] ring-2 ring-[#936B34]/40 bg-[#F0F2F5]'
                       : 'border-gray-200 opacity-75 hover:opacity-100 hover:border-gray-400'
                   }`}
                 >
-                  {primaryImage ? (
-                    <img 
-                      src={primaryImage} 
-                      alt={angle.label} 
-                      className={`w-full h-full object-cover transition-opacity ${activeImageIndex === idx ? 'opacity-100' : 'opacity-80'}`} 
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-1">
-                      <span className="font-mono text-[10px] text-[#936B34] font-semibold">0{idx + 1}</span>
-                      <span className="text-[8px] font-mono uppercase tracking-wider text-gray-600 line-clamp-2 mt-1">
-                        {angle.label}
-                      </span>
-                    </div>
-                  )}
+                  <div className="w-full h-full relative overflow-hidden bg-gray-100">
+                    {view.url ? (
+                      <img 
+                        src={view.url} 
+                        alt={view.label} 
+                        className={`w-full h-full object-cover transition-opacity ${activeImageIndex === idx ? 'opacity-100' : 'opacity-80'}`} 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-1">
+                        <span className="font-mono text-[10px] text-[#936B34] font-semibold">0{idx + 1}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="w-full pt-1 pb-0.5 text-center bg-white/90">
+                    <span className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-gray-800 font-semibold block truncate">
+                      {view.label}
+                    </span>
+                  </div>
+
                   {activeImageIndex === idx && (
-                    <div className="absolute bottom-0 inset-x-0 h-1 bg-[#111827]" />
+                    <div className="absolute bottom-0 inset-x-0 h-1 bg-[#936B34]" />
                   )}
                 </button>
               ))}
             </div>
+
+            {/* Client Attached PDF Lookbook / Spec Documents */}
+            {product.pdfDocuments && product.pdfDocuments.length > 0 && (
+              <div className="p-3.5 bg-[#F9F9F8] border border-[#936B34]/30 mt-4 space-y-2 shadow-xs">
+                <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#936B34]" />
+                    <span className="text-xs font-mono uppercase tracking-wider text-[#111827] font-semibold">
+                      ATELIER PDF LOOKBOOK &amp; SPECIFICATIONS
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-[#936B34] font-bold">
+                    {product.pdfDocuments.length} Document(s)
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {product.pdfDocuments.map(pdf => (
+                    <button
+                      key={pdf.id}
+                      type="button"
+                      onClick={() => setSelectedPdfDoc({
+                        url: pdf.url,
+                        title: `${product.name} — ${pdf.title || pdf.fileName}`,
+                        fileName: pdf.fileName
+                      })}
+                      className="px-3 py-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-xs font-mono text-[#111827] hover:text-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs font-medium"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[#936B34]" />
+                      <span className="truncate max-w-[200px]">{pdf.title || pdf.fileName}</span>
+                      <span className="text-[10px] text-gray-400">· View PDF</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Atelier Craftsmanship Quality Guarantee (Anti-AI Slop luxury provenance) */}
             <div className="p-4 sm:p-5 bg-[#F9F9F8] border border-gray-200 mt-6 flex items-start gap-3.5">
@@ -1315,6 +1410,17 @@ export const ProductDetailPage: React.FC = () => {
         onClose={() => setIsSizeGuideOpen(false)}
         category={product.category}
       />
+
+      {/* PDF DOCUMENT VIEWER MODAL */}
+      {selectedPdfDoc && (
+        <PdfViewerModal
+          isOpen={Boolean(selectedPdfDoc)}
+          onClose={() => setSelectedPdfDoc(null)}
+          pdfUrl={selectedPdfDoc.url}
+          title={selectedPdfDoc.title}
+          fileName={selectedPdfDoc.fileName}
+        />
+      )}
 
     </div>
   );

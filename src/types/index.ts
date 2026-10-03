@@ -103,6 +103,24 @@ export interface ProductVariant {
   sku: string;
 }
 
+export interface ProductPdfDocument {
+  id: string;
+  title: string;
+  fileName: string;
+  url: string;
+  uploadedAt: string;
+  viewType?: 'front' | 'back' | 'left' | 'right' | 'detail' | 'spec' | string;
+  fileSize?: string;
+}
+
+export interface ProductViews {
+  front?: string;
+  back?: string;
+  left?: string;
+  right?: string;
+  detail?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -128,6 +146,8 @@ export interface Product {
   alterationEligible?: boolean;
   totalStock: number;
   shippingCharge?: number;
+  productViews?: ProductViews;
+  pdfDocuments?: ProductPdfDocument[];
 }
 
 export interface CartItem {
