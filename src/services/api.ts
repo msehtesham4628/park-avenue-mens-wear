@@ -161,7 +161,8 @@ function mapBackendProductToFrontend(bp: any): Product {
     totalStock,
     shippingCharge: bp.shippingCharge !== undefined ? Number(bp.shippingCharge) : (bp.price >= 300 ? 0 : 15),
     productViews: bp.productViews || undefined,
-    pdfDocuments: bp.pdfDocuments || []
+    pdfDocuments: bp.pdfDocuments || [],
+    colors: bp.colors && bp.colors.length > 0 ? bp.colors : Array.from(new Set(variants.map((v: any) => v.color)))
   };
 }
 

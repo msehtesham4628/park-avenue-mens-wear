@@ -3,6 +3,7 @@ import { Heart, Eye, ShoppingBag, Truck } from 'lucide-react';
 import { Product, ProductVariant } from '../../types';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
+import { getColorHex, isLightColor } from '../../utils/colorUtils';
 
 interface ProductCardProps {
   product: Product;
@@ -14,7 +15,22 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, colorProducts = [] }) => {
   const { navigateToProduct, addToCart, toggleWishlist, isInWishlist } = useShop();
   const groupedProducts = [product, ...colorProducts];
-  const colorOptions = groupedProducts.flatMap(p => p.variants || []).reduce<ProductVariant[]>((acc, variant) => {
+  const colorOptions = groupedProducts.flatMap(p => {
+    const list: ProductVariant[] = [...(p.variants || [])];
+    (p.colors || []).forEach((c, idx) => {
+      if (!list.some(v => (v.color || '').toLowerCase() === c.toLowerCase())) {
+        list.push({
+          id: `col-${p.id}-${idx}`,
+          size: 'Standard',
+          color: c,
+          colorHex: getColorHex(c),
+          stock: 5,
+          sku: `${p.sku}-${c}`
+        });
+      }
+    });
+    return list;
+  }).reduce<ProductVariant[]>((acc, variant) => {
     if (!acc.some(v => (v.color || 'Standard').toLowerCase() === (variant.color || 'Standard').toLowerCase())) acc.push(variant);
     return acc;
   }, []);
@@ -153,11 +169,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
             {product.name}
           </h3>
 
-          {/* Color selector — grouped same-name products share one card */}
-          {colorOptions.length > 1 && (
+          {/* Color selector — shows available color swatches for product */}
+          {colorOptions.length > 0 && (
             <div className="flex items-center gap-1.5 mt-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
               {colorOptions.map(color => {
                 const colorProduct = groupedProducts.find(p => (p.variants || []).some(v => (v.color || '').toLowerCase() === (color.color || '').toLowerCase()));
+                const isSelected = (selectedColor || '').toLowerCase() === (color.color || '').toLowerCase();
+                const isLight = isLightColor(color.colorHex || '#111827');
                 return (
                   <button
                     key={color.color || color.id}
@@ -169,12 +187,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
                       const matchingSize = colorProduct?.variants?.find(v => v.stock > 0)?.size;
                       if (matchingSize) setSelectedSize(matchingSize);
                     }}
-                    className={"w-4 h-4 rounded-full border transition-all " + ((selectedColor || '').toLowerCase() === (color.color || '').toLowerCase() ? 'ring-2 ring-[#936B34] ring-offset-1 border-[#936B34]' : 'border-gray-300')}
-                    style={{ backgroundColor: color.colorHex || '#E5E7EB' }}
+                    className={`w-4 h-4 rounded-full border transition-all cursor-pointer ${
+                      isSelected 
+                        ? 'ring-2 ring-[#936B34] ring-offset-1 border-[#936B34] scale-110' 
+                        : (isLight ? 'border-gray-400 hover:border-gray-600' : 'border-black/20 hover:border-black/50')
+                    }`}
+                    style={{ backgroundColor: color.colorHex || '#1B2A4A' }}
                   />
                 );
               })}
-              <span className="text-[9px] text-gray-500 ml-1">{colorOptions.length} colors</span>
+              <span className="text-[10px] font-mono text-gray-500 ml-1">
+                {colorOptions.length > 1 ? `${colorOptions.length} colors` : selectedColor}
+              </span>
             </div>
           )}
 

@@ -16,6 +16,7 @@ import {
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 import { navigateTo } from '../../utils/router';
+import { getColorHex, isLightColor } from '../../utils/colorUtils';
 
 export const CartPage: React.FC = () => {
   const { 
@@ -57,12 +58,6 @@ export const CartPage: React.FC = () => {
 
   const discountAmount = (cartSubtotal * discountPercent) / 100;
   const subtotalAfterDiscount = Math.max(0, cartSubtotal - discountAmount);
-  const handleCheckout = () => {
-    if (!currentCustomer) { sessionStorage.setItem('pa_checkout_return','1'); showToast('Please sign in or create an account to proceed to checkout.', 'info'); setActiveView('login'); return; }
-    setActiveView('checkout');
-    navigateTo('/checkout');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   const handleContinueShopping = () => {
     setActiveView('shop');
@@ -180,12 +175,20 @@ export const CartPage: React.FC = () => {
                         onClick={() => navigateToProduct(item.product.id)}
                         className="w-20 h-24 sm:w-24 sm:h-28 shrink-0 bg-[#F5F5F3] border border-gray-200 overflow-hidden cursor-pointer relative group"
                       >
-                        <MediaPlaceholder
-                          category={item.product.category}
-                          label={item.product.name}
-                          aspectRatio="portrait"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+                        {(item.product.images?.[0] || item.product.colorImages?.[item.selectedColor]?.[0] || item.product.productViews?.front) ? (
+                          <img
+                            src={item.product.colorImages?.[item.selectedColor]?.[0] || item.product.images?.[0] || item.product.productViews?.front}
+                            alt={item.product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <MediaPlaceholder
+                            category={item.product.category}
+                            label={item.product.name}
+                            aspectRatio="portrait"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        )}
                       </div>
 
                       {/* Info */}
@@ -200,12 +203,17 @@ export const CartPage: React.FC = () => {
                           {item.product.name}
                         </h3>
 
-                        <div className="mt-1.5 space-y-0.5 text-xs font-mono text-gray-500">
+                        <div className="mt-1.5 space-y-1 text-xs font-mono text-gray-500">
                           <div>
-                            <span className="text-gray-400">SIZE:</span> <span className="text-[#111827] font-medium">{item.selectedSize}</span>
+                            <span className="text-gray-400">SIZE:</span> <span className="text-[#111827] font-semibold">{item.selectedSize}</span>
                           </div>
-                          <div>
-                            <span className="text-gray-400">COLOR:</span> <span className="text-[#111827]">{item.selectedColor}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-gray-400">COLOR:</span> 
+                            <span 
+                              className={`inline-block w-2.5 h-2.5 rounded-full border ${isLightColor(getColorHex(item.selectedColor)) ? 'border-gray-400' : 'border-black/20'}`}
+                              style={{ backgroundColor: getColorHex(item.selectedColor) }}
+                            />
+                            <span className="text-[#111827] font-semibold">{item.selectedColor}</span>
                           </div>
                           <div className="flex items-center gap-1.5 pt-0.5 text-[11px] text-gray-500">
                             <Truck className="w-3 h-3 text-[#936B34]" />
@@ -329,7 +337,7 @@ export const CartPage: React.FC = () => {
                     <span className="flex items-center gap-1">
                       <span>SHIPPING &amp; DELIVERY</span>
                     </span>
-                    <span className="text-gray-500 font-mono text-[11px]">Calculated at checkout</span>
+                    <span className="text-emerald-700 font-mono text-[11px] font-medium">Complimentary Atelier Courier</span>
                   </div>
 
                   <div className="flex justify-between text-gray-600">
@@ -347,7 +355,7 @@ export const CartPage: React.FC = () => {
                     <span className="font-serif text-2xl text-[#111827] font-semibold block">
                       ${subtotalAfterDiscount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[10px] font-mono text-gray-400">USD · Shipping and tax calculated at checkout</span>
+                    <span className="text-[10px] font-mono text-gray-400">USD · White-glove insured atelier reservation</span>
                   </div>
                 </div>
 
@@ -379,21 +387,34 @@ export const CartPage: React.FC = () => {
                   </p>
                 </form>
 
-                {/* Checkout CTA */}
-                <div className="pt-4 space-y-2">
-                  <button
-                    type="button"
-                    onClick={handleCheckout}
-                    className="w-full py-4 bg-[#111827] text-white hover:bg-[#936B34] active:bg-[#7a5829] active:scale-[0.99] transition-all font-semibold text-xs uppercase tracking-[0.25em] flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                  >
-                    <span>{isPaymentGatewayHidden ? 'PROCEED TO BESPOKE CHECKOUT' : 'PROCEED TO PAYMENT'}</span>
-                    <ArrowRight className="w-4 h-4 text-[#936B34]" />
-                  </button>
+                {/* Order Reservation & Concierge Notice (Checkout Temporarily Removed) */}
+                <div className="pt-4 space-y-3">
+                  <div className="p-4 bg-[#FAF8F5] border border-[#936B34]/40 space-y-2.5">
+                    <div className="flex items-center gap-2 text-[#936B34] font-semibold text-xs font-mono uppercase tracking-wider">
+                      <ShieldCheck className="w-4 h-4 text-[#936B34]" />
+                      <span>Online Checkout Temporarily Paused</span>
+                    </div>
+                    <p className="text-xs text-gray-600 leading-relaxed font-mono">
+                      Online self-checkout has been temporarily paused and will be re-enabled soon. All items in your bag remain reserved in your private session. To complete a tailored reservation, please connect with our atelier concierge:
+                    </p>
+                    <div className="pt-2 flex flex-col gap-2">
+                      <a
+                        href="tel:+18005557275"
+                        className="w-full py-3.5 px-4 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono font-semibold uppercase tracking-wider text-center transition-colors cursor-pointer shadow-sm"
+                      >
+                        Call Concierge (+1 800-555-PARK)
+                      </a>
+                      <a
+                        href="mailto:concierge@parkavenuemenswear.com?subject=Park%20Avenue%20Bag%20Reservation"
+                        className="w-full py-3 px-4 bg-white border border-gray-300 hover:border-black text-[#111827] text-xs font-mono uppercase tracking-wider text-center transition-colors cursor-pointer"
+                      >
+                        Email Atelier Concierge
+                      </a>
+                    </div>
+                  </div>
 
-                  <p className="text-[10px] text-center font-mono text-gray-400 pt-1">
-                    {isPaymentGatewayHidden 
-                      ? 'Online Card Payment Temporarily Suspended · Complimentary Reservation'
-                      : 'Signature White-Glove Suit Bag Included With Every Order'}
+                  <p className="text-[10px] text-center font-mono text-gray-400">
+                    Complimentary White-Glove Insured Delivery &amp; Hanger Included With Every Reserved Order
                   </p>
                 </div>
 

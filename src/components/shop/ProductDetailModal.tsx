@@ -4,6 +4,7 @@ import { Product } from '../../types';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 import { estimateTaxByZip } from '../../services/taxEngine';
+import { extractProductColors } from '../../utils/colorUtils';
 
 interface ProductDetailModalProps {
   product: Product | null;
@@ -74,7 +75,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
   // Distinct available sizes and colors
   const allSizes = Array.from(new Set(product.variants?.map(v => v.size) || []));
-  const allColors = Array.from(new Set(product.variants?.map(v => v.color) || []));
+  const extractedColors = extractProductColors(product);
+  const allColors = extractedColors.map(c => c.name);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -226,30 +228,33 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                 </p>
 
                 {/* Color Selector */}
-                {allColors.length > 0 && (
-                  <div className="mb-4">
-                    <div className="flex justify-between text-xs text-gray-500 mb-2 font-mono">
+                {extractedColors.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                    <div className="flex justify-between text-xs text-gray-500 font-mono">
                       <span>Color: <strong className="text-[#111827] font-medium">{currentColor}</strong></span>
+                      <span className="text-[#936B34] text-[11px] font-mono">{extractedColors.length} {extractedColors.length === 1 ? 'shade' : 'shades'}</span>
                     </div>
-                    <div className="flex gap-2">
-                      {allColors.map(col => {
-                        const variantWithColor = product.variants.find(v => v.color === col);
-                        const isSelected = col === currentColor;
+                    <div className="flex flex-wrap gap-2">
+                      {extractedColors.map(colorItem => {
+                        const isSelected = colorItem.name.toLowerCase() === currentColor.toLowerCase();
                         return (
                           <button
-                            key={col}
-                            onClick={() => setSelectedColor(col)}
-                            className={`px-3 py-1.5 text-xs border transition-colors cursor-pointer ${
+                            key={colorItem.name}
+                            type="button"
+                            onClick={() => setSelectedColor(colorItem.name)}
+                            className={`px-3 py-1.5 text-xs font-mono border transition-all cursor-pointer flex items-center gap-2 ${
                               isSelected
-                                ? 'border-[#936B34] text-[#936B34] bg-[#936B34]/15 font-medium'
-                                : 'border-gray-200 text-gray-600 hover:text-[#111827] hover:border-black/30 bg-white'
+                                ? 'border-[#936B34] text-[#111827] bg-[#936B34]/10 ring-1 ring-[#936B34] font-medium shadow-2xs'
+                                : 'border-gray-200 text-gray-600 hover:text-[#111827] hover:border-gray-400 bg-white'
                             }`}
                           >
                             <span 
-                              className="inline-block w-2.5 h-2.5 rounded-full mr-2 border border-gray-300 align-middle"
-                              style={{ backgroundColor: variantWithColor?.colorHex || '#333' }}
+                              className={`inline-block w-3 h-3 rounded-full border ${
+                                colorItem.isLight ? 'border-gray-400' : 'border-black/20'
+                              }`}
+                              style={{ backgroundColor: colorItem.hex }}
                             />
-                            <span>{col}</span>
+                            <span>{colorItem.name}</span>
                           </button>
                         );
                       })}

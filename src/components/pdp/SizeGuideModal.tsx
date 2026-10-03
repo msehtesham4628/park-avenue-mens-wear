@@ -112,7 +112,7 @@ export const SizeGuideModal: React.FC<SizeGuideModalProps> = ({ isOpen, onClose,
           <div className="p-4 bg-[#F9F9F8] border border-[#936B34]/30 text-xs text-gray-600 space-y-1.5">
             <p className="text-[#936B34] font-medium">Bespoke Fit Promise</p>
             <p>
-              All Park Avenue trousers are delivered with unfinished hems to allow custom hemming by our master tailors or your personal tailor. You can specify exact hem break measurements directly at checkout.
+              All Park Avenue trousers are delivered with unfinished hems to allow custom hemming by our master tailors or your personal tailor. You can specify exact hem break measurements directly with our atelier concierge.
             </p>
           </div>
 

@@ -81,8 +81,8 @@ export const LoginPage: React.FC = () => {
         const isCheckoutReturn = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pa_checkout_return') === '1';
         if (isCheckoutReturn) {
           sessionStorage.removeItem('pa_checkout_return');
-          showToast('Welcome back! Continuing to secure checkout...', 'success');
-          setActiveView('checkout');
+          showToast('Welcome back! Continuing to your shopping bag...', 'success');
+          setActiveView('cart');
         } else if (res.role === 'admin' || res.role === 'staff') {
           setActiveView('admin');
         } else {
@@ -159,7 +159,7 @@ export const LoginPage: React.FC = () => {
         const isCheckoutReturn = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pa_checkout_return') === '1';
         if (isCheckoutReturn) {
           sessionStorage.removeItem('pa_checkout_return');
-          setActiveView('checkout');
+          setActiveView('cart');
         } else {
           setActiveView('account');
         }
@@ -199,13 +199,13 @@ export const LoginPage: React.FC = () => {
         {/* Main Card */}
         <div className="bg-white border border-gray-200 p-6 sm:p-8 shadow-sm">
           
-          {/* Checkout Return Prompt */}
+          {/* Shopping Bag Return Prompt */}
           {typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pa_checkout_return') === '1' && (
             <div className="mb-6 p-4 bg-[#FBF9F5] border border-[#936B34]/40 text-xs font-mono flex items-start gap-3">
               <Lock className="w-4 h-4 text-[#936B34] shrink-0 mt-0.5" />
               <div>
                 <span className="font-semibold text-[#111827] block uppercase tracking-wider">Authentication Required</span>
-                <span className="text-gray-600">Please sign in or create an account to proceed to checkout. Your garments in your shopping bag are securely preserved.</span>
+                <span className="text-gray-600">Please sign in or create an account to view and manage your shopping bag. Your garments are securely preserved.</span>
               </div>
             </div>
           )}

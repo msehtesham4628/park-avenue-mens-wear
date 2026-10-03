@@ -169,6 +169,7 @@ export const productService = {
     salePrice?: number;
     images?: string[];
     colorImages?: Record<string, string[]>;
+    colors?: string[];
     variants: Array<{ size: string; color: string; colorHex?: string; stock: number; sku?: string }>;
     lowStockThreshold?: number;
     isFeatured?: boolean;
@@ -208,7 +209,10 @@ export const productService = {
 
     const stockQuantity = processedVariants.reduce((sum, v) => sum + v.stock, 0);
     const sizes = Array.from(new Set(processedVariants.map(v => v.size)));
-    const colors = Array.from(new Set(processedVariants.map(v => v.color)));
+    const colors = Array.from(new Set([
+      ...(data.colors || []),
+      ...processedVariants.map(v => v.color)
+    ].filter(Boolean)));
 
     const product = new ProductModel({
       productId,
@@ -282,7 +286,7 @@ export const productService = {
 
     const fieldsToUpdate = [
       'description', 'category', 'subcategory', 'price', 'salePrice', 
-      'images', 'colorImages', 'lowStockThreshold', 'isFeatured', 'isNewArrival', 
+      'images', 'colorImages', 'colors', 'lowStockThreshold', 'isFeatured', 'isNewArrival', 
       'isActive', 'fabric', 'fit', 'careInstructions', 'shippingCharge',
       'productViews', 'pdfDocuments'
     ];

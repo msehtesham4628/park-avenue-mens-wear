@@ -1,7 +1,7 @@
-import React from 'react';
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Truck } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Truck, ShieldCheck } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
+import { getColorHex, isLightColor } from '../../utils/colorUtils';
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -18,13 +18,6 @@ export const CartDrawer: React.FC = () => {
   } = useShop();
 
   if (!isCartOpen) return null;
-
-  const handleCheckoutClick = () => {
-    if (!currentCustomer) { setIsCartOpen(false); sessionStorage.setItem('pa_checkout_return','1'); showToast('Please sign in or create an account to proceed to checkout.', 'info'); setActiveView('login'); return; }
-    setIsCartOpen(false);
-    setActiveView('checkout');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -57,7 +50,7 @@ export const CartDrawer: React.FC = () => {
           <div className="px-6 py-3 bg-[#F9F9F8] border-b border-gray-200">
             <div className="flex items-center gap-2 text-[10px] font-mono tracking-wider uppercase text-[#936B34] font-medium">
               <Truck className="w-3.5 h-3.5 shrink-0" />
-              <span>INSURED ATELIER DISPATCH · CALCULATED AT CHECKOUT</span>
+              <span>INSURED ATELIER DISPATCH · COMPLIMENTARY COURIER</span>
             </div>
           </div>
 
@@ -96,21 +89,29 @@ export const CartDrawer: React.FC = () => {
 
                 return (
                   <div key={item.id} className="pt-6 first:pt-0 flex gap-4 border-b border-gray-200 pb-6">
-                    {/* Media Placeholder Slot */}
+                    {/* Thumbnail Slot */}
                     <div 
                       onClick={() => {
                         navigateToProduct(item.productId);
                         setIsCartOpen(false);
                       }}
-                      className="w-20 h-28 shrink-0 cursor-pointer overflow-hidden group"
+                      className="w-20 h-28 shrink-0 cursor-pointer overflow-hidden group bg-[#F5F5F3] border border-gray-200 relative"
                     >
-                      <MediaPlaceholder
-                        label="PA"
-                        category={item.product.category}
-                        aspectRatio="portrait"
-                        minimal
-                        className="w-full h-full p-2"
-                      />
+                      {(item.product.images?.[0] || item.product.colorImages?.[item.selectedColor]?.[0] || item.product.productViews?.front) ? (
+                        <img
+                          src={item.product.colorImages?.[item.selectedColor]?.[0] || item.product.images?.[0] || item.product.productViews?.front}
+                          alt={item.product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <MediaPlaceholder
+                          label="PA"
+                          category={item.product.category}
+                          aspectRatio="portrait"
+                          minimal
+                          className="w-full h-full p-2"
+                        />
+                      )}
                     </div>
 
                     {/* Meta */}
@@ -135,10 +136,17 @@ export const CartDrawer: React.FC = () => {
                           </button>
                         </div>
 
-                        <div className="text-[10px] font-mono text-gray-500 mt-1 space-x-2">
-                          <span>SIZE: {item.selectedSize}</span>
+                        <div className="text-[10px] font-mono text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
+                          <span>SIZE: <strong className="text-[#111827] font-semibold">{item.selectedSize}</strong></span>
                           <span>·</span>
-                          <span>COLOR: {item.selectedColor}</span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span>COLOR:</span>
+                            <span 
+                              className={`inline-block w-2.5 h-2.5 rounded-full border ${isLightColor(getColorHex(item.selectedColor)) ? 'border-gray-400' : 'border-black/20'}`}
+                              style={{ backgroundColor: getColorHex(item.selectedColor) }}
+                            />
+                            <strong className="text-[#111827] font-semibold">{item.selectedColor}</strong>
+                          </span>
                         </div>
                         <div className="text-[10px] font-mono text-gray-500 mt-0.5">
                           <span>Shipment: </span>
@@ -182,7 +190,7 @@ export const CartDrawer: React.FC = () => {
             )}
           </div>
 
-          {/* Footer Subtotal & Checkout */}
+          {/* Footer Subtotal & Bag Actions */}
           {cart.length > 0 && (
             <div className="p-6 border-t border-gray-200 bg-[#F9F9F8] space-y-4">
               <div className="space-y-1.5 text-xs font-mono">
@@ -192,37 +200,44 @@ export const CartDrawer: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-gray-500">
                   <span>EXPRESS DELIVERY</span>
-                  <span className="text-[#936B34] font-medium">
-                    Calculated at checkout
+                  <span className="text-emerald-700 font-medium">
+                    Complimentary Atelier Courier
                   </span>
                 </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>SALES TAX</span>
-                  <span className="text-[#111827]">Calculated at checkout</span>
-                </div>
                 <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold text-[#111827]">
-                  <span>CART SUBTOTAL</span>
+                  <span>BAG SUBTOTAL</span>
                   <span className="text-[#936B34] tabular-nums">${cartSubtotal.toFixed(2)}</span>
                 </div>
               </div>
 
-              <button
-                onClick={handleCheckoutClick}
-                className="w-full py-3.5 bg-[#936B34] hover:bg-[#7A5726] text-white text-xs font-semibold uppercase tracking-[0.25em] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
-              >
-                <span>PROCEED TO CHECKOUT</span>
-                <ArrowRight className="w-4 h-4 text-white" />
-              </button>
+              {/* Temporary Checkout Suspension Notice */}
+              <div className="p-3 bg-[#FAF8F5] border border-[#936B34]/30 space-y-1 text-left">
+                <div className="flex items-center gap-1.5 text-[#936B34] text-[10px] font-mono uppercase font-bold tracking-wider">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Online Checkout Temporarily Paused</span>
+                </div>
+                <p className="text-[11px] font-mono text-gray-600 leading-relaxed">
+                  Self-checkout is temporarily paused and will be re-enabled soon. Garments remain reserved in your bag.
+                </p>
+              </div>
 
               <button
                 onClick={() => {
                   setIsCartOpen(false);
                   setActiveView('cart');
                 }}
+                className="w-full py-3.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-semibold uppercase tracking-[0.25em] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              >
+                <span>VIEW DETAILED BAG (/cart)</span>
+                <ArrowRight className="w-4 h-4 text-white" />
+              </button>
+
+              <a
+                href="tel:+18005557275"
                 className="w-full py-2.5 bg-white border border-gray-300 hover:border-black text-gray-700 hover:text-black text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer text-center block"
               >
-                VIEW DETAILED BAG (/cart)
-              </button>
+                CALL ATELIER CONCIERGE (+1 800-555-PARK)
+              </a>
             </div>
           )}
         </div>

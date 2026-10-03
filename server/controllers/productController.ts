@@ -104,7 +104,8 @@ export const productController = {
         careInstructions,
         shippingCharge,
         productViews,
-        pdfDocuments
+        pdfDocuments,
+        colors
       } = req.body;
 
       if (!name || !category || price === undefined) {
@@ -120,6 +121,8 @@ export const productController = {
         resolvedSku = `PA-${(category || 'GAR').slice(0, 4).toUpperCase()}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
       }
 
+      const parsedColors = Array.isArray(colors) ? colors : (typeof colors === 'string' ? colors.split(',').map((c: string) => c.trim()).filter(Boolean) : undefined);
+
       const product = await productService.createProduct({
         name,
         sku: resolvedSku,
@@ -133,6 +136,7 @@ export const productController = {
           { size: '40R', color: 'Black', stock: 5 },
           { size: '42R', color: 'Black', stock: 5 }
         ],
+        colors: parsedColors,
         lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold, 10) : 3,
         isFeatured: Boolean(isFeatured),
         isNewArrival: isNewArrival !== undefined ? Boolean(isNewArrival) : true,

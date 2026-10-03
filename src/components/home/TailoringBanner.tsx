@@ -68,7 +68,7 @@ export const TailoringBanner: React.FC = () => {
                   <span>Complimentary Hemming</span>
                 </div>
                 <p className="text-xs text-slate-400 font-light">
-                  Specify exact inseam breaks and turn-up cuff dimensions during checkout.
+                  Specify exact inseam breaks and turn-up cuff dimensions with our atelier concierge.
                 </p>
               </div>
 

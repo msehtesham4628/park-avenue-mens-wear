@@ -21,6 +21,7 @@ import {
   Calculator,
   TrendingUp,
   CheckCircle2,
+  Check,
   AlertCircle,
   FileUp,
   Package,
@@ -69,10 +70,11 @@ import {
   SeoApiService,
   API_CONFIG
 } from '../../services/api';
-import { Product, Order, AlterationRecord, Customer, ProductCategory, ReturnRequest, AuditLogEntry } from '../../types';
+import { Product, ProductVariant, Order, AlterationRecord, Customer, ProductCategory, ReturnRequest, AuditLogEntry } from '../../types';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { navigateTo } from '../../utils/router';
 import { generateAutoSku } from '../../utils/skuGenerator';
+import { extractProductColors, getColorHex, isLightColor, LUXURY_COLOR_PALETTES } from '../../utils/colorUtils';
 import { CANONICAL_BASE, generateProductSeo, generateCategorySeo } from '../../utils/seo';
 import { 
   getUsStateTaxRates, 
@@ -262,6 +264,7 @@ export const AdminDashboard: React.FC = () => {
     description: '',
     fabric: '',
     fit: '',
+    colors: 'Midnight Navy, Sovereign Black',
     shippingCharge: '15',
     sizeStock: '38R:4, 40R:6, 42R:2',
     views: {
@@ -281,6 +284,10 @@ export const AdminDashboard: React.FC = () => {
       fileSize?: string;
     }>
   });
+
+  // Custom Color Builder state for Product Modal
+  const [customColorName, setCustomColorName] = useState('');
+  const [customColorHex, setCustomColorHex] = useState('#1B2A4A');
 
   // Dedicated 3 to 5 Views & PDF Upload State (for rapid client catalog updates)
   const [isQuickViewsModalOpen, setIsQuickViewsModalOpen] = useState(false);
@@ -565,17 +572,42 @@ export const AdminDashboard: React.FC = () => {
     }
 
     try {
-      const parsedVariants = productForm.sizeStock.split(',').map((item, idx) => {
+      const parsedColors = (productForm.colors || 'Midnight Navy')
+        .split(',')
+        .map(c => c.trim())
+        .filter(Boolean);
+      const effectiveColors = parsedColors.length > 0 ? parsedColors : ['Midnight Navy'];
+
+      const sizeItems = productForm.sizeStock.split(',').map(item => {
         const [sz, st] = item.trim().split(':');
-        const stockNum = parseInt(st || '5', 10);
-        return {
-          id: `var-${Date.now()}-${idx}`,
-          size: sz || 'Standard',
-          color: 'Black / Navy',
-          colorHex: '#1B263B',
-          stock: isNaN(stockNum) ? 5 : stockNum,
-          sku: `${productForm.sku}-${sz || idx}`
-        };
+        const num = parseInt(st || '5', 10);
+        return { size: sz || 'Standard', stock: isNaN(num) ? 5 : num };
+      });
+
+      const parsedVariants: ProductVariant[] = [];
+      effectiveColors.forEach((colorName, cIdx) => {
+        const lower = colorName.toLowerCase();
+        const hex = lower.includes('navy') ? '#1B2A4A' :
+                    lower.includes('black') ? '#111827' :
+                    lower.includes('charcoal') ? '#374151' :
+                    lower.includes('white') || lower.includes('ivory') ? '#F9F9F8' :
+                    lower.includes('burgundy') || lower.includes('wine') ? '#722F37' :
+                    lower.includes('blue') ? '#2B4C7E' :
+                    lower.includes('green') ? '#1E3F20' :
+                    lower.includes('camel') ? '#936B34' :
+                    lower.includes('brown') ? '#4A2E18' :
+                    lower.includes('grey') || lower.includes('gray') ? '#6B7280' : '#1B263B';
+
+        sizeItems.forEach((sItem, sIdx) => {
+          parsedVariants.push({
+            id: `var-${Date.now()}-${cIdx}-${sIdx}`,
+            size: sItem.size,
+            color: colorName,
+            colorHex: hex,
+            stock: sItem.stock,
+            sku: `${productForm.sku}-${colorName.replace(/\s+/g, '').slice(0, 3).toUpperCase()}-${sItem.size}`
+          });
+        });
       });
 
       const totalStock = parsedVariants.reduce((sum, v) => sum + v.stock, 0);
@@ -607,6 +639,7 @@ export const AdminDashboard: React.FC = () => {
           description: productForm.description,
           fabric: productForm.fabric,
           fit: productForm.fit,
+          colors: effectiveColors,
           shippingCharge: productForm.shippingCharge ? parseFloat(productForm.shippingCharge) : 15,
           variants: parsedVariants,
           totalStock,
@@ -629,6 +662,7 @@ export const AdminDashboard: React.FC = () => {
           details: ['Full floating canvas construction', 'Hand-finished pick stitching', 'Bespoke silk lining'],
           fabric: productForm.fabric || '100% Super 150s Italian Virgin Wool',
           fit: productForm.fit || 'Contemporary Tailored Fit',
+          colors: effectiveColors,
           care: ['Dry clean by specialist', 'Steam lightly between wears'],
           images: viewsList,
           productViews: productViewsObj,
@@ -652,6 +686,7 @@ export const AdminDashboard: React.FC = () => {
         description: '',
         fabric: '',
         fit: '',
+        colors: 'Midnight Navy, Sovereign Black',
         shippingCharge: '15',
         sizeStock: '38R:4, 40R:6, 42R:2',
         views: { front: '', back: '', left: '', right: '', detail: '' },
@@ -670,6 +705,10 @@ export const AdminDashboard: React.FC = () => {
   const handleOpenEdit = (p: Product) => {
     setEditingProduct(p);
     const sizeStockStr = p.variants?.map(v => `${v.size}:${v.stock}`).join(', ') || '';
+    const colorStr = (p.colors && p.colors.length > 0)
+      ? p.colors.join(', ')
+      : Array.from(new Set(p.variants?.map(v => v.color) || ['Midnight Navy'])).join(', ');
+
     setProductForm({
       name: p.name,
       category: p.category,
@@ -678,6 +717,7 @@ export const AdminDashboard: React.FC = () => {
       description: p.description,
       fabric: p.fabric || '',
       fit: p.fit || '',
+      colors: colorStr,
       shippingCharge: p.shippingCharge !== undefined ? p.shippingCharge.toString() : '15',
       sizeStock: sizeStockStr,
       views: {
@@ -1687,6 +1727,7 @@ export const AdminDashboard: React.FC = () => {
                       description: '',
                       fabric: '',
                       fit: '',
+                      colors: 'Midnight Navy, Sovereign Black',
                       shippingCharge: '15',
                       sizeStock: '38R:4, 40R:6, 42R:2',
                       views: { front: '', back: '', left: '', right: '', detail: '' },
@@ -1711,6 +1752,7 @@ export const AdminDashboard: React.FC = () => {
                       <th className="p-4">GARMENT NAME</th>
                       <th className="p-4">CATEGORY</th>
                       <th className="p-4">PRICE</th>
+                      <th className="p-4">COLORS</th>
                       <th className="p-4">3-5 VIEWS &amp; PDF</th>
                       <th className="p-4">VARIANTS / STOCK</th>
                       <th className="p-4 text-right">ACTIONS</th>
@@ -1723,6 +1765,23 @@ export const AdminDashboard: React.FC = () => {
                         <td className="p-4 text-[#111827] font-serif text-sm font-light">{prod.name}</td>
                         <td className="p-4 uppercase text-gray-500">{prod.category}</td>
                         <td className="p-4 tabular-nums font-semibold">${prod.price.toLocaleString()}</td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-1 flex-wrap max-w-[180px]">
+                            {extractProductColors(prod).map(c => (
+                              <span
+                                key={c.name}
+                                title={c.name}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white border border-gray-200 text-[9px] text-gray-700 font-mono shadow-2xs"
+                              >
+                                <span
+                                  className={`w-2 h-2 rounded-full shrink-0 border ${c.isLight ? 'border-gray-400' : 'border-black/20'}`}
+                                  style={{ backgroundColor: c.hex }}
+                                />
+                                <span className="truncate max-w-[65px]">{c.name}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </td>
                         <td className="p-4">
                           <button
                             type="button"
@@ -4356,6 +4415,160 @@ export const AdminDashboard: React.FC = () => {
                     placeholder="Super 150s Italian Virgin Wool"
                     className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                   />
+                </div>
+              </div>
+
+              {/* COLOR OPTIONS SECTION */}
+              <div className="border border-gray-200 bg-[#F9F9F8] p-4 space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <label className="text-[10px] font-mono uppercase text-[#111827] font-bold tracking-wider flex items-center gap-1.5">
+                    <span>COLOR OPTIONS *</span>
+                    <span className="text-gray-400 font-normal font-sans text-[11px]">(Pick preset luxury shades, add custom colors, or type comma-separated)</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-[#936B34] font-semibold">
+                    {productForm.colors.split(',').map(c => c.trim()).filter(Boolean).length} colors active
+                  </span>
+                </div>
+
+                {/* Active Color Chips with Remove Buttons */}
+                {productForm.colors.split(',').map(c => c.trim()).filter(Boolean).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 p-2 bg-white border border-gray-200">
+                    {productForm.colors.split(',').map(c => c.trim()).filter(Boolean).map(col => {
+                      const hex = getColorHex(col);
+                      const isLight = isLightColor(hex);
+                      return (
+                        <span
+                          key={col}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#F9F9F8] border border-gray-200 text-xs font-mono text-[#111827] rounded-xs shadow-2xs"
+                        >
+                          <span
+                            className={`w-3 h-3 rounded-full shrink-0 border ${isLight ? 'border-gray-400' : 'border-black/20'}`}
+                            style={{ backgroundColor: hex }}
+                          />
+                          <span className="font-medium">{col}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const list = productForm.colors
+                                .split(',')
+                                .map(c => c.trim())
+                                .filter(Boolean)
+                                .filter(c => c.toLowerCase() !== col.toLowerCase());
+                              setProductForm({ ...productForm, colors: list.join(', ') });
+                            }}
+                            className="p-0.5 text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
+                            title={`Remove ${col}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Comma-separated Text Input */}
+                <input
+                  type="text"
+                  required
+                  value={productForm.colors}
+                  onChange={(e) => setProductForm({ ...productForm, colors: e.target.value })}
+                  placeholder="e.g. Midnight Navy, Sovereign Black, Charcoal Grey"
+                  className="w-full bg-white border border-gray-300 px-3.5 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                />
+
+                {/* Custom Color Creator / Swatch Builder */}
+                <div className="pt-2 border-t border-gray-200">
+                  <span className="text-[9px] font-mono uppercase text-gray-500 tracking-wider block mb-1.5">
+                    Add Custom Atelier Shade:
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={customColorHex}
+                      onChange={(e) => setCustomColorHex(e.target.value)}
+                      className="w-8 h-8 p-0 border border-gray-300 rounded cursor-pointer shrink-0 bg-white"
+                      title="Select hex color"
+                    />
+                    <input
+                      type="text"
+                      value={customColorName}
+                      onChange={(e) => setCustomColorName(e.target.value)}
+                      placeholder="Custom Shade Name (e.g. Imperial Emerald, Royal Plum)"
+                      className="flex-1 bg-white border border-gray-300 px-3 py-1.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const trimmed = customColorName.trim();
+                          if (!trimmed) return;
+                          const currentList = productForm.colors.split(',').map(c => c.trim()).filter(Boolean);
+                          if (!currentList.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+                            setProductForm({ ...productForm, colors: [...currentList, trimmed].join(', ') });
+                          }
+                          setCustomColorName('');
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const trimmed = customColorName.trim();
+                        if (!trimmed) return;
+                        const currentList = productForm.colors.split(',').map(c => c.trim()).filter(Boolean);
+                        if (!currentList.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+                          setProductForm({ ...productForm, colors: [...currentList, trimmed].join(', ') });
+                        }
+                        setCustomColorName('');
+                      }}
+                      className="px-3.5 py-1.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer shrink-0 font-medium"
+                    >
+                      + Add Shade
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Preset Luxury Colors */}
+                <div className="space-y-1.5 pt-2 border-t border-gray-200">
+                  <span className="text-[9px] font-mono uppercase text-gray-500 tracking-wider block">
+                    Curated Menswear Shades (Click to toggle):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {LUXURY_COLOR_PALETTES.map(preset => {
+                      const isActive = productForm.colors.toLowerCase().includes(preset.name.toLowerCase());
+                      const isLight = isLightColor(preset.hex);
+                      return (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => {
+                            const currentList = productForm.colors
+                              .split(',')
+                              .map(c => c.trim())
+                              .filter(Boolean);
+                            let nextList: string[];
+                            if (currentList.some(c => c.toLowerCase() === preset.name.toLowerCase())) {
+                              nextList = currentList.filter(c => c.toLowerCase() !== preset.name.toLowerCase());
+                            } else {
+                              nextList = [...currentList, preset.name];
+                            }
+                            setProductForm({ ...productForm, colors: nextList.join(', ') });
+                          }}
+                          className={`px-2.5 py-1 text-[11px] font-mono border transition-all cursor-pointer flex items-center gap-1.5 ${
+                            isActive
+                              ? 'border-[#936B34] bg-white text-[#936B34] font-bold shadow-2xs ring-1 ring-[#936B34]/30'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400'
+                          }`}
+                        >
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full shrink-0 border ${isLight ? 'border-gray-400' : 'border-black/20'}`}
+                            style={{ backgroundColor: preset.hex }}
+                          />
+                          <span>{preset.name}</span>
+                          {isActive && <Check className="w-3 h-3 text-[#936B34]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 

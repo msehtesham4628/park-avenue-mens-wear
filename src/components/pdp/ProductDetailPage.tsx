@@ -30,6 +30,7 @@ import { SizeGuideModal } from './SizeGuideModal';
 import { PdfViewerModal } from '../common/PdfViewerModal';
 import { estimateTaxAndShipmentByZip, ZipTaxAndShipmentEstimate } from '../../services/taxEngine';
 import { Product } from '../../types';
+import { extractProductColors } from '../../utils/colorUtils';
 
 export const ProductDetailPage: React.FC = () => {
   const { 
@@ -158,13 +159,14 @@ export const ProductDetailPage: React.FC = () => {
 
   // Variants & Options
   const allSizes = Array.from(new Set(product.variants?.map(v => v.size) || ['38R', '40R', '42R', '44R']));
-  const allColors = Array.from(new Set(product.variants?.map(v => v.color) || ['Navy', 'Charcoal', 'Midnight Blue']));
+  const extractedColors = useMemo(() => extractProductColors(product), [product]);
+  const allColors = useMemo(() => extractedColors.map(c => c.name), [extractedColors]);
 
   const currentSize = selectedSize || allSizes[0] || 'Standard';
-  const currentColor = selectedColor || allColors[0] || 'Standard';
+  const currentColor = selectedColor || allColors[0] || 'Midnight Navy';
 
   const matchedVariant = product.variants?.find(
-    v => v.size === currentSize && v.color === currentColor
+    v => v.size === currentSize && (v.color || '').toLowerCase() === currentColor.toLowerCase()
   ) || product.variants?.find(v => v.size === currentSize);
 
   const availableStock = matchedVariant ? matchedVariant.stock : (product.totalStock ?? 12);
@@ -301,19 +303,6 @@ export const ProductDetailPage: React.FC = () => {
     if (isOutOfStock) return;
     addToCart(product, currentSize, currentColor, quantity);
     showToast(`Added ${product.name} (${currentSize} • ${currentColor}) to your bag.`, 'success');
-  };
-
-  const handleBuyNow = () => {
-    if (isOutOfStock) return;
-    addToCart(product, currentSize, currentColor, quantity);
-    if (!currentCustomer) { 
-      sessionStorage.setItem('pa_checkout_return', '1'); 
-      showToast('Please sign in or proceed as guest for expedited checkout.', 'info'); 
-      setActiveView('login'); 
-      return; 
-    }
-    setActiveView('checkout');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleShare = async () => {
@@ -609,27 +598,42 @@ export const ProductDetailPage: React.FC = () => {
             </div>
 
             {/* Color Selector */}
-            {allColors.length > 0 && (
-              <div className="space-y-2.5">
-                <div className="flex justify-between text-xs text-gray-500 font-mono">
-                  <span>COLOR: <strong className="text-[#111827] font-semibold">{currentColor}</strong></span>
-                  <span className="text-gray-400 text-[11px]">{allColors.length} shades</span>
+            {extractedColors.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs text-gray-500 font-mono">
+                  <span className="flex items-center gap-1.5">
+                    <span>COLOR:</span>
+                    <strong className="text-[#111827] font-semibold tracking-wide uppercase">{currentColor}</strong>
+                  </span>
+                  <span className="text-[#936B34] text-[11px] font-medium font-mono">
+                    {extractedColors.length} {extractedColors.length === 1 ? 'shade' : 'shades available'}
+                  </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {allColors.map(color => {
-                    const isSelected = color === currentColor;
+                <div className="flex flex-wrap gap-2.5">
+                  {extractedColors.map(colorItem => {
+                    const isSelected = colorItem.name.toLowerCase() === currentColor.toLowerCase();
                     return (
                       <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={`px-3.5 py-1.5 text-xs font-mono border transition-all cursor-pointer flex items-center gap-2 ${
+                        key={colorItem.name}
+                        type="button"
+                        onClick={() => setSelectedColor(colorItem.name)}
+                        className={`group px-3.5 py-2 text-xs font-mono border transition-all cursor-pointer flex items-center gap-2.5 ${
                           isSelected
-                            ? 'border-[#111827] bg-[#111827] text-white font-semibold shadow-xs'
+                            ? 'border-[#936B34] bg-white text-[#111827] font-semibold ring-2 ring-[#936B34]/40 shadow-sm'
                             : 'border-gray-200 text-gray-700 hover:border-gray-400 bg-[#F9F9F8]'
                         }`}
+                        title={colorItem.name}
                       >
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                        <span>{color}</span>
+                        <span
+                          className={`w-3.5 h-3.5 rounded-full shrink-0 border transition-transform ${
+                            colorItem.isLight ? 'border-gray-400 shadow-2xs' : 'border-black/20'
+                          } ${isSelected ? 'scale-110' : 'group-hover:scale-105'}`}
+                          style={{ backgroundColor: colorItem.hex }}
+                        />
+                        <span className="tracking-wide">{colorItem.name}</span>
+                        {isSelected && (
+                          <Check className="w-3.5 h-3.5 text-[#936B34]" />
+                        )}
                       </button>
                     );
                   })}
@@ -720,28 +724,14 @@ export const ProductDetailPage: React.FC = () => {
 
             {/* Primary Action Buttons (Anchored and Ref'd for Sticky Header) */}
             <div ref={mainActionsRef} className="space-y-3 pt-2">
-              {/* Full Width High-Contrast BUY NOW Button (Peter England Signature) */}
-              <button
-                onClick={handleBuyNow}
-                disabled={isOutOfStock}
-                className={`w-full py-4 px-6 text-xs uppercase tracking-[0.25em] font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg ${
-                  isOutOfStock
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-200'
-                    : 'bg-[#111827] hover:bg-[#7A5726] text-white'
-                }`}
-              >
-                <span>BUY NOW</span>
-              </button>
-
-              {/* Side-by-Side ADD TO BAG & WISHLIST Buttons */}
               <div className="flex gap-3">
                 <button
                   onClick={handleAddToCart}
                   disabled={isOutOfStock}
-                  className={`flex-1 py-3.5 px-4 text-xs uppercase tracking-[0.2em] font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                  className={`flex-1 py-4 px-6 text-xs uppercase tracking-[0.25em] font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg ${
                     isOutOfStock
-                      ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50'
-                      : 'border-[#111827] text-[#111827] hover:bg-gray-100 bg-white'
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-200'
+                      : 'bg-[#111827] hover:bg-[#936B34] text-white active:scale-[0.99]'
                   }`}
                 >
                   <ShoppingBag className="w-4 h-4" />
@@ -750,7 +740,7 @@ export const ProductDetailPage: React.FC = () => {
 
                 <button
                   onClick={() => toggleWishlist(product.id)}
-                  className={`px-5 py-3.5 border transition-all cursor-pointer flex items-center justify-center gap-1.5 text-xs font-mono tracking-wider uppercase ${
+                  className={`px-5 py-4 border transition-all cursor-pointer flex items-center justify-center gap-1.5 text-xs font-mono tracking-wider uppercase ${
                     isWishlisted
                       ? 'border-[#936B34] bg-[#936B34]/15 text-[#936B34]'
                       : 'border-gray-300 text-gray-700 hover:border-[#111827] bg-[#F9F9F8]'
@@ -1362,17 +1352,10 @@ export const ProductDetailPage: React.FC = () => {
             <button
               onClick={handleAddToCart}
               disabled={isOutOfStock}
-              className="px-3.5 py-2.5 border border-[#111827] text-[#111827] text-xs font-mono uppercase tracking-wider font-semibold active:bg-gray-100 flex items-center gap-1 cursor-pointer"
+              className="px-5 py-2.5 bg-[#111827] text-white hover:bg-[#936B34] text-xs font-mono uppercase tracking-widest font-bold shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
-              <span>BAG</span>
-            </button>
-            <button
-              onClick={handleBuyNow}
-              disabled={isOutOfStock}
-              className="px-5 py-2.5 bg-[#111827] text-white text-xs font-mono uppercase tracking-widest font-bold shadow-md active:bg-[#7A5726] cursor-pointer"
-            >
-              BUY NOW
+              <span>{isOutOfStock ? 'OUT OF STOCK' : 'ADD TO BAG'}</span>
             </button>
           </div>
         </div>

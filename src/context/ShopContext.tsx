@@ -411,8 +411,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       showToast(result.message || `Welcome to Park Avenue Mens Wear, ${result.customer.name || 'Patron'}!`, 'success');
       if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('pa_checkout_return') === '1') {
         sessionStorage.removeItem('pa_checkout_return');
-        setActiveViewState('checkout');
-        navigateTo('/checkout');
+        setActiveViewState('cart');
+        navigateTo('/cart');
       }
       return { success: true, role: result.customer.role };
     } else {

@@ -181,7 +181,7 @@ export function parseRoute(pathname?: string): RouteMatch {
       return { view: 'cart' };
 
     case 'checkout':
-      return { view: 'checkout' };
+      return { view: 'cart' };
 
     case 'track-order':
     case 'track':
@@ -317,7 +317,7 @@ export function buildUrl(params: {
       return '/cart';
 
     case 'checkout':
-      return '/checkout';
+      return '/cart';
 
     case 'track-order':
       return '/track-order';

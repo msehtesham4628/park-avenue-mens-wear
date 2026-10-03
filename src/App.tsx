@@ -54,8 +54,7 @@ const MainContent: React.FC = () => {
         {activeView === 'category' && <CategoryPage />}
         {activeView === 'categories' && <CategoriesIndexPage />}
         {activeView === 'pdp' && <ProductDetailPage />}
-        {activeView === 'cart' && <CartPage />}
-        {activeView === 'checkout' && <CheckoutPage />}
+        {(activeView === 'cart' || activeView === 'checkout') && <CartPage />}
         {activeView === 'track-order' && <OrderTrackingPage />}
         {activeView === 'track-alteration' && <AlterationTrackingPage />}
         {activeView === 'track-return' && <ReturnTrackingPage />}
