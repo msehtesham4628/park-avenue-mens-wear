@@ -52,7 +52,8 @@ import {
   processMultiFileDrop, 
   processSingleFile, 
   ProcessedViewResult, 
-  formatBytes 
+  formatBytes,
+  whitenImageFromUrlOrDataUrl
 } from '../../utils/pdfUploadUtils';
 import { PdfViewerModal } from '../common/PdfViewerModal';
 import { useShop } from '../../context/ShopContext';
@@ -393,6 +394,7 @@ export const AdminDashboard: React.FC = () => {
   // Auto Title from Text states
   const [isAutoTitleOpen, setIsAutoTitleOpen] = useState(false);
   const [rawTitleSourceText, setRawTitleSourceText] = useState('');
+  const [titleAiProvider, setTitleAiProvider] = useState<'gemini' | 'openai'>('gemini');
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [generatedTitleResult, setGeneratedTitleResult] = useState<{
     title: string;
@@ -404,10 +406,11 @@ export const AdminDashboard: React.FC = () => {
     source?: string;
   } | null>(null);
 
-  const handleGenerateTitleFromText = async (textToUse?: string) => {
+  const handleGenerateTitleFromText = async (textToUse?: string, imageToUse?: string) => {
     const text = (textToUse !== undefined ? textToUse : (rawTitleSourceText || productForm.description || productForm.fabric || productForm.name)).trim();
-    if (!text) {
-      showToast('Please enter or paste some text describing the garment.', 'error');
+    const candidateImg = imageToUse || productForm.views.front || productForm.views.detail || productForm.views.back || '';
+    if (!text && !candidateImg) {
+      showToast('Please enter text or upload an image to synthesize garment title.', 'error');
       return;
     }
     setIsGeneratingTitle(true);
@@ -416,7 +419,9 @@ export const AdminDashboard: React.FC = () => {
         text,
         category: productForm.category,
         fabric: productForm.fabric,
-        fit: productForm.fit
+        fit: productForm.fit,
+        provider: titleAiProvider,
+        imageBase64: candidateImg && candidateImg.startsWith('data:image') ? candidateImg : undefined
       });
       setGeneratedTitleResult(res);
       setProductForm(prev => ({
@@ -426,7 +431,7 @@ export const AdminDashboard: React.FC = () => {
         fabric: prev.fabric || res.detectedFabric || prev.fabric,
         fit: prev.fit || res.detectedFit || prev.fit
       }));
-      showToast(`Generated Title: "${res.title}"`, 'success');
+      showToast(`Generated Title (${res.source === 'openai-ai' ? 'OpenAI GPT-4o' : res.source === 'gemini-ai' ? 'Google Gemini' : 'Sartorial Engine'}): "${res.title}"`, 'success');
     } catch (err: any) {
       showToast('Title generation error: ' + (err?.message || 'Error'), 'error');
     } finally {
@@ -826,7 +831,7 @@ export const AdminDashboard: React.FC = () => {
   const handleBatchUploadForProductForm = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
     setIsProcessingFiles(true);
-    setProcessingStatus('Processing 3-5 garment view files and rendering PDFs...');
+    setProcessingStatus('Processing 3-5 garment view files and automatically converting backgrounds to studio pure white (#FFFFFF)...');
     try {
       const results = await processMultiFileDrop(files);
       setProductForm(prev => {
@@ -854,7 +859,11 @@ export const AdminDashboard: React.FC = () => {
           pdfDocuments: newPdfDocs
         };
       });
-      showToast(`Processed ${results.length} view angle(s) successfully!`, 'success');
+      showToast(`Processed ${results.length} view(s) with studio pure white (#FFFFFF) background!`, 'success');
+      // If product name is empty, auto-generate title using Gemini or OpenAI from first image
+      if (!productForm.name && results.length > 0 && results[0].previewUrl) {
+        handleGenerateTitleFromText(undefined, results[0].previewUrl);
+      }
     } catch (err: any) {
       showToast('Failed to process uploaded files: ' + (err.message || 'Error'), 'error');
     } finally {
@@ -866,7 +875,7 @@ export const AdminDashboard: React.FC = () => {
   const handleSingleViewUploadForProductForm = async (file: File, viewType: 'front' | 'back' | 'left' | 'right' | 'detail') => {
     if (!file) return;
     setIsProcessingFiles(true);
-    setProcessingStatus(`Rendering ${viewType} view...`);
+    setProcessingStatus(`Rendering ${viewType} view and changing background to studio pure white (#FFFFFF)...`);
     try {
       const res = await processSingleFile(file, viewType);
       setProductForm(prev => {
@@ -889,7 +898,11 @@ export const AdminDashboard: React.FC = () => {
           pdfDocuments: newPdfDocs
         };
       });
-      showToast(`Updated ${res.label} successfully!`, 'success');
+      showToast(`Updated ${res.label} with studio pure white (#FFFFFF) background!`, 'success');
+      // If product name is empty, auto-generate title from this uploaded image
+      if (!productForm.name && res.previewUrl) {
+        handleGenerateTitleFromText(undefined, res.previewUrl);
+      }
     } catch (err: any) {
       showToast('Error processing file: ' + (err.message || 'Error'), 'error');
     } finally {
@@ -4175,30 +4188,64 @@ export const AdminDashboard: React.FC = () => {
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
                   <label className="text-[10px] font-mono uppercase text-gray-500 font-medium">
-                    GARMENT NAME *
+                    GARMENT NAME / TITLE *
                   </label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Gemini / OpenAI direct pill selector */}
+                    <div className="inline-flex border border-gray-300 bg-white shadow-2xs">
+                      <button
+                        type="button"
+                        onClick={() => setTitleAiProvider('gemini')}
+                        className={`px-2 py-0.5 text-[10px] font-mono uppercase font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
+                          titleAiProvider === 'gemini' ? 'bg-[#936B34] text-white' : 'text-gray-600 hover:text-black'
+                        }`}
+                        title="Generate title using Google Gemini 3.8 Flash"
+                      >
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>Gemini</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTitleAiProvider('openai')}
+                        className={`px-2 py-0.5 text-[10px] font-mono uppercase font-semibold transition-colors cursor-pointer flex items-center gap-1 border-l border-gray-200 ${
+                          titleAiProvider === 'openai' ? 'bg-[#111827] text-white' : 'text-gray-600 hover:text-black'
+                        }`}
+                        title="Generate title using OpenAI GPT-4o"
+                      >
+                        <Zap className="w-2.5 h-2.5" />
+                        <span>OpenAI</span>
+                      </button>
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => handleGenerateTitleFromText()}
                       disabled={isGeneratingTitle}
-                      className="text-[10px] font-mono text-[#936B34] hover:underline flex items-center gap-1 font-semibold uppercase cursor-pointer disabled:opacity-50"
-                      title="Quick Auto-Generate title from current form fields"
+                      className="px-2.5 py-1 bg-[#111827] hover:bg-[#936B34] text-white text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 font-semibold cursor-pointer shadow-2xs disabled:opacity-50 transition-colors"
+                      title={`Generate title using ${titleAiProvider === 'openai' ? 'OpenAI GPT-4o' : 'Google Gemini 3.8'}`}
                     >
-                      <Zap className="w-3 h-3 text-[#936B34]" />
-                      <span>{isGeneratingTitle ? 'Generating...' : 'Quick Title'}</span>
+                      {isGeneratingTitle ? (
+                        <>
+                          <div className="w-2.5 h-2.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3 text-[#936B34]" />
+                          <span>✨ AI Title ({titleAiProvider === 'openai' ? 'OpenAI' : 'Gemini'})</span>
+                        </>
+                      )}
                     </button>
-                    <span className="text-gray-300">|</span>
+
                     <button
                       type="button"
                       onClick={() => setIsAutoTitleOpen(prev => !prev)}
                       className="px-2 py-0.5 bg-[#FAF8F5] border border-[#936B34]/40 text-[#936B34] hover:bg-[#936B34] hover:text-white text-[10px] font-mono uppercase tracking-wider transition-colors flex items-center gap-1 font-semibold cursor-pointer shadow-2xs"
-                      title="Auto Title from any custom client text or notes"
+                      title="Custom client specs, WhatsApp text, or variations"
                     >
-                      <Sparkles className="w-3 h-3" />
-                      <span>{isAutoTitleOpen ? 'Close Title Tool' : '✨ Auto Title from Text'}</span>
+                      <span>{isAutoTitleOpen ? 'Hide Variations' : 'Notes & Variations'}</span>
                     </button>
                   </div>
                 </div>
@@ -4253,24 +4300,56 @@ export const AdminDashboard: React.FC = () => {
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleGenerateTitleFromText()}
-                        disabled={isGeneratingTitle}
-                        className="px-3 py-1.5 bg-[#111827] hover:bg-[#936B34] text-white text-[11px] font-mono uppercase tracking-wider font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 transition-colors"
-                      >
-                        {isGeneratingTitle ? (
-                          <>
-                            <div className="w-2.5 h-2.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                            <span>Synthesizing Title...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
-                            <span>Generate Luxury Title</span>
-                          </>
-                        )}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {/* Gemini / OpenAI Provider Selector */}
+                        <div className="flex items-center border border-gray-300 rounded-none overflow-hidden bg-white">
+                          <button
+                            type="button"
+                            onClick={() => setTitleAiProvider('gemini')}
+                            className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
+                              titleAiProvider === 'gemini'
+                                ? 'bg-[#936B34] text-white'
+                                : 'text-gray-600 hover:text-black bg-white'
+                            }`}
+                            title="Generate title using Google Gemini 3.8 Flash"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            <span>Gemini</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTitleAiProvider('openai')}
+                            className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider font-semibold transition-colors cursor-pointer flex items-center gap-1 border-l border-gray-200 ${
+                              titleAiProvider === 'openai'
+                                ? 'bg-[#111827] text-white'
+                                : 'text-gray-600 hover:text-black bg-white'
+                            }`}
+                            title="Generate title using OpenAI GPT-4o"
+                          >
+                            <Zap className="w-3 h-3" />
+                            <span>OpenAI</span>
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateTitleFromText()}
+                          disabled={isGeneratingTitle}
+                          className="px-3.5 py-1.5 bg-[#111827] hover:bg-[#936B34] text-white text-[11px] font-mono uppercase tracking-wider font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 transition-colors"
+                        >
+                          {isGeneratingTitle ? (
+                            <>
+                              <div className="w-2.5 h-2.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                              <span>Generating with {titleAiProvider === 'openai' ? 'OpenAI' : 'Gemini'}...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
+                              <span>Generate Title ({titleAiProvider === 'openai' ? 'OpenAI' : 'Gemini'})</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Result Variations */}
@@ -4280,8 +4359,8 @@ export const AdminDashboard: React.FC = () => {
                           <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold">
                             Choose Title Style:
                           </span>
-                          <span className="text-[9px] font-mono text-gray-500">
-                            Source: {generatedTitleResult.source === 'gemini-ai' ? 'Gemini 3.8 AI' : 'Sartorial Engine'}
+                          <span className="text-[9px] font-mono text-gray-500 font-semibold px-2 py-0.5 bg-gray-100 border border-gray-200">
+                            Engine: {generatedTitleResult.source === 'openai-ai' ? 'OpenAI GPT-4o' : generatedTitleResult.source === 'gemini-ai' ? 'Gemini 3.8 AI' : 'Sartorial Engine'}
                           </span>
                         </div>
 
@@ -4848,6 +4927,9 @@ export const AdminDashboard: React.FC = () => {
                                   <span>PDF</span>
                                 </div>
                               )}
+                              <div className="absolute bottom-1.5 left-1.5 bg-emerald-950/85 text-emerald-300 border border-emerald-500/40 text-[8px] font-mono px-1.5 py-0.5 flex items-center gap-1 shadow-xs">
+                                <span>✓ Studio White (#FFFFFF)</span>
+                              </div>
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                 {isPdf && (
                                   <button
@@ -4889,7 +4971,7 @@ export const AdminDashboard: React.FC = () => {
                         <div className="space-y-1.5 pt-1">
                           <label className="w-full py-1.5 px-2 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] hover:text-[#936B34] text-[10px] font-mono uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs font-semibold">
                             <Upload className="w-3 h-3 text-[#936B34]" />
-                            <span>UPLOAD IMAGE</span>
+                            <span>UPLOAD (AUTO WHITE BG)</span>
                             <input
                               type="file"
                               accept="image/*,application/pdf"
@@ -4901,16 +4983,39 @@ export const AdminDashboard: React.FC = () => {
                             />
                           </label>
 
-                          <input
-                            type="text"
-                            value={currentVal}
-                            onChange={(e) => setProductForm(prev => ({
-                              ...prev,
-                              views: { ...prev.views, [cfg.type]: e.target.value }
-                            }))}
-                            placeholder="or paste image URL"
-                            className="w-full bg-white border border-gray-200 px-2 py-1 text-[10px] text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
-                          />
+                          <div className="flex gap-1">
+                            <input
+                              type="text"
+                              value={currentVal}
+                              onChange={(e) => setProductForm(prev => ({
+                                ...prev,
+                                views: { ...prev.views, [cfg.type]: e.target.value }
+                              }))}
+                              placeholder="or paste image URL"
+                              className="flex-1 bg-white border border-gray-200 px-2 py-1 text-[10px] text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                            />
+                            {currentVal && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    const whitened = await whitenImageFromUrlOrDataUrl(currentVal);
+                                    setProductForm(prev => ({
+                                      ...prev,
+                                      views: { ...prev.views, [cfg.type]: whitened }
+                                    }));
+                                    showToast('Applied pure studio white background (#FFFFFF)!', 'success');
+                                  } catch {
+                                    showToast('Could not convert background.', 'error');
+                                  }
+                                }}
+                                className="px-2 py-1 bg-[#FAF8F5] hover:bg-[#936B34] text-[#936B34] hover:text-white border border-gray-300 text-[9px] font-mono uppercase font-semibold transition-colors cursor-pointer shrink-0"
+                                title="Automatically convert background to pure studio white (#FFFFFF)"
+                              >
+                                Whiten BG
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -5052,6 +5157,9 @@ export const AdminDashboard: React.FC = () => {
                               <span>PDF</span>
                             </div>
                           )}
+                          <div className="absolute bottom-1 left-1 bg-emerald-950/85 text-emerald-300 border border-emerald-500/40 text-[7px] font-mono px-1 py-0.2 flex items-center gap-0.5 shadow-xs">
+                            <span>✓ White BG (#FFF)</span>
+                          </div>
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                             {isPdf && (
                               <button
@@ -5089,7 +5197,7 @@ export const AdminDashboard: React.FC = () => {
                     <div className="space-y-1">
                       <label className="w-full py-1.5 bg-[#FAF8F5] border border-gray-300 hover:border-[#936B34] text-[#111827] text-[9px] font-mono uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer transition-colors font-medium">
                         <Upload className="w-2.5 h-2.5 text-[#936B34]" />
-                        <span>Upload File</span>
+                        <span>Upload (White BG)</span>
                         <input
                           type="file"
                           accept="image/*,application/pdf"
@@ -5100,13 +5208,33 @@ export const AdminDashboard: React.FC = () => {
                           }}
                         />
                       </label>
-                      <input
-                        type="text"
-                        value={currentVal}
-                        onChange={(e) => setQuickViewsForm(prev => ({ ...prev, [cfg.type]: e.target.value }))}
-                        placeholder="or paste URL"
-                        className="w-full bg-[#F9F9F8] border border-gray-200 px-1.5 py-0.5 text-[9px] font-mono text-[#111827] focus:outline-none focus:border-[#936B34]"
-                      />
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          value={currentVal}
+                          onChange={(e) => setQuickViewsForm(prev => ({ ...prev, [cfg.type]: e.target.value }))}
+                          placeholder="or paste URL"
+                          className="flex-1 bg-[#F9F9F8] border border-gray-200 px-1.5 py-0.5 text-[9px] font-mono text-[#111827] focus:outline-none focus:border-[#936B34]"
+                        />
+                        {currentVal && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const whitened = await whitenImageFromUrlOrDataUrl(currentVal);
+                                setQuickViewsForm(prev => ({ ...prev, [cfg.type]: whitened }));
+                                showToast('Converted to studio pure white (#FFFFFF)!', 'success');
+                              } catch {
+                                showToast('Could not convert image background.', 'error');
+                              }
+                            }}
+                            className="px-1.5 py-0.5 bg-[#FAF8F5] hover:bg-[#936B34] text-[#936B34] hover:text-white border border-gray-300 text-[8px] font-mono uppercase font-bold transition-colors cursor-pointer shrink-0"
+                            title="Automatically convert background to pure studio white (#FFFFFF)"
+                          >
+                            Whiten
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

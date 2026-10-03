@@ -410,7 +410,7 @@ export const ProductService = {
     return true;
   },
 
-  async generateTitle(params: { text: string; category?: string; fabric?: string; fit?: string }): Promise<any> {
+  async generateTitle(params: { text?: string; category?: string; fabric?: string; fit?: string; provider?: 'gemini' | 'openai' | 'auto'; imageBase64?: string; imageMimeType?: string }): Promise<any> {
     const remote = await fetchRemote<any>('/products/generate-title', {
       method: 'POST',
       body: JSON.stringify(params)
@@ -419,7 +419,7 @@ export const ProductService = {
       return remote;
     }
     return generateSartorialTitleFromText({
-      rawText: params.text,
+      rawText: params.text || '',
       currentCategory: params.category,
       currentFabric: params.fabric,
       currentFit: params.fit

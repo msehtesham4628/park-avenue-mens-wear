@@ -330,12 +330,15 @@ export const productController = {
    */
   async generateTitle(req: Request, res: Response) {
     try {
-      const { text, rawText, category, fabric, fit } = req.body;
+      const { text, rawText, category, fabric, fit, provider, imageBase64, imageMimeType } = req.body;
       const result = await titleService.generateProductTitle({
         rawText: (rawText || text || '').trim(),
         category,
         fabric,
-        fit
+        fit,
+        provider,
+        imageBase64,
+        imageMimeType
       });
       return res.status(200).json({
         success: true,

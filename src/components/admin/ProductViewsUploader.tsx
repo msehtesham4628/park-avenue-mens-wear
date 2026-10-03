@@ -201,7 +201,7 @@ export const ProductViewsUploader: React.FC<ProductViewsUploaderProps> = ({
               </span>
             </div>
             <p className="text-xs text-gray-600 font-sans mt-0.5">
-              Upload Front, Back, Left, Right &amp; Detail photos of the garment for client display.
+              Upload Front, Back, Left, Right &amp; Detail photos of the garment. Image and PDF backgrounds are automatically converted to studio pure white (#FFFFFF).
             </p>
           </div>
         </div>
@@ -411,6 +411,12 @@ export const ProductViewsUploader: React.FC<ProductViewsUploaderProps> = ({
                     <div className="absolute top-2 left-2 z-10 bg-[#111827]/90 text-[#D4AF37] px-2 py-0.5 text-[9px] font-mono flex items-center gap-1 shadow-xs">
                       <FileText className="w-2.5 h-2.5" />
                       <span>PDF SOURCE</span>
+                    </div>
+                  )}
+
+                  {currentPreview && (
+                    <div className="absolute bottom-2 left-2 z-10 bg-emerald-950/85 text-emerald-300 border border-emerald-500/40 text-[8px] font-mono px-1.5 py-0.5 flex items-center gap-1 shadow-xs">
+                      <span>✓ Studio White (#FFFFFF)</span>
                     </div>
                   )}
                 </div>
