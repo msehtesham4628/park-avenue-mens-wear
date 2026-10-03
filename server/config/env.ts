@@ -25,7 +25,7 @@ export const ENV = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: getPort(),
   MONGODB_URI: process.env.MONGODB_URI || process.env.DATABASE_URL || '',
-  JWT_SECRET: process.env.JWT_SECRET || process.env.AUTH_SECRET || (process.env.NODE_ENV === 'production' ? '' : 'park-avenue-luxury-jwt-secret-key-2026'),
+  JWT_SECRET: process.env.JWT_SECRET || process.env.AUTH_SECRET || 'park-avenue-luxury-jwt-secret-key-2026',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
   

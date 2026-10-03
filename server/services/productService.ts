@@ -180,9 +180,13 @@ export const productService = {
     productViews?: { front?: string; back?: string; left?: string; right?: string; detail?: string };
     pdfDocuments?: any[];
   }, adminUser: { id: string; name: string; email: string; role: string }): Promise<IProduct> {
-    const existingSku = await ProductModel.findOne({ sku: data.sku });
+    let finalSku = (data.sku || '').trim();
+    if (!finalSku) {
+      finalSku = `PA-${(data.category || 'GAR').slice(0, 4).toUpperCase()}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+    }
+    const existingSku = await ProductModel.findOne({ sku: finalSku });
     if (existingSku) {
-      throw new Error(`A product with SKU ${data.sku} already exists.`);
+      finalSku = `${finalSku}-${Math.floor(100 + Math.random() * 900)}`;
     }
 
     let slug = generateSlug(data.name);
@@ -199,7 +203,7 @@ export const productService = {
       color: v.color,
       colorHex: v.colorHex,
       stock: Math.max(0, v.stock || 0),
-      sku: v.sku || `${data.sku}-${v.size.replace(/\s+/g, '')}`
+      sku: v.sku || `${finalSku}-${v.size.replace(/\s+/g, '')}`
     }));
 
     const stockQuantity = processedVariants.reduce((sum, v) => sum + v.stock, 0);
@@ -208,7 +212,7 @@ export const productService = {
 
     const product = new ProductModel({
       productId,
-      sku: data.sku,
+      sku: finalSku,
       name: data.name,
       slug,
       description: data.description,

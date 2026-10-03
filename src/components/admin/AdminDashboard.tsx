@@ -344,6 +344,50 @@ export const AdminDashboard: React.FC = () => {
   } | null>(null);
   const [isBatchingSku, setIsBatchingSku] = useState(false);
 
+  // Auto Title from Text states
+  const [isAutoTitleOpen, setIsAutoTitleOpen] = useState(false);
+  const [rawTitleSourceText, setRawTitleSourceText] = useState('');
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+  const [generatedTitleResult, setGeneratedTitleResult] = useState<{
+    title: string;
+    variations: { label: string; title: string; style: string }[];
+    detectedCategory?: string;
+    detectedFabric?: string;
+    detectedFit?: string;
+    detectedColor?: string;
+    source?: string;
+  } | null>(null);
+
+  const handleGenerateTitleFromText = async (textToUse?: string) => {
+    const text = (textToUse !== undefined ? textToUse : (rawTitleSourceText || productForm.description || productForm.fabric || productForm.name)).trim();
+    if (!text) {
+      showToast('Please enter or paste some text describing the garment.', 'error');
+      return;
+    }
+    setIsGeneratingTitle(true);
+    try {
+      const res = await ProductService.generateTitle({
+        text,
+        category: productForm.category,
+        fabric: productForm.fabric,
+        fit: productForm.fit
+      });
+      setGeneratedTitleResult(res);
+      setProductForm(prev => ({
+        ...prev,
+        name: res.title || prev.name,
+        category: (res.detectedCategory as any) || prev.category,
+        fabric: prev.fabric || res.detectedFabric || prev.fabric,
+        fit: prev.fit || res.detectedFit || prev.fit
+      }));
+      showToast(`Generated Title: "${res.title}"`, 'success');
+    } catch (err: any) {
+      showToast('Title generation error: ' + (err?.message || 'Error'), 'error');
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
+
   // SEO & Sitemap Tab state
   const [seoOverview, setSeoOverview] = useState<any>(null);
   const [isLoadingSeo, setIsLoadingSeo] = useState(false);
@@ -613,10 +657,13 @@ export const AdminDashboard: React.FC = () => {
         views: { front: '', back: '', left: '', right: '', detail: '' },
         pdfDocuments: []
       });
+      setIsAutoTitleOpen(false);
+      setRawTitleSourceText('');
+      setGeneratedTitleResult(null);
       await loadAllData();
       await refreshProducts();
-    } catch {
-      showToast('Failed to save product to vault', 'error');
+    } catch (err: any) {
+      showToast('Failed to save product: ' + (err?.message || 'Error occurred'), 'error');
     }
   };
 
@@ -4031,9 +4078,180 @@ export const AdminDashboard: React.FC = () => {
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1 font-medium">
-                  GARMENT NAME *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] font-mono uppercase text-gray-500 font-medium">
+                    GARMENT NAME *
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleGenerateTitleFromText()}
+                      disabled={isGeneratingTitle}
+                      className="text-[10px] font-mono text-[#936B34] hover:underline flex items-center gap-1 font-semibold uppercase cursor-pointer disabled:opacity-50"
+                      title="Quick Auto-Generate title from current form fields"
+                    >
+                      <Zap className="w-3 h-3 text-[#936B34]" />
+                      <span>{isGeneratingTitle ? 'Generating...' : 'Quick Title'}</span>
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAutoTitleOpen(prev => !prev)}
+                      className="px-2 py-0.5 bg-[#FAF8F5] border border-[#936B34]/40 text-[#936B34] hover:bg-[#936B34] hover:text-white text-[10px] font-mono uppercase tracking-wider transition-colors flex items-center gap-1 font-semibold cursor-pointer shadow-2xs"
+                      title="Auto Title from any custom client text or notes"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>{isAutoTitleOpen ? 'Close Title Tool' : '✨ Auto Title from Text'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* EXPANDABLE AUTO-TITLE FROM TEXT WORKBENCH */}
+                {isAutoTitleOpen && (
+                  <div className="mb-3 p-3.5 bg-white border border-[#936B34]/40 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
+                        <span className="text-[11px] font-mono font-bold text-[#111827] uppercase tracking-wide">
+                          Auto-Generate Title From Any Text
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono text-gray-400 hidden sm:inline">
+                        Client specs, WhatsApp notes, PDF text
+                      </span>
+                    </div>
+
+                    <div>
+                      <textarea
+                        rows={2}
+                        value={rawTitleSourceText}
+                        onChange={(e) => setRawTitleSourceText(e.target.value)}
+                        placeholder="Paste client notes or text here (e.g. 'Navy blue 3 piece suit super 160 wool peak lapel bespoke tailored for evening gala')..."
+                        className="w-full bg-[#F9F9F8] border border-gray-300 p-2 text-xs font-mono text-[#111827] focus:outline-none focus:border-[#936B34]"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        {productForm.description && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRawTitleSourceText(productForm.description);
+                              handleGenerateTitleFromText(productForm.description);
+                            }}
+                            className="text-[10px] font-mono text-gray-600 hover:text-black underline cursor-pointer"
+                          >
+                            Use Description Text
+                          </button>
+                        )}
+                        {rawTitleSourceText && (
+                          <button
+                            type="button"
+                            onClick={() => setRawTitleSourceText('')}
+                            className="text-[10px] font-mono text-gray-400 hover:text-red-500 cursor-pointer"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateTitleFromText()}
+                        disabled={isGeneratingTitle}
+                        className="px-3 py-1.5 bg-[#111827] hover:bg-[#936B34] text-white text-[11px] font-mono uppercase tracking-wider font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 transition-colors"
+                      >
+                        {isGeneratingTitle ? (
+                          <>
+                            <div className="w-2.5 h-2.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            <span>Synthesizing Title...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
+                            <span>Generate Luxury Title</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Result Variations */}
+                    {generatedTitleResult && (
+                      <div className="mt-2.5 pt-2.5 border-t border-gray-200/70 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold">
+                            Choose Title Style:
+                          </span>
+                          <span className="text-[9px] font-mono text-gray-500">
+                            Source: {generatedTitleResult.source === 'gemini-ai' ? 'Gemini 3.8 AI' : 'Sartorial Engine'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {(generatedTitleResult.variations || []).map((v: any, idx: number) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setProductForm(prev => ({ ...prev, name: v.title }));
+                                showToast(`Applied title: "${v.title}"`, 'success');
+                              }}
+                              className={`p-2 text-left border text-xs font-mono transition-all cursor-pointer ${
+                                productForm.name === v.title
+                                  ? 'border-[#936B34] bg-[#FAF8F5] text-[#936B34] font-bold shadow-xs'
+                                  : 'border-gray-200 bg-[#F9F9F8] text-[#111827] hover:border-gray-400'
+                              }`}
+                            >
+                              <div className="text-[9px] text-gray-500 uppercase tracking-widest mb-0.5">
+                                {v.label}
+                              </div>
+                              <div className="truncate font-medium">{v.title}</div>
+                            </button>
+                          ))}
+                        </div>
+
+                        {(generatedTitleResult.detectedCategory || generatedTitleResult.detectedFabric || generatedTitleResult.detectedColor) && (
+                          <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] font-mono text-gray-600">
+                            <span className="font-semibold">Detected specs:</span>
+                            {generatedTitleResult.detectedCategory && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setProductForm(prev => ({ ...prev, category: generatedTitleResult.detectedCategory as any }));
+                                  showToast(`Category set to ${generatedTitleResult.detectedCategory}`, 'info');
+                                }}
+                                className="px-1.5 py-0.5 bg-gray-100 hover:bg-[#936B34] hover:text-white border border-gray-200 text-gray-700 cursor-pointer transition-colors"
+                                title="Click to apply detected category"
+                              >
+                                Category: {generatedTitleResult.detectedCategory} +
+                              </button>
+                            )}
+                            {generatedTitleResult.detectedFabric && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setProductForm(prev => ({ ...prev, fabric: generatedTitleResult.detectedFabric }));
+                                  showToast(`Fabric set to ${generatedTitleResult.detectedFabric}`, 'info');
+                                }}
+                                className="px-1.5 py-0.5 bg-gray-100 hover:bg-[#936B34] hover:text-white border border-gray-200 text-gray-700 cursor-pointer transition-colors"
+                                title="Click to apply detected fabric"
+                              >
+                                Fabric: {generatedTitleResult.detectedFabric} +
+                              </button>
+                            )}
+                            {generatedTitleResult.detectedColor && (
+                              <span className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 text-gray-700">
+                                Color: {generatedTitleResult.detectedColor}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <input
                   type="text"
                   required

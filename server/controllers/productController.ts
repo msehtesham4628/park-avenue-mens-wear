@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { productService } from '../services/productService.js';
 import { skuService } from '../services/skuService.js';
 import { descriptionService } from '../services/descriptionService.js';
+import { titleService } from '../services/titleService.js';
 
 export const productController = {
   /**
@@ -100,25 +101,34 @@ export const productController = {
         isNewArrival,
         fabric,
         fit,
-        careInstructions
+        careInstructions,
+        shippingCharge,
+        productViews,
+        pdfDocuments
       } = req.body;
 
-      if (!name || !sku || !category || price === undefined) {
+      if (!name || !category || price === undefined) {
         return res.status(400).json({
           success: false,
-          message: 'Please provide product name, SKU, category, and price.'
+          message: 'Please provide product name, category, and price.'
         });
+      }
+
+      // Ensure valid structured SKU
+      let resolvedSku = (sku || '').trim();
+      if (!resolvedSku) {
+        resolvedSku = `PA-${(category || 'GAR').slice(0, 4).toUpperCase()}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
       }
 
       const product = await productService.createProduct({
         name,
-        sku,
+        sku: resolvedSku,
         description: description || 'Master crafted bespoke menswear.',
         category,
         subcategory,
         price: parseFloat(price),
         salePrice: salePrice ? parseFloat(salePrice) : undefined,
-        images,
+        images: Array.isArray(images) ? images : [],
         variants: Array.isArray(variants) ? variants : [
           { size: '40R', color: 'Black', stock: 5 },
           { size: '42R', color: 'Black', stock: 5 }
@@ -128,7 +138,10 @@ export const productController = {
         isNewArrival: isNewArrival !== undefined ? Boolean(isNewArrival) : true,
         fabric,
         fit,
-        careInstructions
+        shippingCharge: shippingCharge !== undefined ? parseFloat(shippingCharge) : 15,
+        careInstructions,
+        productViews: productViews || undefined,
+        pdfDocuments: Array.isArray(pdfDocuments) ? pdfDocuments : []
       }, {
         id: user.id,
         name: user.name,
@@ -302,6 +315,28 @@ export const productController = {
         success: true,
         data: result,
         message: `Auto-assigned SKUs to ${result.updatedCount} products.`
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/products/generate-title
+   */
+  async generateTitle(req: Request, res: Response) {
+    try {
+      const { text, rawText, category, fabric, fit } = req.body;
+      const result = await titleService.generateProductTitle({
+        rawText: (rawText || text || '').trim(),
+        category,
+        fabric,
+        fit
+      });
+      return res.status(200).json({
+        success: true,
+        data: result,
+        message: 'Luxury sartorial title synthesized successfully.'
       });
     } catch (err: any) {
       return res.status(500).json({ success: false, message: err.message });

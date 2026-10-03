@@ -244,5 +244,170 @@ Output MUST be valid JSON with this exact structure:
       keywords,
       source: 'sartorial-engine'
     };
+  },
+
+  /**
+   * Generate an ultra-luxury garment title from raw client text, notes, or tech specs
+   */
+  async generateProductTitle(params: {
+    text: string;
+    category?: string;
+    fabric?: string;
+    tone?: 'editorial' | 'ecommerce_seo' | 'bespoke_tailor';
+  }): Promise<{
+    title: string;
+    alternatives: string[];
+    detectedCategory?: string;
+    detectedFabric?: string;
+    summary?: string;
+    source: 'gemini-ai' | 'sartorial-engine';
+  }> {
+    const rawText = (params.text || '').trim();
+    const providedCat = params.category?.trim();
+    const providedFabric = params.fabric?.trim();
+
+    // 1. Try Gemini AI
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey && rawText) {
+      try {
+        const ai = new GoogleGenAI({ apiKey });
+        const systemPrompt = `You are the master creative director and head merchandiser for Park Avenue Menswear, an ultra-luxury bespoke menswear house located in New York City.
+Synthesize a prestigious, high-converting luxury menswear product title from the provided raw text notes, client brief, or technical garment specifications.
+
+Input text:
+"${rawText}"
+${providedCat ? `Specified Category: "${providedCat}"` : ''}
+${providedFabric ? `Specified Fabric: "${providedFabric}"` : ''}
+
+Rules:
+1. Title must sound prestigious, elegant, and aspirational (e.g. "The Park Avenue Midnight Navy Super 150s Wool Suit", "Royal Oxford Tailored Egyptian Cotton Dress Shirt", "Hand-Burnished Goodyear Welted French Calfskin Loafers").
+2. Title must be concise (under 70 characters).
+3. Do NOT include markdown or quotes in the title string.
+4. Also generate 3 distinct alternative titles representing:
+   - Heritage Sartorial Luxury
+   - Modern Contemporary Tailored
+   - Minimalist Refined Bespoke
+5. Extract detectedCategory (Suits, Dress shirts, Ties, Shoe, Pants, etc.) and detectedFabric if found in the text.
+
+Output MUST be valid JSON with this exact structure:
+{
+  "title": "Primary best title",
+  "alternatives": ["Title 1", "Title 2", "Title 3"],
+  "detectedCategory": "Detected category",
+  "detectedFabric": "Detected fabric or material",
+  "summary": "1 sentence explanation"
+}`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: systemPrompt,
+          config: {
+            responseMimeType: 'application/json'
+          }
+        });
+
+        const resText = response.text?.trim() || '';
+        if (resText) {
+          const parsed = JSON.parse(resText);
+          if (parsed.title) {
+            return {
+              title: parsed.title,
+              alternatives: Array.isArray(parsed.alternatives) && parsed.alternatives.length > 0 
+                ? parsed.alternatives 
+                : [parsed.title],
+              detectedCategory: parsed.detectedCategory || providedCat,
+              detectedFabric: parsed.detectedFabric || providedFabric,
+              summary: parsed.summary || 'Synthesized using Park Avenue Sartorial AI',
+              source: 'gemini-ai'
+            };
+          }
+        }
+      } catch (err: any) {
+        console.warn('[Title Generator] Gemini synthesis fallback to sartorial rules:', err?.message || err);
+      }
+    }
+
+    // 2. Deterministic Sartorial Title Synthesizer Fallback
+    const lower = rawText.toLowerCase();
+
+    // Category detection
+    let detectedCategory = providedCat || 'Suits';
+    if (!providedCat) {
+      if (lower.includes('suit') || lower.includes('tuxedo')) detectedCategory = 'Suits';
+      else if (lower.includes('blazer') || lower.includes('jacket') || lower.includes('sportcoat')) detectedCategory = 'Blazers & Jackets';
+      else if (lower.includes('shirt') || lower.includes('button down')) detectedCategory = 'Dress shirts';
+      else if (lower.includes('tie') || lower.includes('bowtie')) detectedCategory = 'Ties';
+      else if (lower.includes('shoe') || lower.includes('loafer') || lower.includes('oxford') || lower.includes('boot')) detectedCategory = 'Shoe';
+      else if (lower.includes('pant') || lower.includes('trouser') || lower.includes('chino')) detectedCategory = 'Pants';
+      else if (lower.includes('coat') || lower.includes('overcoat') || lower.includes('trench')) detectedCategory = 'Coats';
+      else if (lower.includes('sweater') || lower.includes('knit') || lower.includes('cashmere')) detectedCategory = 'Sweaters';
+      else if (lower.includes('polo')) detectedCategory = 'Polo shirts';
+    }
+
+    // Color detection
+    let detectedColor = '';
+    const colorMap: Record<string, string> = {
+      'midnight': 'Midnight Navy',
+      'navy': 'Midnight Navy',
+      'blue': 'Royal Blue',
+      'charcoal': 'Charcoal Melange',
+      'grey': 'Slate Grey',
+      'gray': 'Slate Grey',
+      'black': 'Jet Black',
+      'white': 'Pure White',
+      'ivory': 'Silk Ivory',
+      'cream': 'Champagne Cream',
+      'camel': 'Camel Tan',
+      'brown': 'Espresso Brown',
+      'burgundy': 'Burgundy Wine',
+      'emerald': 'Deep Emerald',
+      'olive': 'Tuscan Olive'
+    };
+    for (const [key, val] of Object.entries(colorMap)) {
+      if (lower.includes(key)) {
+        detectedColor = val;
+        break;
+      }
+    }
+
+    // Fabric detection
+    let detectedFabric = providedFabric || '';
+    if (!providedFabric) {
+      if (lower.includes('cashmere')) detectedFabric = 'Mongolian Cashmere';
+      else if (lower.includes('150') || lower.includes('super 150')) detectedFabric = 'Super 150s Italian Virgin Wool';
+      else if (lower.includes('130') || lower.includes('super 130')) detectedFabric = 'Super 130s Worsted Wool';
+      else if (lower.includes('linen')) detectedFabric = 'Irish Linen';
+      else if (lower.includes('silk')) detectedFabric = 'Como Silk';
+      else if (lower.includes('cotton') || lower.includes('twill') || lower.includes('oxford')) detectedFabric = 'Egyptian Giza Cotton';
+      else if (lower.includes('leather') || lower.includes('calfskin')) detectedFabric = 'French Calfskin';
+      else if (lower.includes('wool') || lower.includes('flannel')) detectedFabric = 'Italian Wool Flannel';
+    }
+
+    // Extract first meaningful phrase from raw text if not empty
+    const firstCleanLine = rawText
+      .split('\n')[0]
+      .replace(/[#*_-]/g, ' ')
+      .trim();
+
+    const baseGarment = detectedCategory.replace(/s$/, ''); // e.g. Suit, Dress Shirt, Pant
+    const prefix = detectedColor ? `${detectedColor} ` : '';
+    const fabricPart = detectedFabric ? `${detectedFabric.split(' ')[0]} ` : '';
+
+    const primaryTitle = firstCleanLine && firstCleanLine.length > 5 && firstCleanLine.length < 50
+      ? `The Park Avenue ${firstCleanLine.replace(/\b\w/g, l => l.toUpperCase())}`
+      : `The Park Avenue ${prefix}${fabricPart}${baseGarment}`.replace(/\s+/g, ' ').trim();
+
+    const alt1 = `Tailored ${prefix}${baseGarment}`.replace(/\s+/g, ' ').trim();
+    const alt2 = `${detectedFabric ? detectedFabric + ' ' : 'Bespoke '}${baseGarment}`.replace(/\s+/g, ' ').trim();
+    const alt3 = `Signature ${prefix}${baseGarment}`.replace(/\s+/g, ' ').trim();
+
+    return {
+      title: primaryTitle,
+      alternatives: [primaryTitle, alt1, alt2, alt3],
+      detectedCategory,
+      detectedFabric: detectedFabric || undefined,
+      summary: 'Generated from garment specs using Park Avenue Sartorial Rules Engine',
+      source: 'sartorial-engine'
+    };
   }
 };

@@ -28,6 +28,7 @@ import {
   INITIAL_NOTIFICATIONS
 } from '../data/initialData';
 import { generateAutoSku } from '../utils/skuGenerator';
+import { generateSartorialTitleFromText } from '../utils/titleGenerator';
 
 export const API_CONFIG = {
   baseUrl: (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) ||
@@ -173,9 +174,14 @@ export const ProductService = {
     const remote = await fetchRemote<any[]>('/products?limit=100');
     if (remote && Array.isArray(remote)) {
       const mapped = remote.map(mapBackendProductToFrontend);
-      productsCache = mapped;
+      // Retain any locally created or updated products so they never vanish in production
+      const remoteIds = new Set(mapped.map(p => p.id));
+      const remoteSkus = new Set(mapped.map(p => p.sku));
+      const localOnly = productsCache.filter(p => !remoteIds.has(p.id) && !remoteSkus.has(p.sku));
+      const merged = [...localOnly, ...mapped];
+      productsCache = merged;
       saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
-      return mapped;
+      return merged;
     }
     await delay(150);
     return [...productsCache];
@@ -195,40 +201,48 @@ export const ProductService = {
   },
 
   async create(newProductData: Omit<Product, 'id' | 'totalStock'>): Promise<Product> {
-    let remote = await fetchRemote<any>('/products/admin', {
-      method: 'POST',
-      body: JSON.stringify(newProductData)
-    });
-    if (!remote) {
-      remote = await fetchRemote<any>('/products', {
+    const generatedId = `prod-${Date.now().toString(36)}`;
+    const totalStock = (newProductData.variants || []).reduce((acc, v) => acc + (v.stock || 0), 0);
+    const localProduct: Product = {
+      ...newProductData,
+      id: generatedId,
+      totalStock
+    };
+
+    let remote: any = null;
+    try {
+      const base = API_CONFIG.baseUrl || '/api';
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.TOKEN) : null;
+      const res = await fetch(`${base.replace(/\/$/, '')}/products`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(newProductData)
       });
-    }
-    if (!remote) {
-      remote = await fetchRemote<any>('/admin/products', {
-        method: 'POST',
-        body: JSON.stringify(newProductData)
-      });
+      if (res.ok) {
+        const json = await res.json();
+        remote = json?.data || json;
+      } else {
+        const errJson = await res.json().catch(() => null);
+        console.warn('[ProductService.create] Remote POST failed:', errJson?.message || `HTTP ${res.status}`);
+      }
+    } catch (netErr) {
+      console.warn('[ProductService.create] Network call failed, keeping in local vault:', netErr);
     }
 
     if (remote) {
       const mapped = mapBackendProductToFrontend(remote);
-      productsCache = [mapped, ...productsCache];
+      productsCache = [mapped, ...productsCache.filter(p => p.id !== mapped.id && p.sku !== mapped.sku)];
       saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
       return mapped;
     }
 
-    await delay(200);
-    const totalStock = (newProductData.variants || []).reduce((acc, v) => acc + (v.stock || 0), 0);
-    const newProduct: Product = {
-      ...newProductData,
-      id: `prod-${Date.now().toString(36)}`,
-      totalStock
-    };
-    productsCache = [newProduct, ...productsCache];
+    // Always preserve local product in memory and localStorage so it immediately appears everywhere!
+    productsCache = [localProduct, ...productsCache.filter(p => p.sku !== localProduct.sku)];
     saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
-    return newProduct;
+    return localProduct;
   },
 
   async batchCreate(products: Omit<Product, 'id' | 'totalStock'>[]): Promise<Product[]> {
@@ -330,6 +344,22 @@ export const ProductService = {
     productsCache = productsCache.filter(p => p.id !== cleanId && p.sku !== cleanId);
     saveStorage(STORAGE_KEYS.PRODUCTS, productsCache);
     return true;
+  },
+
+  async generateTitle(params: { text: string; category?: string; fabric?: string; fit?: string }): Promise<any> {
+    const remote = await fetchRemote<any>('/products/generate-title', {
+      method: 'POST',
+      body: JSON.stringify(params)
+    });
+    if (remote && remote.title) {
+      return remote;
+    }
+    return generateSartorialTitleFromText({
+      rawText: params.text,
+      currentCategory: params.category,
+      currentFabric: params.fabric,
+      currentFit: params.fit
+    });
   },
 
   async generateSku(params: { name: string; category: string; fabric?: string; color?: string; existingSkus?: string[] }): Promise<{ sku: string; categoryCode: string; colorCode: string; sequence: string }> {
