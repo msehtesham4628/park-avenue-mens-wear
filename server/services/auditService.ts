@@ -6,6 +6,8 @@ export interface RecordAuditParams {
     name: string;
     email: string;
     role: string;
+    staffTitle?: string;
+    department?: string;
   };
   action: string;
   entity: string;
@@ -15,6 +17,19 @@ export interface RecordAuditParams {
   metadata?: Record<string, any>;
   ipAddress?: string;
   userAgent?: string;
+}
+
+export interface GetLogsOptions {
+  entity?: string;
+  entityId?: string;
+  action?: string;
+  role?: string;
+  userId?: string;
+  search?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  skip?: number;
 }
 
 export const auditService = {
@@ -39,13 +54,61 @@ export const auditService = {
     return log;
   },
 
-  async getLogs(options: { entity?: string; entityId?: string; limit?: number; skip?: number } = {}) {
+  async getLogs(options: GetLogsOptions = {}) {
     const query: any = {};
-    if (options.entity) query.entity = options.entity;
-    if (options.entityId) query.entityId = options.entityId;
 
-    const limit = options.limit || 50;
-    const skip = options.skip || 0;
+    if (options.entity && options.entity !== 'all') {
+      query.entity = options.entity;
+    }
+
+    if (options.entityId) {
+      query.entityId = options.entityId;
+    }
+
+    if (options.action && options.action !== 'all') {
+      query.action = { $regex: options.action, $options: 'i' };
+    }
+
+    if (options.role && options.role !== 'all') {
+      query['adminUser.role'] = options.role.toLowerCase();
+    }
+
+    if (options.userId && options.userId !== 'all') {
+      query.$or = [
+        { 'adminUser.id': options.userId },
+        { 'adminUser.email': options.userId.toLowerCase() }
+      ];
+    }
+
+    if (options.search && options.search.trim()) {
+      const s = options.search.trim();
+      const regex = { $regex: s, $options: 'i' };
+      query.$or = [
+        { action: regex },
+        { entityId: regex },
+        { entity: regex },
+        { 'adminUser.name': regex },
+        { 'adminUser.email': regex },
+        { 'adminUser.id': regex },
+        { 'metadata.notes': regex },
+        { 'newValue.notes': regex }
+      ];
+    }
+
+    if (options.startDate || options.endDate) {
+      query.createdAt = {};
+      if (options.startDate) {
+        query.createdAt.$gte = new Date(options.startDate);
+      }
+      if (options.endDate) {
+        const end = new Date(options.endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+
+    const limit = Math.min(200, Math.max(1, options.limit || 50));
+    const skip = Math.max(0, options.skip || 0);
 
     try {
       const logs = await AuditLogModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();

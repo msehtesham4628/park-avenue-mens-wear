@@ -236,7 +236,16 @@ export const alterationController = {
    */
   async updateStatus(req: AuthenticatedRequest, res: Response) {
     try {
-      const user = req.user || { id: 'ADMIN', name: 'Admin', email: 'admin@parkavenuemenswear.com', role: 'admin' };
+      const operator = req.body?.operator;
+      const user = operator ? {
+        id: operator.id || operator.customerId || 'STAFF',
+        name: operator.name || 'Staff Member',
+        email: operator.email || 'staff@parkavenuemenswear.com',
+        role: operator.role || 'staff',
+        staffTitle: operator.staffTitle,
+        department: operator.department
+      } : (req.user || { id: 'ADMIN', name: 'Admin', email: 'admin@parkavenuemenswear.com', role: 'admin' });
+
       const { id } = req.params;
       const { status, note, expectedCompletionDate, tailorAssigned, customNotificationMessage, notificationChannel } = req.body;
 

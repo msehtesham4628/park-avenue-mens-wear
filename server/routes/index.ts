@@ -13,6 +13,7 @@ import categoryRoutes from './categoryRoutes.js';
 import checkoutRoutes from './checkoutRoutes.js';
 import returnRoutes from './returnRoutes.js';
 import seoRoutes from './seoRoutes.js';
+import staffRoutes from './staffRoutes.js';
 import { API_DOCUMENTATION } from '../docs/apiDocs.js';
 import { isDbConnected } from '../config/db.js';
 
@@ -66,5 +67,7 @@ apiRouter.use('/admin/products', productRoutes);
 apiRouter.use('/admin/orders', orderRoutes);
 apiRouter.use('/admin/alterations', alterationRoutes);
 apiRouter.use('/admin/returns', returnRoutes);
+apiRouter.use('/admin/staff', staffRoutes);
+apiRouter.use('/staff', staffRoutes);
 
 export default apiRouter;

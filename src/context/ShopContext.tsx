@@ -42,6 +42,7 @@ export type AppView =
   | 'reset-password'
   | 'track-return'
   | 'login'
+  | 'staff-login'
   | 'admin'
   | 'dashboard';
 

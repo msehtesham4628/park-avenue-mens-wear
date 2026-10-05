@@ -18,7 +18,11 @@ import {
   AlterationStatus,
   NotificationChannel,
   ReturnRequest,
-  AuditLogEntry
+  AuditLogEntry,
+  AuditLogUser,
+  StaffMember,
+  StaffPermissionItem,
+  StaffRoleItem
 } from '../types';
 import {
   INITIAL_PRODUCTS,
@@ -586,7 +590,7 @@ export const ProductService = {
     return { updatedCount: count, assigned };
   },
 
-  async updateStock(productId: string, variantId: string, newStock: number): Promise<Product> {
+  async updateStock(productId: string, variantId: string, newStock: number, reason?: string, operator?: AuditLogUser): Promise<Product> {
     const cleanProdId = (productId || '').trim();
     const cleanVarId = (variantId || '').trim();
     const targetStock = Math.max(0, newStock);
@@ -598,13 +602,15 @@ export const ProductService = {
         variantId: cleanVarId,
         adjustmentType: 'set',
         quantity: targetStock,
-        reason: 'manual_adjustment',
-        notes: `Admin manual stock adjustment to ${targetStock}`
+        reason: reason || 'manual_adjustment',
+        notes: `Stock adjusted to ${targetStock} units by ${operator?.name || 'Staff'}${reason ? ` (${reason})` : ''}`,
+        operator
       });
     } catch (_) {}
 
     // 2. Locate product in cache or create updated variants list
     const product = productsCache.find(p => p.id === cleanProdId || p.sku === cleanProdId);
+    const oldStock = product ? product.totalStock : 0;
     const updatedVariants = product && product.variants
       ? product.variants.map(v => 
           v.id === cleanVarId || v.sku === cleanVarId || v.size === cleanVarId
@@ -616,6 +622,19 @@ export const ProductService = {
     const totalStock = updatedVariants 
       ? updatedVariants.reduce((sum, v) => sum + v.stock, 0)
       : undefined;
+
+    // Log activity
+    try {
+      await AuditLogService.create({
+        action: 'INVENTORY_ADJUSTED',
+        entity: 'Inventory',
+        entityId: `${cleanProdId} (${cleanVarId})`,
+        previousValue: { stock: oldStock },
+        newValue: { stock: totalStock ?? targetStock },
+        notes: `Inventory stock adjusted to ${targetStock} by ${operator?.name || 'Staff'}${reason ? ` (${reason})` : ''}`,
+        adminUser: operator
+      });
+    } catch (_) {}
 
     // 3. Persist product update
     if (updatedVariants && totalStock !== undefined) {
@@ -2096,6 +2115,7 @@ export const InventoryService = {
     quantity: number;
     reason: string;
     notes?: string;
+    operator?: AuditLogUser;
   }) {
     return fetchRemote<{ product: any; transaction: any; updatedVariant: any }>('/admin/inventory/adjust', {
       method: 'POST',
@@ -2641,6 +2661,134 @@ export const SeoApiService = {
     }
   }
 };
+
+export const StaffService = {
+  async getAll(query?: { search?: string; status?: string; role?: string }): Promise<StaffMember[]> {
+    const params = new URLSearchParams();
+    if (query?.search) params.append('search', query.search);
+    if (query?.status) params.append('status', query.status);
+    if (query?.role) params.append('role', query.role);
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+
+    const remote = await fetchRemote<StaffMember[]>(`/staff${queryString}`);
+    if (remote && Array.isArray(remote)) {
+      return remote;
+    }
+    await delay(120);
+    return [];
+  },
+
+  async getPermissions(): Promise<{ permissions: StaffPermissionItem[]; rolePresets: Record<string, string[]>; roles?: StaffRoleItem[] }> {
+    const remote = await fetchRemote<{ permissions: StaffPermissionItem[]; rolePresets: Record<string, string[]>; roles?: StaffRoleItem[] }>('/staff/permissions');
+    if (remote && remote.permissions) {
+      return remote;
+    }
+    return {
+      permissions: [],
+      rolePresets: {},
+      roles: []
+    };
+  },
+
+  async getRoles(): Promise<StaffRoleItem[]> {
+    const remote = await fetchRemote<StaffRoleItem[]>('/staff/roles');
+    if (remote && Array.isArray(remote)) {
+      return remote;
+    }
+    return [];
+  },
+
+  async createRole(data: {
+    roleKey?: string;
+    name: string;
+    description?: string;
+    department?: string;
+    staffTitle?: string;
+    baseRole?: 'staff' | 'admin';
+    permissions?: string[];
+  }): Promise<StaffRoleItem> {
+    const remote = await fetchRemote<StaffRoleItem>('/staff/roles', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    if (remote && remote.id) {
+      return remote;
+    }
+    throw new Error('Failed to create custom role');
+  },
+
+  async deleteRole(roleKey: string): Promise<boolean> {
+    const remote = await fetchRemote<any>(`/staff/roles/${encodeURIComponent(roleKey)}`, {
+      method: 'DELETE'
+    });
+    return Boolean(remote && remote.success);
+  },
+
+  async createPermission(data: {
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+  }): Promise<StaffPermissionItem> {
+    const remote = await fetchRemote<StaffPermissionItem>('/staff/permissions', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    if (remote && remote.id) {
+      return remote;
+    }
+    throw new Error('Failed to create permission');
+  },
+
+  async deletePermission(id: string): Promise<boolean> {
+    const remote = await fetchRemote<any>(`/staff/permissions/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+    return Boolean(remote && remote.success);
+  },
+
+  async create(data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    username?: string;
+    password: string;
+    phone?: string;
+    role?: 'admin' | 'staff';
+    staffTitle?: string;
+    department?: string;
+    permissions?: string[];
+    status?: 'active' | 'suspended';
+  }): Promise<StaffMember> {
+    const remote = await fetchRemote<StaffMember>('/staff', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    if (remote && remote.id) {
+      return remote;
+    }
+    throw new Error('Failed to create staff member');
+  },
+
+  async update(id: string, data: Partial<StaffMember> & { password?: string }): Promise<StaffMember> {
+    const remote = await fetchRemote<StaffMember>(`/staff/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    if (remote && remote.id) {
+      return remote;
+    }
+    throw new Error('Failed to update staff member');
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const remote = await fetchRemote<any>(`/staff/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+    return Boolean(remote && remote.success);
+  }
+};
+
 
 
 

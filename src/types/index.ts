@@ -274,11 +274,18 @@ export interface Customer {
   id: string;
   customerId?: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
   email: string;
   phone: string;
   role?: string;
   avatar?: string;
   tier?: string;
+  staffTitle?: string;
+  department?: string;
+  permissions?: string[];
+  status?: string;
   measurements?: {
     chest: string;
     waist: string;
@@ -301,6 +308,45 @@ export interface Customer {
   ordersCount: number;
   totalSpent: number;
   joinedDate: string;
+}
+
+export interface StaffMember {
+  id: string;
+  customerId: string;
+  _id?: string;
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  email: string;
+  phone?: string;
+  role: 'admin' | 'staff';
+  staffTitle?: string;
+  department?: string;
+  permissions: string[];
+  status: 'active' | 'suspended' | 'inactive';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface StaffPermissionItem {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  isSystem?: boolean;
+}
+
+export interface StaffRoleItem {
+  id: string;
+  roleKey: string;
+  name: string;
+  description?: string;
+  department?: string;
+  staffTitle?: string;
+  baseRole: 'staff' | 'admin';
+  permissions: string[];
+  isSystem?: boolean;
 }
 
 export type NotificationChannel = 'email' | 'sms' | 'whatsapp' | 'all';
@@ -366,6 +412,8 @@ export interface AuditLogUser {
   name: string;
   email: string;
   role: 'admin' | 'staff' | string;
+  staffTitle?: string;
+  department?: string;
 }
 
 export interface AuditLogEntry {

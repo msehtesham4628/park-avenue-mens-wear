@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
+import { navigateTo } from '../../utils/router';
 
 type AuthViewMode = 'login' | 'create-account';
 
@@ -630,6 +631,22 @@ export const LoginPage: React.FC = () => {
           <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-center gap-2 text-[10px] text-gray-400 font-mono">
             <ShieldCheck className="w-3.5 h-3.5 text-[#936B34]" />
             <span>256-Bit SSL Encrypted · Park Avenue Mens Wear Authentication</span>
+          </div>
+
+          {/* Staff Login Link */}
+          <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-center text-xs font-mono">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView('staff-login');
+                navigateTo('/staff-login');
+                window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+              }}
+              className="text-[#936B34] hover:underline flex items-center gap-1.5 cursor-pointer font-medium"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Atelier Staff or Administrator? Admin &amp; Staff Login (/admin-login · /staff-login) &rarr;</span>
+            </button>
           </div>
 
         </div>

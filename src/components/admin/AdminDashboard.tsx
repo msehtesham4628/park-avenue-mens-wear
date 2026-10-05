@@ -102,6 +102,8 @@ import {
   exportSalesReportToExcel
 } from '../../utils/excelErpUtils';
 import { AnalyticsVisualizer } from './AnalyticsVisualizer';
+import { StaffLoginPage } from './StaffLoginPage';
+import { StaffManagementView } from './StaffManagementView';
 
 type AdminTab = 
   | 'dashboard' 
@@ -116,7 +118,8 @@ type AdminTab =
   | 'erp-reports'
   | 'notifications' 
   | 'seo'
-  | 'settings';
+  | 'settings'
+  | 'staff-management';
 
 export const AdminDashboard: React.FC = () => {
   const { 
@@ -1348,154 +1351,7 @@ export const AdminDashboard: React.FC = () => {
     : '--';
 
   if (!isAdminLoggedIn) {
-    const handleAdminSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      const cleanEmail = adminUsername.trim().toLowerCase();
-      if (!cleanEmail || !adminPassword) {
-        showToast('Please provide executive username and password', 'error');
-        return;
-      }
-      setIsAuthenticating(true);
-      try {
-        const res = await login(cleanEmail, adminPassword);
-        if (res.success && (res.role === 'admin' || res.role === 'staff')) {
-          showToast('Atelier Executive clearance confirmed. Welcome Administrator.', 'success');
-          await loadAllData();
-        } else if (res.success) {
-          showToast('Access restricted: Account is active but does not possess Atelier Admin privileges.', 'error');
-        } else {
-          showToast(res.message || 'Access restricted: Invalid executive credentials.', 'error');
-        }
-      } catch {
-        showToast('Authentication protocol failed', 'error');
-      } finally {
-        setIsAuthenticating(false);
-      }
-    };
-
-    return (
-      <div className="min-h-[85vh] bg-[#F9F9F8] flex items-center justify-center px-4 py-16">
-        <div className="w-full max-w-md bg-white border border-gray-200 shadow-2xl p-8 sm:p-10 relative">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <ParkAvenueLogo variant="stacked" size="sm" />
-            </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#111827] text-[#936B34] text-[10px] font-mono uppercase tracking-[0.25em] mb-3">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>EXECUTIVE ACCESS GATE</span>
-            </div>
-            <h1 className="font-serif text-2xl text-[#111827] uppercase tracking-wide font-light">
-              ATELIER ADMINISTRATION
-            </h1>
-            <p className="text-xs text-gray-500 font-mono mt-2 leading-relaxed">
-              Restricted portal path (<code className="text-[#936B34]">/admin</code> &amp; <code className="text-[#936B34]">/dashboard</code>). Enter administrator credentials to access products catalogue, Excel operations, manual orders, and Tally ERP.
-            </p>
-          </div>
-
-          {/* Quick-fill helper banner */}
-          <div className="bg-[#FAF8F5] border border-[#936B34]/30 p-3.5 mb-6 text-left shadow-xs">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                DEFAULT ATELIER CREDENTIALS
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setAdminUsername('parkamw@admin.com');
-                  setAdminPassword('ParkAvenue@2026');
-                }}
-                className="text-[10px] font-mono text-[#936B34] hover:underline uppercase font-bold cursor-pointer"
-              >
-                Auto-Fill
-              </button>
-            </div>
-            <div className="text-[11px] font-mono text-gray-600 flex flex-col gap-0.5">
-              <div>Email: <span className="text-[#111827] font-semibold">parkamw@admin.com</span></div>
-              <div>Password: <span className="text-[#111827] font-semibold">ParkAvenue@2026</span></div>
-            </div>
-          </div>
-
-          <form onSubmit={handleAdminSubmit} className="space-y-4">
-            <div>
-              <label className="block text-[11px] font-mono uppercase tracking-widest text-gray-700 mb-1.5 font-medium">
-                Executive Administrator Email *
-              </label>
-              <input
-                type="email"
-                value={adminUsername}
-                onChange={(e) => setAdminUsername(e.target.value)}
-                placeholder="parkamw@admin.com"
-                className="w-full bg-[#F9F9F8] border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:border-[#936B34] focus:bg-white focus:outline-none transition-colors"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-mono uppercase tracking-widest text-gray-700 mb-1.5 font-medium">
-                Master Security Password *
-              </label>
-              <div className="relative">
-                <input
-                  type={showAdminPassword ? 'text' : 'password'}
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full bg-[#F9F9F8] border border-gray-300 px-3.5 py-2.5 pr-10 text-xs text-[#111827] font-mono focus:border-[#936B34] focus:bg-white focus:outline-none transition-colors"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAdminPassword(!showAdminPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black cursor-pointer"
-                  aria-label={showAdminPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isAuthenticating}
-              className="w-full py-3.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-semibold uppercase tracking-[0.2em] transition-colors cursor-pointer shadow-md disabled:opacity-50"
-            >
-              {isAuthenticating ? 'VERIFYING CREDENTIALS...' : 'AUTHENTICATE ATELIER ACCESS'}
-            </button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-3 text-xs font-mono">
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveView('account');
-                  navigateTo('/account');
-                }}
-                className="text-[#936B34] hover:underline flex items-center gap-1.5 cursor-pointer font-medium"
-              >
-                <span>Patron / Client Portal (/account) &rarr;</span>
-              </button>
-              <span className="text-[10px] text-gray-400 uppercase tracking-widest">
-                ERP ENABLED
-              </span>
-            </div>
-            
-            <button
-              type="button"
-              onClick={() => {
-                setActiveView('home');
-                navigateTo('/');
-              }}
-              className="text-gray-500 hover:text-black flex items-center gap-1.5 cursor-pointer text-[11px]"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>RETURN TO STOREFRONT</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <StaffLoginPage />;
   }
 
   const adminNavGroups = useMemo(() => [
@@ -1530,6 +1386,12 @@ export const AdminDashboard: React.FC = () => {
         { id: 'seo', label: 'SEO & Sitemap (USA #1)', icon: Globe },
         { id: 'notifications', label: 'Notifications', icon: Bell },
         { id: 'settings', label: 'Gateway & Settings', icon: SettingsIcon }
+      ]
+    },
+    {
+      title: 'ACCESS & SECURITY',
+      items: [
+        { id: 'staff-management', label: 'Staff & Permissions', icon: UserCheck }
       ]
     }
   ], [productsList.length, ordersList, returnsList, alterationsList, customersList.length, auditLogsList.length]);
@@ -1735,6 +1597,7 @@ export const AdminDashboard: React.FC = () => {
                 {activeTab === 'seo' && 'USA #1 Luxury Sartorial SEO Engine'}
                 {activeTab === 'notifications' && 'Broadcast Communications'}
                 {activeTab === 'settings' && 'Payment Gateway & System Configurations'}
+                {activeTab === 'staff-management' && 'Staff & Role Permissions Management'}
               </h2>
             </div>
           </div>
@@ -4705,6 +4568,11 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* STAFF & ROLE PERMISSIONS MANAGEMENT (LINKED TO MONGODB) */}
+        {activeTab === 'staff-management' && (
+          <StaffManagementView />
         )}
 
       </main>

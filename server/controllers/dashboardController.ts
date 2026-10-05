@@ -90,7 +90,7 @@ export const dashboardController = {
    */
   async getAuditLogs(req: Request, res: Response) {
     try {
-      const { search, role, entity, action, limit = 50, page = 1 } = req.query;
+      const { search, role, entity, action, userId, limit = 50, page = 1 } = req.query;
       const query: any = {};
 
       if (role && role !== 'all') {
@@ -105,6 +105,14 @@ export const dashboardController = {
         query.action = String(action);
       }
 
+      if (userId && userId !== 'all') {
+        const u = String(userId);
+        query.$or = [
+          { 'adminUser.id': u },
+          { 'adminUser.email': u.toLowerCase() }
+        ];
+      }
+
       if (search && String(search).trim()) {
         const term = String(search).trim();
         query.$or = [
@@ -113,7 +121,8 @@ export const dashboardController = {
           { entityId: { $regex: term, $options: 'i' } },
           { 'adminUser.name': { $regex: term, $options: 'i' } },
           { 'adminUser.email': { $regex: term, $options: 'i' } },
-          { 'adminUser.role': { $regex: term, $options: 'i' } }
+          { 'adminUser.role': { $regex: term, $options: 'i' } },
+          { 'metadata.notes': { $regex: term, $options: 'i' } }
         ];
       }
 
@@ -137,7 +146,9 @@ export const dashboardController = {
           id: l.adminUser?.id || 'system',
           name: l.adminUser?.name || 'Administrator',
           email: l.adminUser?.email || 'admin@parkavenuemenswear.com',
-          role: l.adminUser?.role || 'admin'
+          role: l.adminUser?.role || 'admin',
+          staffTitle: l.adminUser?.staffTitle || (l.adminUser?.role === 'admin' ? 'Executive Administrator' : 'Staff Tailor'),
+          department: l.adminUser?.department || (l.adminUser?.role === 'admin' ? 'Executive' : 'Atelier')
         },
         action: l.action,
         entity: l.entity,

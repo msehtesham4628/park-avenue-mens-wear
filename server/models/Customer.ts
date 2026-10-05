@@ -31,6 +31,9 @@ export interface ICustomer extends Document {
   inseamPreference?: string;
   notes?: string;
   vipTier?: 'Member' | 'Bespoke Patron' | 'Private Atelier Club';
+  staffTitle?: string;
+  department?: string;
+  permissions?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,7 +79,10 @@ const CustomerSchema = new Schema<ICustomer>({
     type: String, 
     enum: ['Member', 'Bespoke Patron', 'Private Atelier Club'],
     default: 'Member' 
-  }
+  },
+  staffTitle: { type: String, trim: true },
+  department: { type: String, trim: true },
+  permissions: { type: [String], default: [] }
 }, {
   timestamps: true
 });

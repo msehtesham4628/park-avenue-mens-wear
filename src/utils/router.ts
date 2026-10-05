@@ -151,9 +151,13 @@ export function parseRoute(pathname?: string): RouteMatch {
     case 'admin':
       if (segments.length >= 2 && segments[1]) {
         const sub = segments[1].toLowerCase();
+        if (sub === 'login' || sub === 'signin' || sub === 'staff-login') {
+          return { view: 'staff-login' };
+        }
         let adminTab = sub;
         if (sub === 'product' || sub === 'products') adminTab = 'products';
         else if (sub === 'erp' || sub === 'erp-reports' || sub === 'tally') adminTab = 'erp-reports';
+        else if (sub === 'staff' || sub === 'staff-management') adminTab = 'staff-management';
         return { view: 'admin', adminTab };
       }
       return { view: 'admin', adminTab: 'dashboard' };
@@ -206,6 +210,11 @@ export function parseRoute(pathname?: string): RouteMatch {
     case 'signin':
     case 'auth':
       return { view: 'login' };
+
+    case 'staff-login':
+    case 'admin-login':
+    case 'staff':
+      return { view: 'staff-login' };
 
     case 'categories':
       return { view: 'categories' };
@@ -377,6 +386,9 @@ export function buildUrl(params: {
 
     case 'login':
       return '/login';
+
+    case 'staff-login':
+      return '/staff-login';
 
     case 'pdp':
       if (productId) {

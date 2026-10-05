@@ -7,6 +7,8 @@ export interface IAuditLog extends Document {
     name: string;
     email: string;
     role: string;
+    staffTitle?: string;
+    department?: string;
   };
   action: string; // e.g. PRODUCT_CREATED, INVENTORY_ADJUSTED, ORDER_STATUS_UPDATED
   entity: string; // e.g. Product, Order, Inventory, Alteration, Customer
@@ -25,7 +27,9 @@ const AuditLogSchema = new Schema<IAuditLog>({
     id: { type: String, required: true },
     name: { type: String, required: true },
     email: { type: String, required: true },
-    role: { type: String, required: true }
+    role: { type: String, required: true },
+    staffTitle: { type: String },
+    department: { type: String }
   },
   action: { type: String, required: true, index: true },
   entity: { type: String, required: true, index: true },

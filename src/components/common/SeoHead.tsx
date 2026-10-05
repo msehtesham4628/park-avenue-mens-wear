@@ -96,9 +96,9 @@ export const SeoHead: React.FC = () => {
       return;
     }
 
-    // 8. Admin / Dashboard (NoIndex / Protected)
-    if (activeView === 'admin' || activeView === 'dashboard') {
-      document.title = `Atelier Admin & Operations Portal | ${BRAND_NAME}`;
+    // 8. Admin / Staff Login / Dashboard (NoIndex / Protected)
+    if (activeView === 'admin' || activeView === 'dashboard' || activeView === 'staff-login') {
+      document.title = `Atelier Staff & Administration Portal | ${BRAND_NAME}`;
       return;
     }
 

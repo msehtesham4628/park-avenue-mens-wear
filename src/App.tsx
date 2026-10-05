@@ -30,10 +30,11 @@ import { ResetPasswordPage } from './components/customer/ResetPasswordPage';
 import { ReturnTrackingPage } from './components/customer/ReturnTrackingPage';
 import { LoginPage } from './components/account/LoginPage';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { StaffLoginPage } from './components/admin/StaffLoginPage';
 import { WelcomePage } from './components/welcome/WelcomePage';
 
 const MainContent: React.FC = () => {
-  const { activeView, currentCustomer } = useShop();
+  const { activeView, currentCustomer, isAdminLoggedIn } = useShop();
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -72,6 +73,9 @@ const MainContent: React.FC = () => {
         )}
         {activeView === 'login' && (
           currentCustomer ? <CustomerDashboard /> : <LoginPage />
+        )}
+        {activeView === 'staff-login' && (
+          isAdminLoggedIn ? <AdminDashboard /> : <StaffLoginPage />
         )}
         {(activeView === 'admin' || activeView === 'dashboard') && <AdminDashboard />}
       </main>

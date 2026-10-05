@@ -253,11 +253,20 @@ export const orderController = {
 
   async updateShipment(req: AuthenticatedRequest, res: Response) {
     try {
-      if (!req.user || !['admin','staff'].includes(req.user.role)) return res.status(403).json({ success:false, message:'Admin or Executive access required.' });
+      const operator = req.body?.operator;
+      const user = operator ? {
+        id: operator.id || operator.customerId || 'STAFF',
+        name: operator.name || 'Staff Member',
+        email: operator.email || 'staff@parkavenuemenswear.com',
+        role: operator.role || 'staff',
+        staffTitle: operator.staffTitle,
+        department: operator.department
+      } : (req.user || { id: 'ADMIN', name: 'Admin', email: 'admin@parkavenuemenswear.com', role: 'admin' });
+
       const { id } = req.params;
       const { carrier, trackingId, trackingUrl, status, estimatedDelivery, notes } = req.body;
       if (!carrier || !trackingId || !status) return res.status(400).json({ success:false, message:'Carrier, tracking ID and shipment status are required.' });
-      const order = await orderService.updateShipment(id, { id:req.user.id, name:req.user.name, email:req.user.email, role:req.user.role }, { carrier, trackingId, trackingUrl, status, estimatedDelivery, notes });
+      const order = await orderService.updateShipment(id, { id:user.id, name:user.name, email:user.email, role:user.role }, { carrier, trackingId, trackingUrl, status, estimatedDelivery, notes });
       return res.status(200).json({ success:true, data:order, message:'Shipment information updated.' });
     } catch(err:any) { return res.status(400).json({ success:false, message:err.message }); }
   },
@@ -291,7 +300,16 @@ export const orderController = {
    */
   async updateOrderStatus(req: AuthenticatedRequest, res: Response) {
     try {
-      const user = req.user || { id: 'ADMIN', name: 'Admin', email: 'admin@parkavenuemenswear.com', role: 'admin' };
+      const operator = req.body?.operator;
+      const user = operator ? {
+        id: operator.id || operator.customerId || 'STAFF',
+        name: operator.name || 'Staff Member',
+        email: operator.email || 'staff@parkavenuemenswear.com',
+        role: operator.role || 'staff',
+        staffTitle: operator.staffTitle,
+        department: operator.department
+      } : (req.user || { id: 'ADMIN', name: 'Admin', email: 'admin@parkavenuemenswear.com', role: 'admin' });
+
       const { id } = req.params;
       const { status, note, trackingNumber, carrier, estimatedDelivery, customNotificationMessage, notificationChannel } = req.body;
 
