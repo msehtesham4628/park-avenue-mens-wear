@@ -53,12 +53,12 @@ async function bootstrapServer() {
   });
 
   app.use(express.json({
-    limit: '10mb',
+    limit: '50mb',
     verify: (req: any, _res, buf) => {
       req.rawBody = buf;
     }
   }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
   // Connect to Database & Seed initial data
   try {
@@ -71,9 +71,43 @@ async function bootstrapServer() {
   }
 
   // Direct root search engine crawl endpoints for https://www.parkavenuemenswear.com
-  app.get('/sitemap.xml', async (_req, res) => {
+  app.get(['/sitemap.xml', '/sitemap_index.xml'], async (_req, res) => {
     try {
-      const xml = await seoService.generateSitemapXml();
+      const xml = await seoService.generateMainSitemapIndexXml();
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+      return res.status(200).send(xml);
+    } catch (err: any) {
+      return res.status(500).send(`<error>${err?.message}</error>`);
+    }
+  });
+
+  app.get('/sitemap_pages.xml', async (_req, res) => {
+    try {
+      const xml = await seoService.generatePagesSitemapXml();
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+      return res.status(200).send(xml);
+    } catch (err: any) {
+      return res.status(500).send(`<error>${err?.message}</error>`);
+    }
+  });
+
+  app.get('/sitemap_products_:chunk.xml', async (req, res) => {
+    try {
+      const chunkNum = parseInt(req.params.chunk, 10) || 1;
+      const xml = await seoService.generateProductSitemapXml(chunkNum);
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+      return res.status(200).send(xml);
+    } catch (err: any) {
+      return res.status(500).send(`<error>${err?.message}</error>`);
+    }
+  });
+
+  app.get('/sitemap_products.xml', async (_req, res) => {
+    try {
+      const xml = await seoService.generateProductSitemapXml(1);
       res.setHeader('Content-Type', 'application/xml; charset=utf-8');
       res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
       return res.status(200).send(xml);

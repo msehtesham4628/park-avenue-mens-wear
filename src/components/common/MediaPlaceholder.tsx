@@ -1,4 +1,5 @@
 import React from 'react';
+import { Scissors } from 'lucide-react';
 
 interface MediaPlaceholderProps {
   label?: string;
@@ -46,17 +47,14 @@ export const MediaPlaceholder: React.FC<MediaPlaceholderProps> = ({
       <div className="absolute bottom-3 left-3 w-2.5 h-2.5 border-b border-l border-[#936B34]/60 transition-colors group-hover:border-[#936B34]" />
       <div className="absolute bottom-3 right-3 w-2.5 h-2.5 border-b border-r border-[#936B34]/60 transition-colors group-hover:border-[#936B34]" />
 
-      {/* Supplied official Park Avenue artwork — no generated/text logo. */}
+      {/* Clean luxury sartorial presentation — zero logo overlay */}
       <div className="relative z-10 flex flex-col items-center max-w-[85%]">
-        <img
-          src="/Park_Avenue_Logo.png"
-          alt="Park Avenue Menswear"
-          className={`${minimal ? 'w-28 sm:w-36' : 'w-36 sm:w-48'} max-h-40 object-contain mb-4 transition-transform duration-500 group-hover:scale-105`}
-          loading="lazy"
-        />
+        <div className="w-12 h-12 rounded-full bg-[#FAF8F5] border border-[#936B34]/40 flex items-center justify-center text-[#936B34] mb-3 group-hover:scale-105 transition-transform">
+          <Scissors className="w-5 h-5 stroke-[1.5]" />
+        </div>
 
         {category && (
-          <span className="text-[9px] uppercase tracking-[0.3em] text-[#936B34] font-mono mb-1 font-semibold">
+          <span className="text-[10px] uppercase tracking-[0.3em] text-[#936B34] font-mono mb-1 font-semibold">
             {category}
           </span>
         )}

@@ -447,6 +447,8 @@ export const AdminDashboard: React.FC = () => {
   const [seoOverview, setSeoOverview] = useState<any>(null);
   const [isLoadingSeo, setIsLoadingSeo] = useState(false);
   const [isPingingCrawlers, setIsPingingCrawlers] = useState(false);
+  const [isGeneratingSitemap, setIsGeneratingSitemap] = useState(false);
+  const [sitemapGenResult, setSitemapGenResult] = useState<any>(null);
   const [pingResult, setPingResult] = useState<string | null>(null);
   const [copiedSitemap, setCopiedSitemap] = useState(false);
   const [selectedSeoPreviewType, setSelectedSeoPreviewType] = useState<'product' | 'category'>('product');
@@ -541,6 +543,26 @@ export const AdminDashboard: React.FC = () => {
       showToast('Sitemap notification queued.', 'info');
     } finally {
       setIsPingingCrawlers(false);
+    }
+  };
+
+  const handleGenerateSitemap = async () => {
+    setIsGeneratingSitemap(true);
+    setSitemapGenResult(null);
+    try {
+      const res = await SeoApiService.generateAndSyncSitemaps();
+      if (res && res.success) {
+        setSitemapGenResult(res);
+        showToast(res.message, 'success');
+        const ov = await SeoApiService.getOverview();
+        if (ov) setSeoOverview(ov);
+      } else {
+        showToast(res?.message || 'Failed to generate sitemaps', 'error');
+      }
+    } catch (e: any) {
+      showToast('Error generating sitemaps: ' + (e?.message || 'Error occurred'), 'error');
+    } finally {
+      setIsGeneratingSitemap(false);
     }
   };
 
@@ -3768,6 +3790,26 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
+                  onClick={handleGenerateSitemap}
+                  disabled={isGeneratingSitemap}
+                  className="px-4 py-2 bg-[#936B34] text-white hover:bg-[#785526] text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer font-bold disabled:opacity-50 shadow-sm active:scale-95"
+                  title="One-click sitemap generation: skips existing entries, adds missing products/pages, chunks at 1,000 items"
+                >
+                  {isGeneratingSitemap ? (
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>GENERATING SITEMAPS...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>⚡ GENERATE &amp; SYNC SITEMAP</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => {
                     navigator.clipboard.writeText('https://www.parkavenuemenswear.com/sitemap.xml');
                     setCopiedSitemap(true);
@@ -3869,6 +3911,252 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="font-serif text-3xl text-[#111827]">50 <span className="text-sm font-mono text-gray-500">States + DC</span></div>
                 <p className="text-[10px] font-mono text-gray-500">Structured for Nationwide Google Shopping</p>
+              </div>
+            </div>
+
+            {/* ONE-CLICK MULTI-SITEMAP ENGINE (1,000 PRODUCT LIMIT CHUNKS) */}
+            <div className="border border-gray-200 bg-white p-6 space-y-6 shadow-xs">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-gray-200">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-[#936B34]" />
+                    <h3 className="font-serif text-lg text-[#111827] uppercase tracking-wide">
+                      ONE-CLICK MULTI-SITEMAP ENGINE (1,000 ITEMS PER PRODUCT CHUNK)
+                    </h3>
+                  </div>
+                  <p className="text-xs text-gray-500 font-mono mt-1 leading-relaxed">
+                    Builds the Main Sitemap Index (<code className="text-[#936B34]">sitemap.xml</code>) first. Skips products &amp; pages already in sitemap, detects missing entries, and auto-partitions product sitemaps at exactly <strong>1,000 products per file</strong> (Product Sitemap 1, Product Sitemap 2, ...).
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleGenerateSitemap}
+                    disabled={isGeneratingSitemap}
+                    className="px-5 py-2.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+                  >
+                    {isGeneratingSitemap ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-[#E5C384]" />
+                        <span>SCANNING &amp; GENERATING...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 text-[#E5C384]" />
+                        <span>⚡ GENERATE &amp; SYNC SITEMAP</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Real-time synchronization feedback alert */}
+              {sitemapGenResult && (
+                <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-xs text-xs font-mono space-y-2">
+                  <div className="flex items-center justify-between text-emerald-900 font-bold">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{sitemapGenResult.message}</span>
+                    </div>
+                    <button onClick={() => setSitemapGenResult(null)} className="text-gray-400 hover:text-gray-700 cursor-pointer text-base">&times;</button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-[11px] text-emerald-950 border-t border-emerald-200">
+                    <div>
+                      <span className="text-emerald-700 block">Existing Skipped:</span>
+                      <strong>{sitemapGenResult.stats?.existingSkipped ?? 0} URLs</strong>
+                    </div>
+                    <div>
+                      <span className="text-emerald-700 block">Newly Added:</span>
+                      <strong>{sitemapGenResult.stats?.newlyAdded ?? 0} URLs</strong>
+                    </div>
+                    <div>
+                      <span className="text-emerald-700 block">Total Active Products:</span>
+                      <strong>{sitemapGenResult.stats?.totalProducts ?? productsList.length} Items</strong>
+                    </div>
+                    <div>
+                      <span className="text-emerald-700 block">Product Sitemap Chunks:</span>
+                      <strong>{sitemapGenResult.stats?.productSitemapChunks ?? 1} (1,000 limit)</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Partitioned Sitemaps Architecture View */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono uppercase tracking-widest text-[#111827] font-bold">
+                    ACTIVE SITEMAP INDEX &amp; PARTITIONS DIRECTORY
+                  </span>
+                  <span className="text-[10px] font-mono text-gray-500 uppercase">
+                    Auto-Partition Limit: 1,000 entries
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {/* 1. Main Sitemap Index */}
+                  <div className="p-4 bg-[#FAF8F5] border border-[#936B34]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-[#936B34] text-white text-[9px] font-mono uppercase font-bold tracking-wider">
+                          PRIMARY INDEX
+                        </span>
+                        <h4 className="font-mono text-xs uppercase font-bold text-[#111827]">
+                          Main Sitemap Index (sitemap.xml)
+                        </h4>
+                      </div>
+                      <p className="text-[11px] font-mono text-gray-600">
+                        https://www.parkavenuemenswear.com/sitemap.xml
+                      </p>
+                      <span className="text-[10px] font-mono text-[#936B34] block">
+                        Root index submitted to Google Search Console &amp; Bing Webmaster Tools. References all sub-sitemaps.
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href="/sitemap.xml"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] text-[11px] font-mono flex items-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-[#936B34]" />
+                        <span>LIVE XML</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText('https://www.parkavenuemenswear.com/sitemap.xml');
+                          showToast('Copied sitemap.xml URL!', 'success');
+                        }}
+                        className="p-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] transition-colors"
+                        title="Copy URL"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-gray-600" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => SeoApiService.downloadSitemapXml('/sitemap.xml', 'sitemap.xml')}
+                        className="p-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] transition-colors"
+                        title="Download XML"
+                      >
+                        <Download className="w-3.5 h-3.5 text-gray-600" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2. Static & Category Pages Sitemap */}
+                  <div className="p-4 bg-white border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-800 text-[9px] font-mono uppercase font-bold tracking-wider">
+                          PAGES PARTITION
+                        </span>
+                        <h4 className="font-mono text-xs uppercase font-bold text-[#111827]">
+                          Storefront Pages &amp; Categories (sitemap_pages.xml)
+                        </h4>
+                      </div>
+                      <p className="text-[11px] font-mono text-gray-600">
+                        https://www.parkavenuemenswear.com/sitemap_pages.xml
+                      </p>
+                      <span className="text-[10px] font-mono text-gray-500 block">
+                        Homepage, 9 Atelier Department landings, Shop directory, Return Policy, and Terms of Commission.
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href="/sitemap_pages.xml"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] text-[11px] font-mono flex items-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-[#936B34]" />
+                        <span>LIVE XML</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText('https://www.parkavenuemenswear.com/sitemap_pages.xml');
+                          showToast('Copied sitemap_pages.xml URL!', 'success');
+                        }}
+                        className="p-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] transition-colors"
+                        title="Copy URL"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-gray-600" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => SeoApiService.downloadSitemapXml('/sitemap_pages.xml', 'sitemap_pages.xml')}
+                        className="p-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] transition-colors"
+                        title="Download XML"
+                      >
+                        <Download className="w-3.5 h-3.5 text-gray-600" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 3. Product Sitemaps (1,000 items limit chunks) */}
+                  {Array.from({ length: Math.max(1, Math.ceil(productsList.length / 1000)) }).map((_, idx) => {
+                    const chunkNum = idx + 1;
+                    const chunkFilename = `sitemap_products_${chunkNum}.xml`;
+                    const chunkUrl = `https://www.parkavenuemenswear.com/${chunkFilename}`;
+                    const startEntry = idx * 1000 + 1;
+                    const endEntry = Math.min((idx + 1) * 1000, productsList.length);
+
+                    return (
+                      <div key={chunkNum} className="p-4 bg-white border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[9px] font-mono uppercase font-bold tracking-wider">
+                              PRODUCT CHUNK #{chunkNum}
+                            </span>
+                            <h4 className="font-mono text-xs uppercase font-bold text-[#111827]">
+                              Products Sitemap #{chunkNum} ({chunkFilename})
+                            </h4>
+                          </div>
+                          <p className="text-[11px] font-mono text-gray-600">
+                            {chunkUrl}
+                          </p>
+                          <span className="text-[10px] font-mono text-gray-500 block">
+                            Entries {startEntry} to {endEntry} (Capacity: up to 1,000 garments). When entries exceed 1,000, next chunk is spawned.
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <a
+                            href={`/${chunkFilename}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3 py-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] text-[11px] font-mono flex items-center gap-1.5 transition-colors"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5 text-[#936B34]" />
+                            <span>LIVE XML</span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(chunkUrl);
+                              showToast(`Copied ${chunkFilename} URL!`, 'success');
+                            }}
+                            className="p-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] transition-colors"
+                            title="Copy URL"
+                          >
+                            <Copy className="w-3.5 h-3.5 text-gray-600" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => SeoApiService.downloadSitemapXml(`/${chunkFilename}`, chunkFilename)}
+                            className="p-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-[#111827] transition-colors"
+                            title="Download XML"
+                          >
+                            <Download className="w-3.5 h-3.5 text-gray-600" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

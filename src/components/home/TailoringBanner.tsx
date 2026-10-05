@@ -7,14 +7,7 @@ export const TailoringBanner: React.FC = () => {
   const { setActiveView } = useShop();
 
   return (
-    <section className="py-24 bg-[#F9F9F8] border-y border-white/10 text-[#F8FAFC] relative overflow-hidden">
-      {/* Background supplied-logo watermark */}
-      <img
-        src="/Park_Avenue_Logo.png"
-        alt=""
-        aria-hidden="true"
-        className="absolute -right-16 -bottom-16 w-72 h-72 object-contain opacity-[0.025] pointer-events-none select-none"
-      />
+    <section className="py-24 bg-[#0F141E] border-y border-white/10 text-[#F8FAFC] relative overflow-hidden">
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">

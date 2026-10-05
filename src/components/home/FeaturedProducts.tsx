@@ -48,7 +48,7 @@ export const FeaturedProducts: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12 pb-6 border-b border-gray-200">
           <div>
             <div className="flex items-center gap-2 text-xs tracking-[0.3em] uppercase text-[#936B34] mb-2 font-mono">
-              <img src="/Park_Avenue_Logo.png" alt="Park Avenue Menswear" className="w-8 h-8 object-contain" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#936B34]" />
               <span>CURATED SELECTION</span>
             </div>
             <h2 className="font-serif text-3xl sm:text-4xl text-[#111827] font-light uppercase tracking-wide">

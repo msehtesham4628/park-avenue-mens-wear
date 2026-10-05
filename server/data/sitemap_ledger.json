@@ -1,0 +1,203 @@
+{
+  "indexedUrls": {
+    "https://www.parkavenuemenswear.com/": {
+      "loc": "https://www.parkavenuemenswear.com/",
+      "type": "home",
+      "lastmod": "2026-10-05",
+      "title": "Park Avenue Menswear Homepage"
+    },
+    "https://www.parkavenuemenswear.com/shop": {
+      "loc": "https://www.parkavenuemenswear.com/shop",
+      "type": "page",
+      "lastmod": "2026-10-05",
+      "title": "Shop All Menswear Collections USA"
+    },
+    "https://www.parkavenuemenswear.com/categories": {
+      "loc": "https://www.parkavenuemenswear.com/categories",
+      "type": "page",
+      "lastmod": "2026-10-05",
+      "title": "All Menswear Categories Directory"
+    },
+    "https://www.parkavenuemenswear.com/track-order": {
+      "loc": "https://www.parkavenuemenswear.com/track-order",
+      "type": "portal",
+      "lastmod": "2026-10-05",
+      "title": "Track Executive Order USA"
+    },
+    "https://www.parkavenuemenswear.com/track-alteration": {
+      "loc": "https://www.parkavenuemenswear.com/track-alteration",
+      "type": "portal",
+      "lastmod": "2026-10-05",
+      "title": "Track Bespoke Alterations"
+    },
+    "https://www.parkavenuemenswear.com/track-return": {
+      "loc": "https://www.parkavenuemenswear.com/track-return",
+      "type": "portal",
+      "lastmod": "2026-10-05",
+      "title": "Track Returns & Exchanges"
+    },
+    "https://www.parkavenuemenswear.com/login": {
+      "loc": "https://www.parkavenuemenswear.com/login",
+      "type": "portal",
+      "lastmod": "2026-10-05",
+      "title": "Client & Patron Login"
+    },
+    "https://www.parkavenuemenswear.com/account": {
+      "loc": "https://www.parkavenuemenswear.com/account",
+      "type": "portal",
+      "lastmod": "2026-10-05",
+      "title": "Patron Account Portal"
+    },
+    "https://www.parkavenuemenswear.com/terms": {
+      "loc": "https://www.parkavenuemenswear.com/terms",
+      "type": "page",
+      "lastmod": "2026-10-05",
+      "title": "Terms & Conditions of Commission"
+    },
+    "https://www.parkavenuemenswear.com/returns-policy": {
+      "loc": "https://www.parkavenuemenswear.com/returns-policy",
+      "type": "page",
+      "lastmod": "2026-10-05",
+      "title": "Atelier Return Policy & Fit Guarantee"
+    },
+    "https://www.parkavenuemenswear.com/suits": {
+      "loc": "https://www.parkavenuemenswear.com/suits",
+      "type": "category",
+      "lastmod": "2026-10-05",
+      "title": "Luxury Men's Suits & Tuxedos"
+    },
+    "https://www.parkavenuemenswear.com/blazers-jackets": {
+      "loc": "https://www.parkavenuemenswear.com/blazers-jackets",
+      "type": "category",
+      "lastmod": "2026-10-05",
+      "title": "Luxury Men's Blazers & Sport Coats"
+    },
+    "https://www.parkavenuemenswear.com/shirts": {
+      "loc": "https://www.parkavenuemenswear.com/shirts",
+      "type": "category",
+      "lastmod": "2026-10-05",
+      "title": "Luxury Men's Dress Shirts & Polos"
+    },
+    "https://www.parkavenuemenswear.com/pants": {
+      "loc": "https://www.parkavenuemenswear.com/pants",
+      "type": "category",
+      "lastmod": "2026-10-05",
+      "title": "Luxury Men's Tailored Trousers & Pants"
+    },
+    "https://www.parkavenuemenswear.com/outerwear": {
+      "loc": "https://www.parkavenuemenswear.com/outerwear",
+      "type": "category",
+      "lastmod": "2026-10-05",
+      "title": "Luxury Men's Luxury Overcoats & Jackets"
+    },
+    "https://www.parkavenuemenswear.com/sweaters-knitwear": {
+      "loc": "https://www.parkavenuemenswear.com/sweaters-knitwear",
+      "type": "category",
+      "lastmod": "2026-10-05",
+      "title": "Luxury Men's Cashmere Sweaters & Knitwear"
+    },
+    "https://www.parkavenuemenswear.com/footwear": {
+      "loc": "https://www.parkavenuemenswear.com/footwear",
+      "type": "category",
+      "lastmod": "2026-10-05",
+      "title": "Luxury Men's Goodyear Welted Shoes & Boots"
+    },
+    "https://www.parkavenuemenswear.com/accessories": {
+      "loc": "https://www.parkavenuemenswear.com/accessories",
+      "type": "category",
+      "lastmod": "2026-10-05",
+      "title": "Luxury Men's Silk Ties & Bespoke Accessories"
+    },
+    "https://www.parkavenuemenswear.com/shorts": {
+      "loc": "https://www.parkavenuemenswear.com/shorts",
+      "type": "category",
+      "lastmod": "2026-10-05",
+      "title": "Luxury Men's Sartorial Linen & Trouser Shorts"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-SUIT-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-SUIT-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "The Park Avenue Navy Double-Breasted Suit"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-SUIT-002": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-SUIT-002",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Super 180s Charcoal Worsted Two-Piece Suit"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-SHIRT-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-SHIRT-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Egyptian Giza 87 Twill Formal Dress Shirt"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-PANTS-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-PANTS-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "High-Rise Single Pleat Flannel Trousers"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-TIE-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-TIE-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Handcrafted Grenadine Silk Garza Fina Tie"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-SHOE-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-SHOE-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Goodyear-Welted Wholecut Oxford Shoe"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-BOOT-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-BOOT-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Hand-Burnished Balmoral Dress Boots"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-LOOF-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-LOOF-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Belgravian Tasselled Belgian Loofers"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-JEAN-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-JEAN-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Kurabo Mills Japanese Selvedge Jeans"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-LJ-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-LJ-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "French Plonge Lambskin Sartorial Biker Jacket"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-SWEAT-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-SWEAT-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Todd & Duncan 4-Ply Scottish Cashmere Crewneck"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-COAT-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-COAT-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Sovereign Double-Breasted Cashmere Overcoat"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-POLO-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-POLO-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Sea Island Knit Silk-Cotton Sartorial Polo"
+    },
+    "https://www.parkavenuemenswear.com/product/PROD-SHRT-001": {
+      "loc": "https://www.parkavenuemenswear.com/product/PROD-SHRT-001",
+      "type": "product",
+      "lastmod": "2026-10-05",
+      "title": "Pleated Irish Linen Tailored Walk Shorts"
+    }
+  },
+  "lastGenerated": "2026-10-05T20:47:06.201Z"
+}

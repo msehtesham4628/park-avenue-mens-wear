@@ -5,8 +5,6 @@ interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElemen
   category?: string;
 }
 
-const BRAND_LOGO = '/Park_Avenue_Logo.png';
-
 export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
   alt = 'Park Avenue Menswear',
@@ -20,29 +18,23 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 
   if (hasError || !src) {
     return (
-      <div className={`relative flex items-center justify-center overflow-hidden bg-[#F8F9FA] border border-gray-200 ${className}`}>
-        <img
-          src={BRAND_LOGO}
-          alt="Park Avenue Menswear"
-          className="w-full h-full object-contain p-8"
-        />
-        <span className="sr-only">{fallbackTitle || category || 'Park Avenue Menswear'}</span>
+      <div className={`relative flex flex-col items-center justify-center overflow-hidden bg-[#F3F4F6] border border-gray-200 text-gray-400 p-6 ${className}`}>
+        {/* Subtle tailoring drafting accent — zero logo watermark */}
+        <div className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center mb-2 text-[#936B34]">
+          <span className="text-xs font-serif font-semibold">PA</span>
+        </div>
+        <span className="text-[10px] font-mono uppercase tracking-wider text-gray-500 text-center">
+          {fallbackTitle || category || 'Bespoke Garment'}
+        </span>
       </div>
     );
   }
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
-      {/* Supplied Park Avenue PNG while the real product image loads. */}
+      {/* Neutral luxury skeleton pulse while image loads — zero logo watermark */}
       {!isLoaded && (
-        <div className="absolute inset-0 bg-[#F8F9FA] flex items-center justify-center z-10">
-          <img
-            src={BRAND_LOGO}
-            alt=""
-            aria-hidden="true"
-            className="w-24 sm:w-32 max-h-24 object-contain opacity-80"
-          />
-        </div>
+        <div className="absolute inset-0 bg-[#EFEFED] animate-pulse flex items-center justify-center z-10" />
       )}
       <img
         src={src}
@@ -51,7 +43,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         loading="lazy"
         onLoad={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
-        className={`w-full h-full object-cover transition-opacity duration-500 ${
+        className={`w-full h-full object-cover transition-opacity duration-300 ${
           isLoaded ? 'opacity-100' : 'opacity-0'
         }`}
         {...props}
