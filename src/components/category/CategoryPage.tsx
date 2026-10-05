@@ -195,70 +195,76 @@ export const CategoryPage: React.FC = () => {
 
   return (
     <div className="w-full bg-[#FCFCFB] text-[#111827] min-h-screen pb-20">
-      {/* 1. Atelier Department Hero Banner */}
-      <section className="relative w-full overflow-hidden bg-[#0D1017] text-white">
-        {/* Background Image with Ambient Luxury Gradient */}
-        <div className="absolute inset-0 pointer-events-none">
-          <img
-            src={bgImage}
-            alt={currentCategoryItem.name}
-            className="w-full h-full object-cover object-center brightness-40 blur-xs scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0D1017] via-black/60 to-black/80" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-[#0D1017]/50 to-[#0D1017]" />
-        </div>
+      {/* 1. Atelier Department Hero Banner (Mirrors Home Hero Aesthetic) */}
+      <section className="relative w-full bg-[#0E1118] text-white overflow-hidden select-none">
+        <div className="relative w-full h-[520px] xs:h-[560px] sm:h-[620px] md:h-[660px] lg:h-[700px] flex items-center justify-center overflow-hidden bg-[#0A0D14]">
+          {/* Background Ambient Layer */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/60 z-10 pointer-events-none" />
 
-        {/* Content Container */}
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-14 sm:pt-16 sm:pb-20">
-          {/* Breadcrumbs */}
-          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-[10px] sm:text-xs font-mono uppercase tracking-[0.25em] text-gray-400 mb-6">
-            <button 
-              onClick={() => { setActiveView('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="hover:text-[#E5C384] transition-colors cursor-pointer"
-            >
-              HOME
-            </button>
-            <ChevronRight className="w-3 h-3 text-white/40" />
-            <button 
-              onClick={openCategoriesIndex}
-              className="hover:text-[#E5C384] transition-colors cursor-pointer"
-            >
-              DEPARTMENTS
-            </button>
-            <ChevronRight className="w-3 h-3 text-white/40" />
-            <span className="text-[#E5C384] font-semibold">{currentCategoryItem.name.toUpperCase()}</span>
-          </nav>
+          {/* Crisp, High-Fashion Edge-to-Edge Category Model Presentation */}
+          <div className="absolute inset-0 flex items-center justify-center p-0">
+            <img
+              src={bgImage}
+              alt={`${currentCategoryItem.name} - ${story.headline}`}
+              className="w-full h-full object-cover object-top sm:object-center select-none"
+              fetchPriority="high"
+            />
+          </div>
 
-          <div className="max-w-3xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-black/60 backdrop-blur-md border border-white/15 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-[0.25em] text-[#E5C384]">
-              <Sparkles className="w-3 h-3 text-[#E5C384]" />
-              <span>{story.tag}</span>
-            </div>
+          {/* Top Breadcrumbs & Department Selector */}
+          <div className="absolute top-4 sm:top-6 inset-x-0 z-20 max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+            <nav aria-label="Breadcrumb" className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-mono uppercase tracking-[0.25em] text-gray-300 bg-black/50 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15 shadow-sm">
+              <button 
+                onClick={() => { setActiveView('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="hover:text-[#E5C384] transition-colors cursor-pointer"
+              >
+                HOME
+              </button>
+              <ChevronRight className="w-3 h-3 text-white/40" />
+              <button 
+                onClick={openCategoriesIndex}
+                className="hover:text-[#E5C384] transition-colors cursor-pointer"
+              >
+                DEPARTMENTS
+              </button>
+              <ChevronRight className="w-3 h-3 text-white/40" />
+              <span className="text-[#E5C384] font-semibold">{currentCategoryItem.name.toUpperCase()}</span>
+            </nav>
+          </div>
 
-            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl uppercase tracking-wide text-white leading-tight font-light drop-shadow-md">
-              {currentCategoryItem.name}
-            </h1>
+          {/* Bottom Floating Luxury Banner Content Card (Exact Home Hero Design Pattern) */}
+          <div className="absolute bottom-12 sm:bottom-16 inset-x-0 z-20 pointer-events-none flex flex-col items-center justify-center px-4 text-center">
+            <div className="max-w-xl mx-auto space-y-2 sm:space-y-2.5 p-4 sm:p-5 bg-black/60 backdrop-blur-md border border-white/15 rounded-2xl sm:rounded-3xl shadow-2xl pointer-events-auto">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-black/60 border border-white/15 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-[0.25em] text-[#E5C384]">
+                <Sparkles className="w-3 h-3 text-[#936B34]" />
+                <span>{story.tag}</span>
+              </div>
+              
+              <h1 className="font-serif text-2xl xs:text-3xl sm:text-4xl text-white tracking-wide uppercase leading-tight drop-shadow-md">
+                {currentCategoryItem.name}
+              </h1>
+              
+              <p className="text-[11px] sm:text-xs text-gray-200/90 font-light tracking-wide line-clamp-2 drop-shadow-sm max-w-lg mx-auto">
+                {story.description}
+              </p>
 
-            <p className="text-sm sm:text-base text-gray-200/90 font-light leading-relaxed max-w-2xl drop-shadow-sm">
-              {story.description}
-            </p>
-
-            {/* Department Highlights */}
-            <div className="pt-2 flex flex-wrap gap-2 sm:gap-2.5">
-              {story.highlights.map(item => (
-                <span 
-                  key={item}
-                  className="px-2.5 py-1 bg-white/10 backdrop-blur-md border border-white/15 rounded-xs text-[10px] sm:text-[11px] font-sans text-gray-200 tracking-wider uppercase font-medium"
-                >
-                  ✓ {item}
-                </span>
-              ))}
+              {/* Department Highlights */}
+              <div className="pt-1.5 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+                {story.highlights.map(item => (
+                  <span 
+                    key={item}
+                    className="px-2.5 py-0.5 bg-white/10 backdrop-blur-md border border-white/15 rounded-full text-[9px] sm:text-[10px] font-sans text-gray-200 tracking-wider uppercase font-medium"
+                  >
+                    ✓ {item}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Bottom Banner Details Ribbon: Alterations, Courier, Guarantees */}
-        <div className="relative border-t border-white/10 bg-black/40 backdrop-blur-md py-3 px-4 sm:px-6">
+        <div className="relative border-t border-white/10 bg-black/60 backdrop-blur-md py-3 px-4 sm:px-6">
           <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4 text-[10px] sm:text-xs font-mono uppercase tracking-[0.2em] text-gray-300">
             <div className="flex items-center gap-2 text-[#E5C384]">
               <Scissors className="w-3.5 h-3.5" />

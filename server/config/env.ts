@@ -8,16 +8,7 @@ function getPort(): number {
     const parsed = parseInt(args[portArgIndex + 1], 10);
     if (!isNaN(parsed) && parsed > 0) return parsed;
   }
-  if (process.env.SERVER_PORT) {
-    const parsed = parseInt(process.env.SERVER_PORT, 10);
-    if (!isNaN(parsed) && parsed > 0) return parsed;
-  }
-  // In AI Studio environments, port 8080 is used by the reverse proxy.
-  // The Node backend server must run on port 3000.
-  if (process.env.PORT && process.env.PORT !== '8080') {
-    const parsed = parseInt(process.env.PORT, 10);
-    if (!isNaN(parsed) && parsed > 0) return parsed;
-  }
+  // In AI Studio environments, dev server must strictly bind to port 3000
   return 3000;
 }
 
@@ -28,6 +19,7 @@ export const ENV = {
   JWT_SECRET: process.env.JWT_SECRET || process.env.AUTH_SECRET || 'park-avenue-luxury-jwt-secret-key-2026',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   
   // Communication Gateways
   EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || 'mock',

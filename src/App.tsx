@@ -14,6 +14,7 @@ import { Hero } from './components/home/Hero';
 import { CategoryShowcase } from './components/home/CategoryShowcase';
 import { FeaturedProducts } from './components/home/FeaturedProducts';
 import { CampaignBanner } from './components/home/CampaignBanner';
+import { TailoringBanner } from './components/home/TailoringBanner';
 import { ShopPage } from './components/shop/ShopPage';
 import { CategoryPage } from './components/category/CategoryPage';
 import { CategoriesIndexPage } from './components/category/CategoriesIndexPage';
@@ -48,6 +49,7 @@ const MainContent: React.FC = () => {
             <CategoryShowcase />
             <FeaturedProducts />
             <CampaignBanner />
+            <TailoringBanner />
           </>
         )}
 

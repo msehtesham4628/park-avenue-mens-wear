@@ -19,15 +19,20 @@ export const CampaignBanner: React.FC = () => {
         {/* Editorial Campaign Container */}
         <div className="border border-gray-200 bg-white grid grid-cols-1 lg:grid-cols-12 overflow-hidden items-stretch shadow-xl rounded-2xl sm:rounded-3xl">
           
-          {/* Left Column: Premium Placeholder Area */}
-          <div className="lg:col-span-7 relative min-h-[380px] sm:min-h-[460px] flex items-center justify-center p-8 bg-[#F8F9FA] border-b lg:border-b-0 lg:border-r border-gray-200">
-            <MediaPlaceholder
-              label="PARK AVENUE MENSWEAR"
-              category="EDITORIAL CAMPAIGN"
-              aspectRatio="auto"
-              className="w-full h-full min-h-[340px] sm:min-h-[420px]"
-              subtext="AUTUMN / WINTER TAILORING EXHIBIT"
+          {/* Left Column: Premium Editorial Campaign Visual */}
+          <div className="lg:col-span-7 relative min-h-[380px] sm:min-h-[460px] overflow-hidden bg-[#0F141E] border-b lg:border-b-0 lg:border-r border-gray-200 group">
+            <img
+              src="/campaign_model.png"
+              alt="Park Avenue Bespoke Menswear Campaign"
+              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+              loading="lazy"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+            <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between text-white/90">
+              <span className="font-mono text-[9px] uppercase tracking-[0.25em] bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/15">
+                AUTUMN / WINTER SARTORIAL EXHIBIT
+              </span>
+            </div>
           </div>
 
           {/* Right Column: Editorial Text & Action */}

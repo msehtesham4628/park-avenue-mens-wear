@@ -12,23 +12,23 @@ export const TailoringBanner: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
-          {/* Left Visual Column: Luxury Media Placeholder */}
+          {/* Left Visual Column: Bespoke Atelier Visual */}
           <div className="lg:col-span-5 relative">
-            <div className="aspect-[4/5] bg-[#0E1526] overflow-hidden border border-white/10 shadow-2xl relative p-6 flex flex-col justify-between">
-              <MediaPlaceholder
-                label="PARK AVENUE MENSWEAR"
-                category="BESPOKE ATELIER"
-                aspectRatio="auto"
-                className="w-full h-full min-h-[360px]"
-                subtext="MASTER TAILORING WORKBENCH"
+            <div className="aspect-[4/5] bg-[#0E1526] overflow-hidden border border-white/10 shadow-2xl relative group rounded-2xl sm:rounded-3xl">
+              <img
+                src="/Suits_image.png"
+                alt="Park Avenue Bespoke Master Tailoring"
+                className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out"
+                loading="lazy"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/20 pointer-events-none" />
 
               {/* Bottom Quote on Atelier */}
-              <div className="absolute bottom-6 left-6 right-6 p-4 bg-white/95 backdrop-blur-md border border-white/10 shadow-lg">
-                <p className="font-serif italic text-xs sm:text-sm text-slate-200 leading-snug">
+              <div className="absolute bottom-6 left-6 right-6 p-4 sm:p-5 bg-black/75 backdrop-blur-md border border-white/15 shadow-xl rounded-xl">
+                <p className="font-serif italic text-xs sm:text-sm text-white/95 leading-snug">
                   &ldquo;A suit that does not fit with precision is merely cloth. True bespoke is sculptured architecture.&rdquo;
                 </p>
-                <span className="text-[9px] uppercase tracking-widest text-[#936B34] mt-1.5 block font-mono font-medium">
+                <span className="text-[9px] uppercase tracking-widest text-[#E5C384] mt-1.5 block font-mono font-medium">
                   PARK AVENUE MENSWEAR · MASTER TAILORING SALON
                 </span>
               </div>
