@@ -115,7 +115,7 @@ export const seoService = {
       }
     } catch (_) {}
 
-    return Array.from(productMap.values());
+    return Array.from(productMap.values()).sort((a, b) => String(a.productId || a.id || a.sku || '').localeCompare(String(b.productId || b.id || b.sku || '')));
   },
 
   /**
@@ -200,7 +200,7 @@ export const seoService = {
     for (const prod of chunkProducts) {
       const id = prod.productId || prod.id || prod.sku;
       const prodDate = prod.updatedAt ? new Date(prod.updatedAt).toISOString().split('T')[0] : today;
-      const fullUrl = `${CANONICAL_DOMAIN}/product/${encodeURIComponent(id)}`;
+      const fullUrl = `${CANONICAL_DOMAIN}/category/products/${encodeURIComponent(id)}`;
 
       xml += `  <url>\n`;
       xml += `    <loc>${fullUrl}</loc>\n`;
