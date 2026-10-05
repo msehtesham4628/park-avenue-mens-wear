@@ -111,8 +111,20 @@ async function initialize() {
 }
 
 export default async function handler(req: express.Request, res: express.Response) {
+  // SEO endpoints must never wait for the database/app initialization.
+  // Googlebot can fetch the sitemap even while MongoDB is unavailable.
+  const requestPath = String(req.path || req.url || '').split('?')[0];
+  const isSeoRequest =
+    requestPath === '/sitemap.xml' ||
+    requestPath === '/sitemap_index.xml' ||
+    requestPath === '/sitemap_pages.xml' ||
+    requestPath === '/robots.txt' ||
+    /^\\/sitemap_products_\\d+\\.xml$/.test(requestPath);
+
   try {
-    await initialize();
+    if (!isSeoRequest) {
+      await initialize();
+    }
     return app(req, res);
   } catch (error: any) {
     console.error('[Park Avenue API] Request handler fallback:', error);
