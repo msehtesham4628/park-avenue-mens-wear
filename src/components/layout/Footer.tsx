@@ -97,7 +97,7 @@ export const Footer: React.FC = () => {
                     className="hover:text-[#936B34] transition-colors cursor-pointer text-[#111827] font-medium flex items-center gap-1.5"
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-[#936B34]" />
-                    <span>RETURN POLICY (30-DAY GUARANTEE)</span>
+                    <span>RETURN POLICY (15-DAY GUARANTEE)</span>
                   </button>
                 </li>
                 <li>

@@ -29,10 +29,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
     document.body.removeChild(a);
   };
 
-  const handleOpenExternal = () => {
-    window.open(pdfUrl, '_blank');
-  };
-
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6 animate-fade-in">
       <div className="bg-white w-full max-w-5xl h-[92vh] flex flex-col shadow-2xl border border-[#936B34]/40 relative">
@@ -63,13 +59,15 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
               <span className="hidden sm:inline">Download</span>
             </button>
 
-            <button
-              onClick={handleOpenExternal}
-              className="p-1.5 text-gray-300 hover:text-white transition-colors cursor-pointer"
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 text-gray-300 hover:text-white transition-colors cursor-pointer inline-flex items-center"
               title="Open in new tab"
             >
               <ExternalLink className="w-4 h-4" />
-            </button>
+            </a>
 
             <button
               onClick={onClose}

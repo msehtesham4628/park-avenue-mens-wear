@@ -88,14 +88,14 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
               Atelier Return Policy
             </h2>
             <p className="text-gray-500 font-mono text-[11px] pb-3 border-b border-gray-200">
-              30-Day Luxury Return &amp; Fit Guarantee Window
+              15-Day Luxury Return &amp; Fit Guarantee Window
             </p>
 
             <div className="space-y-3 pt-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 <div className="p-3 bg-[#FAF8F5] border border-gray-200">
                   <span className="text-[10px] font-mono uppercase text-[#936B34] font-bold block mb-1">WINDOW</span>
-                  <p className="font-serif text-lg text-[#111827]">30 Days</p>
+                  <p className="font-serif text-lg text-[#111827]">15 Days</p>
                   <p className="text-[10px] font-mono text-gray-500">From verified courier delivery date</p>
                 </div>
                 <div className="p-3 bg-[#FAF8F5] border border-gray-200">

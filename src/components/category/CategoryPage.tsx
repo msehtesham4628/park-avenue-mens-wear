@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Sparkles, 
@@ -32,6 +32,10 @@ export const CategoryPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'featured' | 'price-low' | 'price-high' | 'newest'>('featured');
   const [filterInStockOnly, setFilterInStockOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [selectedCategory, selectedSubcategory]);
 
   // Find category item configuration
   const currentCategoryItem = useMemo(() => {

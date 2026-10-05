@@ -710,6 +710,21 @@ function mapBackendOrderToFrontend(bo: any): Order {
 }
 
 export const OrderService = {
+  async getMyOrders(): Promise<Order[]> {
+    const remote = await fetchRemote<any[]>('/orders');
+    if (remote && Array.isArray(remote)) {
+      return remote.map(mapBackendOrderToFrontend);
+    }
+    const currentUser = AuthService.getCurrentUser();
+    if (!currentUser) return [];
+    const email = (currentUser.email || '').trim().toLowerCase();
+    const id = currentUser.id || (currentUser as any).customerId;
+    return ordersCache.filter(o => 
+      (email && (o.customerEmail || '').trim().toLowerCase() === email) ||
+      (id && (o as any).customerId === id)
+    );
+  },
+
   async getAll(): Promise<Order[]> {
     const remote = await fetchRemote<any[]>('/orders/admin/list?limit=100');
     if (remote && Array.isArray(remote)) {
@@ -1155,6 +1170,21 @@ function mapBackendAlterationToFrontend(a: any): AlterationRecord {
 }
 
 export const AlterationService = {
+  async getMyAlterations(): Promise<AlterationRecord[]> {
+    const remote = await fetchRemote<any[]>('/alterations');
+    if (remote && Array.isArray(remote)) {
+      return remote.map(mapBackendAlterationToFrontend);
+    }
+    const currentUser = AuthService.getCurrentUser();
+    if (!currentUser) return [];
+    const email = (currentUser.email || '').trim().toLowerCase();
+    const id = currentUser.id || (currentUser as any).customerId;
+    return alterationsCache.filter(a => 
+      (email && (a.customerEmail || '').trim().toLowerCase() === email) ||
+      (id && (a as any).customerId === id)
+    );
+  },
+
   async getAll(): Promise<AlterationRecord[]> {
     const remote = await fetchRemote<any[]>('/alterations/admin/list');
     if (remote && Array.isArray(remote)) {
@@ -1450,7 +1480,14 @@ export const ReturnService = {
       return mapped;
     }
     await delay(100);
-    return [...returnsCache];
+    const currentUser = AuthService.getCurrentUser();
+    if (!currentUser) return [];
+    const email = (currentUser.email || '').trim().toLowerCase();
+    const id = currentUser.id || (currentUser as any).customerId;
+    return returnsCache.filter(r => 
+      (email && (r.customerEmail || '').trim().toLowerCase() === email) ||
+      (id && (r as any).customerId === id)
+    );
   },
 
   async getById(searchQuery: string): Promise<ReturnRequest | null> {

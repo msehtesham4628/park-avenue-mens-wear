@@ -24,17 +24,20 @@ export const OrderTrackingPage: React.FC = () => {
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    OrderService.getAll().then(orders => {
-      if (currentCustomer) {
-        const userOrders = orders.filter(o => 
-          (o.customerEmail && o.customerEmail.toLowerCase() === currentCustomer.email.toLowerCase()) ||
-          (o.customerName && currentCustomer.name && o.customerName.toLowerCase().includes(currentCustomer.name.toLowerCase()))
-        );
+    if (currentCustomer) {
+      OrderService.getMyOrders().then(orders => {
+        const custEmail = (currentCustomer.email || '').trim().toLowerCase();
+        const custId = currentCustomer.id || currentCustomer.customerId;
+        const userOrders = (orders || []).filter(o => {
+          const email = (o.customerEmail || '').trim().toLowerCase();
+          const id = (o as any).customerId;
+          return (custEmail && email === custEmail) || (custId && id === custId);
+        });
         setRecentOrders(userOrders);
-      } else {
-        setRecentOrders([]);
-      }
-    });
+      }).catch(() => setRecentOrders([]));
+    } else {
+      setRecentOrders([]);
+    }
 
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);

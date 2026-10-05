@@ -427,4 +427,7 @@ export function navigateTo(url: string, replace = false): void {
 
   // Dispatch custom event to notify listeners immediately
   window.dispatchEvent(new CustomEvent('parkavenue:routechange', { detail: { url } }));
+
+  // Ensure user viewport is scrolled to top on navigation
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 }

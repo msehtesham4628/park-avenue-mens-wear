@@ -477,10 +477,10 @@ export const CartPage: React.FC = () => {
                   <RotateCcw className="w-4 h-4 text-[#936B34] shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold text-[#111827] block uppercase tracking-wider text-[11px]">
-                      30-DAY ATELIER RETURNS
+                      15-DAY ATELIER RETURNS
                     </span>
                     <span className="text-[11px] text-gray-500">
-                      Unworn garments with original basting and tags eligible for full courtesy return.
+                      Unworn garments with original basting and tags eligible for full courtesy return within 15 days of delivery.
                     </span>
                   </div>
                 </div>

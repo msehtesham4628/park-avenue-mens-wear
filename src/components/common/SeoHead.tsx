@@ -89,7 +89,7 @@ export const SeoHead: React.FC = () => {
     if (activeView === 'track-return') {
       applySeoMetadata({
         title: `Returns & Exchange Portal | ${BRAND_NAME} USA`,
-        description: 'Experience effortless 30-day luxury returns and exchanges with prepaid return postage across all 50 United States.',
+        description: 'Experience effortless 15-day luxury returns and exchanges with prepaid return postage across all 50 United States.',
         canonicalPath: '/track-return',
         ogType: 'website'
       });

@@ -272,6 +272,7 @@ export interface AlterationRecord {
 
 export interface Customer {
   id: string;
+  customerId?: string;
   name: string;
   email: string;
   phone: string;

@@ -17,7 +17,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
-import { AuthService, ReturnService, OrderService } from '../../services/api';
+import { AuthService, ReturnService, OrderService, AlterationService } from '../../services/api';
 import { Order, AlterationRecord, ReturnRequest } from '../../types';
 import { ImageWithFallback } from '../common/ImageWithFallback';
 import { LoginPage } from '../account/LoginPage';
@@ -51,220 +51,58 @@ export const CustomerDashboard: React.FC = () => {
     if (!currentCustomer) return;
     setIsLoading(true);
     try {
-      const [profile, dbReturns, allDbOrders] = await Promise.all([
+      const [profile, dbReturns, myOrders, myAlterations] = await Promise.all([
         AuthService.getMe().catch(() => null),
         ReturnService.getMyReturns().catch(() => []),
-        OrderService.getAll().catch(() => [])
+        OrderService.getMyOrders().catch(() => []),
+        AlterationService.getMyAlterations().catch(() => [])
       ]);
 
-      let userOrders: Order[] = [];
-      if (profile?.orders && profile.orders.length > 0) {
-        userOrders = profile.orders;
-      } else if (allDbOrders && allDbOrders.length > 0) {
-        // Match by email or customer name, or show all DB orders
-        const matched = allDbOrders.filter(o => 
-          (o.customerEmail && currentCustomer.email && o.customerEmail.toLowerCase() === currentCustomer.email.toLowerCase()) ||
-          (o.customerName && currentCustomer.name && o.customerName.toLowerCase().includes(currentCustomer.name.toLowerCase()))
-        );
-        userOrders = matched.length > 0 ? matched : allDbOrders;
-      }
+      const custEmail = (currentCustomer.email || '').trim().toLowerCase();
+      const custId = currentCustomer.id || currentCustomer.customerId;
 
-      // If still no orders, seed default bespoke commissions with full line items
-      if (userOrders.length === 0) {
-        userOrders = [
-          {
-            id: 'PA-2026-000001',
-            customerName: currentCustomer.name || 'Patron',
-            customerEmail: currentCustomer.email,
-            customerPhone: currentCustomer.phone || '+1 (555) 234-5678',
-            date: '2026-09-18',
-            items: [
-              {
-                productId: 'prod-blazer-navy',
-                productName: 'Imperial Worsted Navy Blazer',
-                category: 'Blazers & Jackets',
-                size: '40R',
-                color: 'Navy',
-                quantity: 1,
-                price: 1250,
-                image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&q=80&w=600',
-                sku: 'PA-BLAZER-01-40R',
-                itemStatus: 'Delivered'
-              },
-              {
-                productId: 'prod-trousers-flannel',
-                productName: 'Pleated Flannel Dress Trousers',
-                category: 'Pants',
-                size: '32W',
-                color: 'Charcoal',
-                quantity: 1,
-                price: 380,
-                image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=600',
-                sku: 'PA-PANT-02-32W',
-                itemStatus: 'Delivered'
-              },
-              {
-                productId: 'prod-shirt-white',
-                productName: 'Egyptian Giza Cotton Twill Shirt',
-                category: 'Shirts',
-                size: '15.5',
-                color: 'White',
-                quantity: 2,
-                price: 185,
-                image: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&q=80&w=600',
-                sku: 'PA-SHIRT-03-15.5',
-                itemStatus: 'Delivered'
-              }
-            ],
-            subtotal: 2000,
-            shippingFee: 0,
-            shippingMethod: 'FedEx White-Glove Overnight',
-            carrier: 'FedEx Priority',
-            trackingNumber: 'FX-884920412US',
-            tax: 177.50,
-            total: 2177.50,
-            orderStatus: 'Delivered',
-            paymentStatus: 'Paid',
-            paymentMethod: 'MasterCard (Ending in 4082)',
-            shippingAddress: {
-              street: '1048 5th Avenue',
-              apartment: 'Penthouse B',
-              city: 'New York',
-              state: 'NY',
-              zipCode: '10028',
-              country: 'United States'
-            },
-            timeline: [
-              {
-                status: 'Order Confirmed',
-                timestamp: '2026-09-18 09:15 AM',
-                location: 'Park Avenue Flagship Atelier',
-                description: 'Commission registered and bespoke fabric allocated.',
-                completed: true
-              },
-              {
-                status: 'Processing',
-                timestamp: '2026-09-19 11:30 AM',
-                location: 'Atelier Workshop',
-                description: 'Hand pressing and master sartorial tailoring.',
-                completed: true
-              },
-              {
-                status: 'Packed',
-                timestamp: '2026-09-20 03:00 PM',
-                location: 'Atelier White-Glove Suite',
-                description: 'Garments boxed in cedar lining with suit hanger.',
-                completed: true
-              },
-              {
-                status: 'Shipped',
-                timestamp: '2026-09-21 08:30 AM',
-                location: 'FedEx Air Hub NY',
-                description: 'Priority courier dispatch with insurance.',
-                completed: true
-              },
-              {
-                status: 'Delivered',
-                timestamp: '2026-09-22 02:15 PM',
-                location: '1048 5th Ave, Penthouse B, NY',
-                description: 'Handed directly to patron. Signed receipt verified.',
-                completed: true
-              }
-            ]
-          },
-          {
-            id: 'PA-2026-000002',
-            customerName: currentCustomer.name || 'Patron',
-            customerEmail: currentCustomer.email,
-            customerPhone: currentCustomer.phone || '+1 (555) 234-5678',
-            date: '2026-09-24',
-            items: [
-              {
-                productId: 'prod-suit-charcoal',
-                productName: 'Super 160s Charcoal Double-Breasted Suit',
-                category: 'Suits',
-                size: '42R',
-                color: 'Charcoal',
-                quantity: 1,
-                price: 1850,
-                image: 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&q=80&w=600',
-                sku: 'PA-SUIT-04-42R',
-                itemStatus: 'Shipped'
-              },
-              {
-                productId: 'prod-tie-grenadine',
-                productName: 'Silk Grenadine Hand-Rolled Tie',
-                category: 'Accessories',
-                size: 'Standard',
-                color: 'Burgundy',
-                quantity: 1,
-                price: 145,
-                image: 'https://images.unsplash.com/photo-1589756823695-278bc923f962?auto=format&fit=crop&q=80&w=600',
-                sku: 'PA-TIE-05',
-                itemStatus: 'Shipped'
-              }
-            ],
-            subtotal: 1995,
-            shippingFee: 0,
-            shippingMethod: 'White-Glove Atelier Courier',
-            carrier: 'Atelier Courier',
-            trackingNumber: 'PA-WG-902144',
-            tax: 177.06,
-            total: 2172.06,
-            orderStatus: 'Shipped',
-            paymentStatus: 'Paid',
-            paymentMethod: 'Visa (Ending in 8839)',
-            shippingAddress: {
-              street: '1048 5th Avenue',
-              apartment: 'Penthouse B',
-              city: 'New York',
-              state: 'NY',
-              zipCode: '10028',
-              country: 'United States'
-            },
-            timeline: [
-              {
-                status: 'Order Confirmed',
-                timestamp: '2026-09-24 10:00 AM',
-                location: 'Park Avenue Flagship Atelier',
-                description: 'Payment authorized and items reserved from private vault.',
-                completed: true
-              },
-              {
-                status: 'Processing',
-                timestamp: '2026-09-24 02:45 PM',
-                location: 'Atelier Workshop',
-                description: 'Inspection and master pressing.',
-                completed: true
-              },
-              {
-                status: 'Packed',
-                timestamp: '2026-09-25 09:10 AM',
-                location: 'Packaging Suite',
-                description: 'Garment box sealing.',
-                completed: true
-              },
-              {
-                status: 'Shipped',
-                timestamp: '2026-09-25 04:30 PM',
-                location: 'Atelier Courier Dispatch',
-                description: 'White-glove private courier in transit.',
-                completed: true
-              }
-            ]
-          }
-        ];
+      // Strictly isolate to the current authenticated customer only:
+      let userOrders: Order[] = [];
+      if (myOrders && myOrders.length > 0) {
+        userOrders = myOrders.filter(o => {
+          const email = (o.customerEmail || '').trim().toLowerCase();
+          const id = (o as any).customerId;
+          return (custEmail && email === custEmail) || (custId && id === custId);
+        });
+      } else if (profile?.orders && profile.orders.length > 0) {
+        userOrders = profile.orders.filter(o => {
+          const email = (o.customerEmail || '').trim().toLowerCase();
+          const id = (o as any).customerId;
+          return (custEmail && email === custEmail) || (custId && id === custId);
+        });
       }
 
       setOrders(userOrders);
-      if (profile?.alterations) setAlterations(profile.alterations);
-      if (profile?.returns && profile.returns.length > 0) {
-        setReturns(profile.returns);
-      } else if (dbReturns && dbReturns.length > 0) {
-        setReturns(dbReturns);
-      }
+
+      // Filter alterations strictly for this customer
+      let userAlterations: AlterationRecord[] = [];
+      const rawAlts = (myAlterations && myAlterations.length > 0) ? myAlterations : (profile?.alterations || []);
+      userAlterations = rawAlts.filter(a => {
+        const email = (a.customerEmail || '').trim().toLowerCase();
+        const id = (a as any).customerId;
+        return (custEmail && email === custEmail) || (custId && id === custId);
+      });
+      setAlterations(userAlterations);
+
+      // Filter returns strictly for this customer
+      let userReturns: ReturnRequest[] = [];
+      const rawReturns = (dbReturns && dbReturns.length > 0) ? dbReturns : (profile?.returns || []);
+      userReturns = rawReturns.filter(r => {
+        const email = (r.customerEmail || '').trim().toLowerCase();
+        const id = (r as any).customerId;
+        return (custEmail && email === custEmail) || (custId && id === custId);
+      });
+      setReturns(userReturns);
     } catch {
       // offline fallback
+      setOrders([]);
+      setAlterations([]);
+      setReturns([]);
     } finally {
       setIsLoading(false);
     }
@@ -461,7 +299,7 @@ export const CustomerDashboard: React.FC = () => {
                 Registered Shipping &amp; White-Glove Dispatch Address
               </h2>
               <p className="text-xs text-gray-600 font-sans max-w-2xl leading-relaxed">
-                All bespoke sartorial commissions, tailoring alterations, and size exchanges are dispatched directly to your designated destination below via insured private courier.
+                All sartorial orders, tailoring alterations, and size exchanges are dispatched directly to your designated destination below via insured private courier.
               </p>
               
               <div className="pt-2 flex items-start gap-3 text-xs font-mono text-gray-800">

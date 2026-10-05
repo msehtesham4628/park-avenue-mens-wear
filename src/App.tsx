@@ -35,6 +35,10 @@ import { WelcomePage } from './components/welcome/WelcomePage';
 const MainContent: React.FC = () => {
   const { activeView, currentCustomer } = useShop();
 
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [activeView]);
+
   return (
     <div className="min-h-screen flex flex-col bg-white text-[#111827] selection:bg-[#936B34] selection:text-white">
       <SeoHead />

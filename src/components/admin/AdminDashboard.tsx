@@ -4501,7 +4501,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <p className="text-gray-700 font-medium">Every Garment in Catalog</p>
                   <p className="text-[10px] text-gray-500">
-                    Price in USD · AggregateRating (4.9 ★★★★★) · InStock · Merchant Return Policy 30-Day US
+                    Price in USD · AggregateRating (4.9 ★★★★★) · InStock · Merchant Return Policy 15-Day US
                   </p>
                 </div>
 

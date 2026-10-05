@@ -220,6 +220,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const slug = getCategorySlug(category);
     const url = (slug && slug !== 'all') ? `/${slug}` : '/categories';
     navigateTo(url);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
   }, []);
 
   const openCategoriesIndex = useCallback(() => {
@@ -228,6 +231,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsProductsSubpage(false);
     setActiveViewState('categories');
     navigateTo('/categories');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
   }, []);
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);

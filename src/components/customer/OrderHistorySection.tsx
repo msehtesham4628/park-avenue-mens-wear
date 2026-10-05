@@ -97,12 +97,12 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
     try {
       await OrderService.updateShippingAddress(editingOrderAddress.id, addressEditForm);
       setLocalOrders(prev => prev.map(o => o.id === editingOrderAddress.id ? { ...o, shippingAddress: addressEditForm } : o));
-      showToast(`Delivery destination address updated for Commission #${editingOrderAddress.id}`, 'success');
+      showToast(`Delivery destination address updated for Order #${editingOrderAddress.id}`, 'success');
       setEditingOrderAddress(null);
     } catch {
       // Local fallback update
       setLocalOrders(prev => prev.map(o => o.id === editingOrderAddress.id ? { ...o, shippingAddress: addressEditForm } : o));
-      showToast(`Delivery address recorded for Commission #${editingOrderAddress.id}`, 'success');
+      showToast(`Delivery address recorded for Order #${editingOrderAddress.id}`, 'success');
       setEditingOrderAddress(null);
     } finally {
       setIsSavingAddress(false);
@@ -248,7 +248,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
 
     setTimeout(() => {
       setReorderingId(null);
-      showToast(`Re-ordered ${addedCount} garment${addedCount > 1 ? 's' : ''} from Commission #${order.id}. Added to your shopping bag.`, 'success');
+      showToast(`Re-ordered ${addedCount} garment${addedCount > 1 ? 's' : ''} from Order #${order.id}. Added to your shopping bag.`, 'success');
       setIsCartOpen(true);
     }, 400);
   };
@@ -297,8 +297,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
 
   // Overall Metrics
   const metrics = useMemo(() => {
-    const totalCommissions = localOrders.length;
-    const totalLifetimeSpend = localOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const totalOrders = localOrders.length;
     const inTransitCount = localOrders.filter(o => {
       const s = o.orderStatus?.toLowerCase() || '';
       return s.includes('shipped') || s.includes('transit') || s.includes('delivery');
@@ -308,7 +307,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
       return s.includes('delivered') || s.includes('completed');
     }).length;
 
-    return { totalCommissions, totalLifetimeSpend, inTransitCount, deliveredCount };
+    return { totalOrders, inTransitCount, deliveredCount };
   }, [localOrders]);
 
   // Format Status Badge
@@ -381,7 +380,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
             </span>
           </div>
           <h2 className="font-serif text-2xl sm:text-3xl text-[#111827] font-light">
-            Order History &amp; Commissions
+            Order History
           </h2>
           <p className="text-xs text-gray-500 font-sans mt-0.5">
             Review detailed garment specifications, courier delivery waybills, and re-order previous bespoke items with one click.
@@ -403,17 +402,17 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
         </div>
       </div>
 
-      {/* Summary KPI Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* Summary KPI Strip without Commission or Total Investment */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="bg-[#FAF8F5] border border-gray-200 p-4 space-y-1">
           <span className="text-[10px] font-mono uppercase text-gray-500 tracking-widest block">
-            TOTAL COMMISSIONS
+            TOTAL ORDERS
           </span>
           <div className="font-serif text-2xl sm:text-3xl text-[#111827]">
-            {metrics.totalCommissions}
+            {metrics.totalOrders}
           </div>
           <span className="text-[10px] font-mono text-[#936B34] block">
-            Registered on ledger
+            Recorded in your account
           </span>
         </div>
 
@@ -438,18 +437,6 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
           </div>
           <span className="text-[10px] font-mono text-emerald-700 block">
             Completed delivery
-          </span>
-        </div>
-
-        <div className="bg-[#FAF8F5] border border-gray-200 p-4 space-y-1">
-          <span className="text-[10px] font-mono uppercase text-gray-500 tracking-widest block">
-            TOTAL INVESTMENT
-          </span>
-          <div className="font-serif text-2xl sm:text-3xl text-[#111827]">
-            ${metrics.totalLifetimeSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <span className="text-[10px] font-mono text-gray-500 block">
-            Lifetime atelier spend
           </span>
         </div>
       </div>
@@ -527,7 +514,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                       <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono text-sm font-bold text-[#111827]">
-                            COMMISSION #{order.id}
+                            ORDER #{order.id}
                           </span>
                           <button
                             onClick={(e) => copyOrderId(order.id, e)}
@@ -587,7 +574,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                         onClick={(e) => handleReorderEntireOrder(order, e)}
                         disabled={isReorderingThisOrder}
                         className="px-4 py-2.5 bg-[#111827] text-white hover:bg-[#936B34] active:bg-[#7a5829] text-xs font-mono uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer font-semibold shadow-xs disabled:opacity-50"
-                        title="Add all garments from this commission to your bag"
+                        title="Add all garments from this order to your bag"
                       >
                         <RotateCcw className={`w-3.5 h-3.5 text-[#E5C384] ${isReorderingThisOrder ? 'animate-spin' : ''}`} />
                         <span>{isReorderingThisOrder ? 'RE-ORDERING...' : 'RE-ORDER ALL'}</span>
@@ -921,12 +908,12 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
           </div>
           <div>
             <h3 className="font-serif text-2xl text-[#111827]">
-              {searchQuery || statusFilter !== 'all' ? 'No Matching Commissions Found' : 'No Commissions on File'}
+              {searchQuery || statusFilter !== 'all' ? 'No Matching Orders Found' : 'No Orders on File'}
             </h3>
             <p className="text-xs text-gray-500 font-sans mt-1 max-w-md mx-auto leading-relaxed">
               {searchQuery || statusFilter !== 'all'
                 ? 'Try adjusting your search query or status filter to see other orders in your archive.'
-                : 'Your bespoke commissions, tailor fitting adjustments, and order receipts will be permanently recorded here.'}
+                : 'Your orders, tailor fitting adjustments, and receipts will be permanently recorded here.'}
             </p>
           </div>
           <div className="pt-2 flex justify-center gap-3">
@@ -971,7 +958,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                   Official Atelier Invoice &amp; Receipt
                 </h3>
                 <p className="text-xs font-mono text-gray-500">
-                  Commission #{selectedReceiptOrder.id} · Date: {selectedReceiptOrder.date}
+                  Order #{selectedReceiptOrder.id} · Date: {selectedReceiptOrder.date}
                 </p>
               </div>
               <button
@@ -1056,7 +1043,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                   className="px-5 py-2 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Re-Order This Commission</span>
+                  <span>Re-Order These Items</span>
                 </button>
               </div>
             </div>
@@ -1078,7 +1065,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                   Update Shipping Address
                 </h3>
                 <p className="text-xs font-mono text-gray-500">
-                  Commission #{editingOrderAddress.id} &bull; Recipient: {editingOrderAddress.customerName}
+                  Order #{editingOrderAddress.id} &bull; Recipient: {editingOrderAddress.customerName}
                 </p>
               </div>
               <button

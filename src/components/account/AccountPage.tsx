@@ -108,11 +108,25 @@ export const AccountPage: React.FC = () => {
     try {
       const profile = await AuthService.getMe();
       if (profile) {
-        setCustomerOrders(profile.orders);
-        setCustomerAlterations(profile.alterations);
+        const custEmail = (currentCustomer.email || '').trim().toLowerCase();
+        const custId = currentCustomer.id || currentCustomer.customerId;
+        const myOrders = (profile.orders || []).filter((o: any) => {
+          const email = (o.customerEmail || '').trim().toLowerCase();
+          const id = o.customerId;
+          return (custEmail && email === custEmail) || (custId && id === custId);
+        });
+        const myAlts = (profile.alterations || []).filter((a: any) => {
+          const email = (a.customerEmail || '').trim().toLowerCase();
+          const id = a.customerId;
+          return (custEmail && email === custEmail) || (custId && id === custId);
+        });
+        setCustomerOrders(myOrders);
+        setCustomerAlterations(myAlts);
       }
     } catch {
       // offline fallback
+      setCustomerOrders([]);
+      setCustomerAlterations([]);
     }
 
     // Populate info form from currentCustomer
@@ -146,24 +160,10 @@ export const AccountPage: React.FC = () => {
       if (saved) {
         setReturnRequests(JSON.parse(saved));
       } else {
-        // Seed default sample return for rich initial state
-        const initialReturns: ReturnRequest[] = [
-          {
-            id: 'RET-8941',
-            orderId: 'PA-10245',
-            itemNames: ['The Sartorial Worsted Wool Suit'],
-            actionType: 'Size / Fit Exchange',
-            reason: 'Trousers hemming calibration requested for half break.',
-            status: 'Approved - Prepaid Label Sent',
-            createdAt: new Date(Date.now() - 86400000 * 2).toLocaleDateString(),
-            trackingReturnNumber: 'FEDEX-RET-891024'
-          }
-        ];
-        setReturnRequests(initialReturns);
-        localStorage.setItem(`pa_returns_${currentCustomer.id || currentCustomer.email}`, JSON.stringify(initialReturns));
+        setReturnRequests([]);
       }
     } catch {
-      // ignore
+      setReturnRequests([]);
     }
   };
 
