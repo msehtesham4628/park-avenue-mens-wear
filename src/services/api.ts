@@ -57,32 +57,114 @@ const STORAGE_KEYS = {
 // Helper for simulated latency
 const delay = (ms = 280) => new Promise(resolve => setTimeout(resolve, ms));
 
+// In-flight request coalescing & short-term TTL response cache to eliminate request stampedes
+const inFlightRequests = new Map<string, Promise<any>>();
+const apiResponseCache = new Map<string, { data: any; expiry: number }>();
+
+export function invalidateApiCache(prefix?: string) {
+  if (!prefix) {
+    apiResponseCache.clear();
+    return;
+  }
+  for (const key of apiResponseCache.keys()) {
+    if (key.includes(prefix)) {
+      apiResponseCache.delete(key);
+    }
+  }
+}
+
 async function fetchRemote<T>(endpoint: string, options?: RequestInit): Promise<T | null> {
   const base = API_CONFIG.baseUrl || '/api';
-  try {
-    const url = `${base.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
-    const token = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.TOKEN) : null;
-    const res = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        ...(options?.headers || {})
-      }
-    });
-    if (!res.ok) {
-      console.warn(`[Park Avenue API] ${options?.method || 'GET'} ${url} returned ${res.status}`);
-      return null;
-    }
-    const json = await res.json();
-    if (json && typeof json === 'object' && 'data' in json) {
-      return json.data as T;
-    }
-    return json as T;
-  } catch (err) {
-    console.warn(`[Park Avenue API] Network call to ${endpoint} failed, falling back to local vault:`, err);
-    return null;
+  const method = (options?.method || 'GET').toUpperCase();
+  const url = `${base.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+
+  // For non-GET mutations, invalidate relevant caches and execute directly
+  if (method !== 'GET') {
+    if (endpoint.includes('product')) invalidateApiCache('product');
+    if (endpoint.includes('order')) invalidateApiCache('order');
+    if (endpoint.includes('alteration')) invalidateApiCache('alteration');
+    if (endpoint.includes('customer')) invalidateApiCache('customer');
+    if (endpoint.includes('return')) invalidateApiCache('return');
+    if (endpoint.includes('payment')) invalidateApiCache('payment');
   }
+
+  // For GET requests, check short-term cache first (15-second TTL prevents repeated concurrent stamps)
+  if (method === 'GET') {
+    const cached = apiResponseCache.get(url);
+    if (cached && cached.expiry > Date.now()) {
+      return cached.data as T;
+    }
+
+    // If an identical GET request is currently in-flight, coalesce onto it to prevent race conditions
+    if (inFlightRequests.has(url)) {
+      return inFlightRequests.get(url)! as Promise<T | null>;
+    }
+  }
+
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.TOKEN) : null;
+  const executeFetch = async (): Promise<T | null> => {
+    try {
+      const res = await fetch(url, {
+        ...options,
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(options?.headers || {})
+        }
+      });
+
+      if (!res.ok) {
+        if (res.status === 304) {
+          const prev = apiResponseCache.get(url);
+          if (prev) return prev.data as T;
+          try {
+            const rawStored = localStorage.getItem(`pa_http_cache_${url}`);
+            if (rawStored) return JSON.parse(rawStored) as T;
+          } catch (_) {}
+        }
+        console.warn(`[Park Avenue API] ${method} ${url} returned ${res.status}`);
+        return null;
+      }
+
+      const json = await res.json();
+      const extracted = (json && typeof json === 'object' && 'data' in json) ? json.data : json;
+      if (method === 'GET' && extracted !== null && extracted !== undefined) {
+        apiResponseCache.set(url, { data: extracted, expiry: Date.now() + 25000 });
+        try {
+          const str = JSON.stringify(extracted);
+          if (str.length < 300000) {
+            localStorage.setItem(`pa_http_cache_${url}`, str);
+          }
+        } catch (_) {}
+      }
+      return extracted as T;
+    } catch (err) {
+      console.warn(`[Park Avenue API] Network call to ${endpoint} failed, falling back to local vault:`, err);
+      // Secondary fallback to localStorage cache if network offline
+      if (method === 'GET') {
+        try {
+          const rawStored = localStorage.getItem(`pa_http_cache_${url}`);
+          if (rawStored) return JSON.parse(rawStored) as T;
+        } catch (_) {}
+      }
+      return null;
+    } finally {
+      if (method === 'GET') {
+        inFlightRequests.delete(url);
+      }
+    }
+  };
+
+  if (method === 'GET') {
+    const promise = executeFetch();
+    inFlightRequests.set(url, promise);
+    return promise;
+  }
+
+  return executeFetch();
 }
 
 function loadStorage<T>(key: string, fallback: T): T {
@@ -265,8 +347,11 @@ export const ProductService = {
     
     const res = await fetch(`${base.replace(/\/$/, '')}/products`, {
       method: 'POST',
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
       body: JSON.stringify(newProductData)

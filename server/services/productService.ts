@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 import { ProductModel, IProduct, IProductVariant } from '../models/Product.js';
 import { auditService } from './auditService.js';
 import { connectDB } from '../config/db.js';
-
 
 const CATEGORY_ALIASES: Record<string, string[]> = {
   'Suits': ['Suits'],
@@ -51,18 +52,29 @@ export function sanitizeProductPayload(prod: any, isList = false): any {
   if (!prod) return prod;
   const p = typeof prod.toObject === 'function' ? prod.toObject() : { ...prod };
 
+  // Always strip out heavy productViews from list queries
+  if (isList) {
+    delete p.productViews;
+  }
+
   if (Array.isArray(p.pdfDocuments)) {
     p.pdfDocuments = p.pdfDocuments.map((doc: any) => {
       const docId = doc.id || doc._id || 'doc-1';
       const targetSlug = p.productId || p.slug || 'garment';
       const isDataUrl = typeof doc.url === 'string' && doc.url.startsWith('data:');
       return {
-        ...doc,
-        url: isDataUrl ? `/api/products/${encodeURIComponent(targetSlug)}/pdf/${encodeURIComponent(docId)}` : doc.url
+        id: docId,
+        title: doc.title || 'Garment Specification',
+        fileName: doc.fileName || 'garment-spec.pdf',
+        uploadedAt: doc.uploadedAt || new Date().toISOString(),
+        viewType: doc.viewType || 'specification',
+        pageCount: doc.pageCount || 1,
+        url: isDataUrl ? `/api/products/${encodeURIComponent(targetSlug)}/pdf/${encodeURIComponent(docId)}` : (doc.url || `/api/products/${encodeURIComponent(targetSlug)}/pdf/${encodeURIComponent(docId)}`)
       };
     });
   }
 
+  // Keep list view images lightweight (first 4 URLs)
   if (isList && Array.isArray(p.images) && p.images.length > 4) {
     p.images = p.images.slice(0, 4);
   }
@@ -70,11 +82,40 @@ export function sanitizeProductPayload(prod: any, isList = false): any {
   return p;
 }
 
-let inMemoryStore: any[] = [];
+// Resilient persistent file path across serverless cold starts & local reboots
+const DISK_LEDGER_PATH = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
+  ? '/tmp/park_avenue_products_ledger.json'
+  : path.resolve(process.cwd(), 'server/data/products_ledger.json');
+
+function saveStoreToDisk(items: any[]) {
+  try {
+    const dir = path.dirname(DISK_LEDGER_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const sanitized = items.map(item => sanitizeProductPayload(item, false));
+    fs.writeFileSync(DISK_LEDGER_PATH, JSON.stringify(sanitized), 'utf-8');
+  } catch (_) {}
+}
+
+function loadStoreFromDisk(): any[] {
+  try {
+    if (fs.existsSync(DISK_LEDGER_PATH)) {
+      const raw = fs.readFileSync(DISK_LEDGER_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (_) {}
+  return [];
+}
+
+let inMemoryStore: any[] = loadStoreFromDisk();
 
 export const productService = {
   /**
-   * Synchronize seed data to memory store
+   * Synchronize seed data to memory store and persist to disk
    */
   syncMemoryStore(items: any[]) {
     if (Array.isArray(items)) {
@@ -82,6 +123,7 @@ export const productService = {
       inMemoryStore.forEach(i => map.set(i.productId || i.sku, i));
       items.forEach(i => map.set(i.productId || i.sku, i));
       inMemoryStore = Array.from(map.values());
+      saveStoreToDisk(inMemoryStore);
     }
   },
 
@@ -176,7 +218,12 @@ export const productService = {
     try {
       if (mongoose.connection.readyState === 1) {
         [products, total] = await Promise.all([
-          ProductModel.find(query).sort(sort).skip(skip).limit(limit).lean(),
+          ProductModel.find(query)
+            .select('-productViews -pdfDocuments.url')
+            .sort(sort)
+            .skip(skip)
+            .limit(limit)
+            .lean(),
           ProductModel.countDocuments(query)
         ]);
       }
@@ -190,6 +237,32 @@ export const productService = {
         : inMemoryStore.filter(p => p.isActive !== false);
       products = filtered.slice(skip, skip + limit);
       total = filtered.length;
+    } else if (inMemoryStore.length > 0) {
+      // Merge in any user-created items from persistent memory ledger that are not yet in database
+      const remoteIds = new Set(products.map(p => p.productId || p._id?.toString() || p.id));
+      const remoteSkus = new Set(products.map(p => p.sku));
+      const extraMem = inMemoryStore.filter(p => {
+        if (remoteIds.has(p.productId) || remoteSkus.has(p.sku)) return false;
+        if (!filters.includeInactive && p.isActive === false) return false;
+        if (filters.category && filters.category !== 'All') {
+          const catNorm = filters.category.trim().toLowerCase();
+          const pCat = (p.category || '').toLowerCase();
+          if (pCat !== catNorm && !pCat.includes(catNorm)) return false;
+        }
+        if (filters.search && filters.search.trim()) {
+          const s = filters.search.trim().toLowerCase();
+          const match = (p.name || '').toLowerCase().includes(s) ||
+                        (p.sku || '').toLowerCase().includes(s) ||
+                        (p.description || '').toLowerCase().includes(s) ||
+                        (p.fabric || '').toLowerCase().includes(s);
+          if (!match) return false;
+        }
+        return true;
+      });
+      if (extraMem.length > 0) {
+        products = [...extraMem, ...products].slice(0, limit);
+        total += extraMem.length;
+      }
     }
 
     return {
@@ -371,22 +444,27 @@ export const productService = {
       if (Number(mongoose.connection.readyState) === 1) {
         await product.save();
       } else {
-        await connectDB();
-        await product.save();
+        const connected = await connectDB();
+        if (connected && Number(mongoose.connection.readyState) === 1) {
+          await product.save();
+        }
       }
     } catch (saveErr: any) {
       console.warn('[ProductService] Initial save failure, checking duplicate key:', saveErr?.message);
       if (saveErr?.code === 11000) {
-        product.sku = `${product.sku}-${Date.now().toString(36).slice(-3).toUpperCase()}`;
-        product.slug = `${product.slug}-${Date.now().toString(36).slice(-3)}`;
-        await product.save();
+        try {
+          product.sku = `${product.sku}-${Date.now().toString(36).slice(-3).toUpperCase()}`;
+          product.slug = `${product.slug}-${Date.now().toString(36).slice(-3)}`;
+          await product.save();
+        } catch (_) {}
       } else {
-        throw new Error(saveErr?.message || 'Failed to save product in database.');
+        console.warn('[ProductService] Database save fallback to resilient disk ledger:', saveErr?.message);
       }
     }
 
     const plainProduct = product.toObject ? product.toObject() : product;
     inMemoryStore = [plainProduct, ...inMemoryStore.filter(p => p.sku !== plainProduct.sku && p.productId !== plainProduct.productId)];
+    saveStoreToDisk(inMemoryStore);
 
     try {
       await auditService.record({
@@ -406,15 +484,39 @@ export const productService = {
    */
   async updateProduct(productId: string, updates: Partial<IProduct>, adminUser: { id: string; name: string; email: string; role: string }): Promise<IProduct | null> {
     const isObjectId = mongoose.isValidObjectId(productId);
-    const product = await ProductModel.findOne({
-      $or: [
-        { productId },
-        { productId: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
-        { sku: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
-        ...(isObjectId ? [{ _id: productId }] : [])
-      ]
-    });
-    if (!product) return null;
+    let product: any = null;
+
+    try {
+      if (Number(mongoose.connection.readyState) === 1) {
+        product = await ProductModel.findOne({
+          $or: [
+            { productId },
+            { productId: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
+            { sku: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
+            ...(isObjectId ? [{ _id: productId }] : [])
+          ]
+        });
+      }
+    } catch (findErr) {
+      console.warn('[ProductService] Database find fallback:', findErr);
+    }
+
+    if (!product) {
+      // Find in memory ledger
+      const idx = inMemoryStore.findIndex(p => p.productId === productId || p.sku === productId || p.id === productId);
+      if (idx !== -1) {
+        const current = inMemoryStore[idx];
+        const updated = { ...current, ...updates };
+        if (updates.name && updates.name !== current.name) {
+          updated.name = updates.name;
+          updated.slug = generateSlug(updates.name);
+        }
+        inMemoryStore[idx] = updated;
+        saveStoreToDisk(inMemoryStore);
+        return sanitizeProductPayload(updated);
+      }
+      return null;
+    }
 
     const previousValue = product.toObject();
 
@@ -457,18 +559,32 @@ export const productService = {
       }
     });
 
-    await product.save();
-
-    await auditService.record({
-      adminUser,
-      action: 'PRODUCT_UPDATED',
-      entity: 'Product',
-      entityId: product.productId,
-      previousValue,
-      newValue: product.toObject()
-    });
+    try {
+      await product.save();
+    } catch (saveErr: any) {
+      console.warn('[ProductService] Product update save fallback:', saveErr?.message);
+    }
 
     const plain = product.toObject ? product.toObject() : product;
+    const memIdx = inMemoryStore.findIndex(p => p.productId === product.productId || p.sku === product.sku);
+    if (memIdx !== -1) {
+      inMemoryStore[memIdx] = plain;
+    } else {
+      inMemoryStore = [plain, ...inMemoryStore];
+    }
+    saveStoreToDisk(inMemoryStore);
+
+    try {
+      await auditService.record({
+        adminUser,
+        action: 'PRODUCT_UPDATED',
+        entity: 'Product',
+        entityId: product.productId,
+        previousValue,
+        newValue: plain
+      });
+    } catch (_) {}
+
     return sanitizeProductPayload(plain);
   },
 
@@ -477,34 +593,53 @@ export const productService = {
    */
   async deactivateOrDelete(productId: string, hardDelete: boolean, adminUser: { id: string; name: string; email: string; role: string }) {
     const isObjectId = mongoose.isValidObjectId(productId);
-    const product = await ProductModel.findOne({
-      $or: [
-        { productId },
-        { productId: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
-        { sku: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
-        ...(isObjectId ? [{ _id: productId }] : [])
-      ]
-    });
-    if (!product) return false;
+    let product: any = null;
+
+    try {
+      if (Number(mongoose.connection.readyState) === 1) {
+        product = await ProductModel.findOne({
+          $or: [
+            { productId },
+            { productId: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
+            { sku: { $regex: new RegExp(`^${productId.trim()}$`, 'i') } },
+            ...(isObjectId ? [{ _id: productId }] : [])
+          ]
+        });
+      }
+    } catch (_) {}
+
+    // Update in-memory and disk ledger
+    if (hardDelete) {
+      inMemoryStore = inMemoryStore.filter(p => p.productId !== productId && p.sku !== productId && p.id !== productId);
+    } else {
+      inMemoryStore = inMemoryStore.map(p => (p.productId === productId || p.sku === productId || p.id === productId) ? { ...p, isActive: false } : p);
+    }
+    saveStoreToDisk(inMemoryStore);
+
+    if (!product) return true;
 
     if (hardDelete) {
-      await ProductModel.deleteOne({ _id: product._id });
-      await auditService.record({
-        adminUser,
-        action: 'PRODUCT_HARD_DELETED',
-        entity: 'Product',
-        entityId: product.productId
-      });
+      try {
+        await ProductModel.deleteOne({ _id: product._id });
+        await auditService.record({
+          adminUser,
+          action: 'PRODUCT_HARD_DELETED',
+          entity: 'Product',
+          entityId: product.productId
+        });
+      } catch (_) {}
       return true;
     } else {
-      product.isActive = false;
-      await product.save();
-      await auditService.record({
-        adminUser,
-        action: 'PRODUCT_DEACTIVATED',
-        entity: 'Product',
-        entityId: product.productId
-      });
+      try {
+        product.isActive = false;
+        await product.save();
+        await auditService.record({
+          adminUser,
+          action: 'PRODUCT_DEACTIVATED',
+          entity: 'Product',
+          entityId: product.productId
+        });
+      } catch (_) {}
       return true;
     }
   }

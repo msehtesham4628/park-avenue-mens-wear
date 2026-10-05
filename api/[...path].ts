@@ -5,11 +5,27 @@ import { connectDB } from '../server/config/db.js';
 import { seedInitialData } from '../server/config/seed.js';
 import { errorHandler } from '../server/middleware/errorHandler.js';
 
+// Suppress DEP0169 legacy url.parse deprecation warning emitted by Express 4 internal dependencies on Node 22
+const originalEmitWarning = process.emitWarning;
+process.emitWarning = (warning: any, ...args: any[]) => {
+  if (typeof warning === 'string' && warning.includes('DEP0169')) return;
+  if (warning && typeof warning === 'object' && warning.code === 'DEP0169') return;
+  return (originalEmitWarning as any).call(process, warning, ...args);
+};
+
 const app = express();
 
+app.set('etag', false);
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+app.use((_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
 
 app.use('/api', apiRouter);
 app.use('/', apiRouter);

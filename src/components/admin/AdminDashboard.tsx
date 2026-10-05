@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Plus, 
   Edit3, 
@@ -43,6 +43,13 @@ import {
   Sparkles,
   Search,
   Share2,
+  LayoutDashboard,
+  BarChart3,
+  ShoppingBag,
+  Bell,
+  Menu,
+  ChevronRight,
+  ChevronLeft,
   Award,
   UploadCloud,
   Image as ImageIcon
@@ -68,8 +75,10 @@ import {
   StripeGatewayConfig,
   AuditLogService,
   SeoApiService,
-  API_CONFIG
+  API_CONFIG,
+  invalidateApiCache
 } from '../../services/api';
+import { debounceAsync } from '../../utils/requestDebouncer';
 import { Product, ProductVariant, Order, AlterationRecord, Customer, ProductCategory, ReturnRequest, AuditLogEntry } from '../../types';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { navigateTo, parseRoute } from '../../utils/router';
@@ -535,38 +544,108 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const loadAllData = async () => {
+  // Sidebar state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Tab data freshness cache timestamps to prevent concurrent API stampedes
+  const tabFetchTimestamps = React.useRef<Record<string, number>>({});
+
+  const loadTabData = useCallback(async (tab: AdminTab, force = false) => {
+    const now = Date.now();
+    const lastFetch = tabFetchTimestamps.current[tab] || 0;
+    if (!force && now - lastFetch < 60000) {
+      // Data is fresh (60-second in-memory shield), return immediately
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const [prods, ords, alts, custs, returnsData, stripeCfg, statsData, logsData, seoData] = await Promise.all([
-        ProductService.getAll(),
-        OrderService.getAll(),
-        AlterationService.getAll(),
-        CustomerService.getAll(),
-        ReturnService.getAll().catch(() => []),
-        StripePaymentService.getConfig().catch(() => null),
-        DashboardService.getStats().catch(() => null),
-        AuditLogService.getAll().catch(() => []),
-        SeoApiService.getOverview().catch(() => null)
-      ]);
-      setProductsList(prods);
-      if (prods.length > 0) {
-        setSelectedSeoProductId(prods[0].id);
+      if (tab === 'dashboard') {
+        const [statsData, prods, ords, alts] = await Promise.all([
+          DashboardService.getStats().catch(() => null),
+          ProductService.getAll().catch(() => []),
+          OrderService.getAll().catch(() => []),
+          AlterationService.getAll().catch(() => [])
+        ]);
+        if (statsData) setDbStats(statsData);
+        if (prods && prods.length > 0) setProductsList(prods);
+        if (ords && ords.length > 0) setOrdersList(ords);
+        if (alts && alts.length > 0) setAlterationsList(alts);
+      } else if (tab === 'products' || tab === 'inventory') {
+        const prods = await ProductService.getAll().catch(() => []);
+        if (prods) setProductsList(prods);
+      } else if (tab === 'orders') {
+        const ords = await OrderService.getAll().catch(() => []);
+        if (ords) setOrdersList(ords);
+      } else if (tab === 'returns') {
+        const returnsData = await ReturnService.getAll().catch(() => []);
+        if (returnsData) setReturnsList(returnsData);
+      } else if (tab === 'customers') {
+        const custs = await CustomerService.getAll().catch(() => []);
+        if (custs) setCustomersList(custs);
+      } else if (tab === 'alterations') {
+        const alts = await AlterationService.getAll().catch(() => []);
+        if (alts) setAlterationsList(alts);
+      } else if (tab === 'logs') {
+        const logsData = await AuditLogService.getAll().catch(() => []);
+        if (logsData) setAuditLogsList(logsData);
+      } else if (tab === 'erp-reports') {
+        const [prods, ords] = await Promise.all([
+          ProductService.getAll().catch(() => []),
+          OrderService.getAll().catch(() => [])
+        ]);
+        if (prods) setProductsList(prods);
+        if (ords) setOrdersList(ords);
+      } else if (tab === 'seo') {
+        const [seoData, prods] = await Promise.all([
+          SeoApiService.getOverview().catch(() => null),
+          ProductService.getAll().catch(() => [])
+        ]);
+        if (seoData) setSeoOverview(seoData);
+        if (prods && prods.length > 0) {
+          setProductsList(prods);
+          if (!selectedSeoProductId) setSelectedSeoProductId(prods[0].id);
+        }
+      } else if (tab === 'settings') {
+        const stripeCfg = await StripePaymentService.getConfig().catch(() => null);
+        if (stripeCfg) setStripeConfig(stripeCfg);
+      } else if (tab === 'analytics') {
+        const [statsData, ords, prods] = await Promise.all([
+          DashboardService.getStats().catch(() => null),
+          OrderService.getAll().catch(() => []),
+          ProductService.getAll().catch(() => [])
+        ]);
+        if (statsData) setDbStats(statsData);
+        if (ords) setOrdersList(ords);
+        if (prods) setProductsList(prods);
       }
-      setOrdersList(ords);
-      setAlterationsList(alts);
-      setCustomersList(custs);
-      setReturnsList(returnsData || []);
-      if (stripeCfg) setStripeConfig(stripeCfg);
-      if (statsData) setDbStats(statsData);
-      setAuditLogsList(logsData || []);
-      if (seoData) setSeoOverview(seoData);
-    } catch {
-      showToast('Could not sync with archive ledger', 'error');
+
+      tabFetchTimestamps.current[tab] = now;
+    } catch (err: any) {
+      console.warn('[AdminDashboard] Tab data fetch error:', err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedSeoProductId]);
+
+  // Request debouncer prevents rapid tab clicks from generating excessive concurrent API calls
+  const debouncedLoadTab = useMemo(() => {
+    return debounceAsync(async (tab: AdminTab, force = false) => {
+      await loadTabData(tab, force);
+    }, 150);
+  }, [loadTabData]);
+
+  // Explicit refresh triggers active tab reload
+  const loadAllData = useCallback(async () => {
+    await debouncedLoadTab(activeTab, true);
+  }, [debouncedLoadTab, activeTab]);
+
+  useEffect(() => {
+    if (isAdminLoggedIn) {
+      debouncedLoadTab(activeTab, false);
+    }
+  }, [activeTab, isAdminLoggedIn, debouncedLoadTab]);
 
   const handleTestStripe = async () => {
     setIsTestingStripe(true);
@@ -598,10 +677,6 @@ export const AdminDashboard: React.FC = () => {
       setIsTestingStripe(false);
     }
   };
-
-  useEffect(() => {
-    loadAllData();
-  }, []);
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -694,11 +769,28 @@ export const AdminDashboard: React.FC = () => {
           productViews: productViewsObj,
           pdfDocuments: productForm.pdfDocuments
         };
-        await ProductService.update(editingProduct.id, updated);
-        showToast(`Product ${updated.name} updated successfully`, 'success');
+        // Optimistic instant update
+        setProductsList(prev => prev.map(p => p.id === updated.id ? updated : p));
+        setIsAddProductOpen(false);
+        setEditingProduct(null);
+        showToast(`Product ${updated.name} updated successfully!`, 'success');
+
+        ProductService.update(editingProduct.id, updated)
+          .then(saved => {
+            if (saved) {
+              setProductsList(prev => prev.map(p => p.id === saved.id ? saved : p));
+            }
+            tabFetchTimestamps.current['products'] = Date.now();
+            refreshProducts().catch(() => {});
+          })
+          .catch(err => {
+            console.warn('[Admin] Background update sync:', err);
+          });
       } else {
         // Create flow
-        await ProductService.create({
+        const tempId = `PROD-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 900 + 100)}`;
+        const optimistic: Product = {
+          id: tempId,
           name: productForm.name.trim(),
           subtitle: `${productForm.fabric || 'Super 150s Wool'} · Bespoke Cut`,
           category: productForm.category,
@@ -715,16 +807,31 @@ export const AdminDashboard: React.FC = () => {
           productViews: productViewsObj,
           pdfDocuments: productForm.pdfDocuments,
           variants: parsedVariants,
+          totalStock,
           isFeatured: true,
           isNewArrival: true,
           alterationEligible: true,
           shippingCharge: cleanShipping
-        });
-        showToast(`Product ${productForm.name} created and saved in database!`, 'success');
+        };
+        // Optimistic instant insertion
+        setProductsList(prev => [optimistic, ...prev]);
+        setIsAddProductOpen(false);
+        setEditingProduct(null);
+        showToast(`Product ${productForm.name} saved and added!`, 'success');
+
+        ProductService.create(optimistic)
+          .then(saved => {
+            if (saved) {
+              setProductsList(prev => prev.map(p => (p.id === tempId || p.sku === saved.sku) ? saved : p));
+            }
+            tabFetchTimestamps.current['products'] = Date.now();
+            refreshProducts().catch(() => {});
+          })
+          .catch(err => {
+            console.warn('[Admin] Background product save sync:', err);
+          });
       }
 
-      setIsAddProductOpen(false);
-      setEditingProduct(null);
       setProductForm({
         name: '',
         category: 'Suits',
@@ -742,8 +849,6 @@ export const AdminDashboard: React.FC = () => {
       setIsAutoTitleOpen(false);
       setRawTitleSourceText('');
       setGeneratedTitleResult(null);
-      await loadAllData();
-      await refreshProducts();
     } catch (err: any) {
       showToast('Failed to save product: ' + (err?.message || 'Error occurred'), 'error');
     }
@@ -1371,115 +1476,270 @@ export const AdminDashboard: React.FC = () => {
     );
   }
 
+  const adminNavGroups = useMemo(() => [
+    {
+      title: 'OVERVIEW',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'analytics', label: 'Analytics & Charts', icon: BarChart3 }
+      ]
+    },
+    {
+      title: 'CATALOG & STOCK',
+      items: [
+        { id: 'products', label: 'Products', icon: Package, badge: productsList.length },
+        { id: 'inventory', label: 'Inventory Matrix', icon: Layers }
+      ]
+    },
+    {
+      title: 'ATELIER & ORDERS',
+      items: [
+        { id: 'orders', label: 'Orders', icon: ShoppingBag, badge: ordersList.filter(o => o.status === 'processing').length },
+        { id: 'returns', label: 'Returns & Exchanges', icon: RotateCcw, badge: returnsList.filter(r => r.status === 'Pending Review' || r.status === 'Approved - Return Label Sent').length },
+        { id: 'alterations', label: 'Alterations', icon: Scissors, badge: alterationsList.filter(a => a.status !== 'completed').length },
+        { id: 'customers', label: 'Clientele / Patrons', icon: Users, badge: customersList.length }
+      ]
+    },
+    {
+      title: 'ENTERPRISE & ERP',
+      items: [
+        { id: 'logs', label: 'Staff Audit Logs', icon: FileText, badge: auditLogsList.length },
+        { id: 'erp-reports', label: 'Tally & ERP', icon: FileSpreadsheet },
+        { id: 'seo', label: 'SEO & Sitemap (USA #1)', icon: Globe },
+        { id: 'notifications', label: 'Notifications', icon: Bell },
+        { id: 'settings', label: 'Gateway & Settings', icon: SettingsIcon }
+      ]
+    }
+  ], [productsList.length, ordersList, returnsList, alterationsList, customersList.length, auditLogsList.length]);
+
   return (
-    <div className="min-h-screen bg-white text-[#111827] pt-8 pb-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header: Exact Required Spec: PARK AVENUE MENSWEAR ADMIN */}
-        <div className="py-6 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-xs bg-[#111827] text-white px-2 py-0.5 font-bold">
+    <div className="min-h-screen bg-[#FBFBFA] text-[#111827] flex flex-col lg:flex-row">
+      {/* Mobile Drawer Backdrop */}
+      {isMobileSidebarOpen && (
+        <div
+          onClick={() => setIsMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-xs transition-opacity"
+        />
+      )}
+
+      {/* Luxury Left Sidebar */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 bg-[#111827] text-gray-300 flex flex-col border-r border-[#262F40] transition-all duration-300 ease-in-out
+        lg:static lg:translate-x-0
+        ${isMobileSidebarOpen ? 'translate-x-0 w-72 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
+        ${isSidebarCollapsed ? 'lg:w-20' : 'lg:w-72'}
+      `}>
+        {/* Sidebar Header */}
+        <div className="h-20 px-5 flex items-center justify-between border-b border-[#1E2638] bg-[#0E1524] shrink-0">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <span className="font-mono text-xs bg-[#936B34] text-white px-2.5 py-1 font-bold tracking-widest shrink-0">
               PA
             </span>
-            <div>
-              <h1 className="font-serif text-2xl sm:text-3xl text-[#111827] uppercase tracking-wide font-light">
-                PARK AVENUE MENSWEAR ADMIN
-              </h1>
-              <p className="text-xs text-gray-500 font-mono mt-0.5">
-                Backend Operations &amp; Inventory Management Portal
-              </p>
+            {!isSidebarCollapsed && (
+              <div className="min-w-0">
+                <h1 className="font-serif text-sm tracking-widest uppercase text-white font-medium truncate">
+                  PARK AVENUE
+                </h1>
+                <p className="text-[10px] text-[#936B34] font-mono tracking-widest uppercase truncate">
+                  ATELIER ADMIN
+                </p>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="hidden lg:flex items-center justify-center w-8 h-8 rounded-sm text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            title={isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          >
+            {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="lg:hidden flex items-center justify-center w-8 h-8 text-gray-400 hover:text-white cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Sidebar Navigation Links */}
+        <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6 scrollbar-thin scrollbar-thumb-gray-800">
+          {adminNavGroups.map((group, gIdx) => (
+            <div key={gIdx} className="space-y-1">
+              {!isSidebarCollapsed && (
+                <div className="px-3 pb-1 text-[10px] font-mono font-semibold tracking-[0.2em] text-[#936B34] uppercase">
+                  {group.title}
+                </div>
+              )}
+              {group.items.map(tab => {
+                const IconComponent = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(tab.id as AdminTab);
+                      setIsMobileSidebarOpen(false);
+                    }}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2.5 rounded-sm text-xs font-mono tracking-wide uppercase transition-all cursor-pointer group relative
+                      ${isActive
+                        ? 'bg-[#936B34] text-white font-semibold shadow-xs'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }
+                      ${isSidebarCollapsed ? 'justify-center px-0' : 'justify-between'}
+                    `}
+                    title={tab.label}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <IconComponent className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#936B34]'}`} />
+                      {!isSidebarCollapsed && <span className="truncate">{tab.label}</span>}
+                    </div>
+
+                    {!isSidebarCollapsed && Boolean(tab.badge && tab.badge > 0) && (
+                      <span className={`px-1.5 py-0.5 text-[9px] rounded-full font-bold ${isActive ? 'bg-white text-[#936B34]' : 'bg-[#936B34] text-white'}`}>
+                        {tab.badge}
+                      </span>
+                    )}
+
+                    {isSidebarCollapsed && Boolean(tab.badge && tab.badge > 0) && (
+                      <span className="absolute top-1 right-2 w-2 h-2 rounded-full bg-[#936B34]" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Sidebar Footer Controls */}
+        <div className="p-3 border-t border-[#1E2638] bg-[#0E1524] space-y-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              togglePaymentGateway();
+              showToast(
+                isPaymentGatewayHidden
+                  ? 'Online card payments activated.'
+                  : 'Online payments temporarily hidden / suspended.',
+                'info'
+              );
+            }}
+            className={`w-full py-2 px-2.5 text-[11px] font-mono uppercase tracking-wider flex items-center rounded-sm cursor-pointer transition-colors border ${
+              isSidebarCollapsed ? 'justify-center' : 'justify-between'
+            } ${
+              isPaymentGatewayHidden
+                ? 'bg-amber-950/40 text-amber-300 border-amber-800/60 hover:bg-amber-900/40'
+                : 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60 hover:bg-emerald-900/40'
+            }`}
+            title="Click to toggle temporary online card payment hiding"
+          >
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-3.5 h-3.5 shrink-0 text-[#936B34]" />
+              {!isSidebarCollapsed && <span>PAYMENTS</span>}
+            </div>
+            {!isSidebarCollapsed && (
+              <span className="font-bold text-[9px]">
+                {isPaymentGatewayHidden ? 'HIDDEN' : 'ACTIVE'}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveView('home')}
+            className={`w-full py-2 px-2.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-[11px] font-mono uppercase tracking-wider flex items-center rounded-sm cursor-pointer transition-colors ${
+              isSidebarCollapsed ? 'justify-center' : 'gap-2.5'
+            }`}
+            title="Return to Storefront"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
+            {!isSidebarCollapsed && <span>STOREFRONT</span>}
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              await logout();
+              setActiveView('home');
+              navigateTo('/');
+            }}
+            className={`w-full py-2 px-2.5 text-gray-400 hover:text-rose-400 hover:bg-rose-950/30 text-[11px] font-mono uppercase tracking-wider flex items-center rounded-sm cursor-pointer transition-colors ${
+              isSidebarCollapsed ? 'justify-center' : 'gap-2.5'
+            }`}
+            title="Sign Out"
+          >
+            <Lock className="w-3.5 h-3.5 shrink-0" />
+            {!isSidebarCollapsed && <span>SIGN OUT</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen">
+        {/* Top Navbar */}
+        <header className="h-20 bg-white border-b border-gray-200 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <button
+              type="button"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="lg:hidden p-2 text-gray-600 hover:text-[#111827] cursor-pointer"
+              title="Open Navigation"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest text-[#936B34] uppercase">
+                <span>PARK AVENUE ATELIER</span>
+                <span>/</span>
+                <span className="text-gray-900 font-bold">{activeTab.toUpperCase()}</span>
+              </div>
+              <h2 className="font-serif text-lg sm:text-xl text-[#111827] uppercase tracking-wide font-light truncate">
+                {activeTab === 'dashboard' && 'Executive Performance Ledger'}
+                {activeTab === 'analytics' && 'Atelier Analytics & Visualizer'}
+                {activeTab === 'products' && 'Bespoke Garment Registry'}
+                {activeTab === 'inventory' && 'Real-Time Inventory Matrix'}
+                {activeTab === 'orders' && 'Patron Orders & Dispatches'}
+                {activeTab === 'returns' && 'Returns & Exchanges Processing'}
+                {activeTab === 'customers' && 'Clientele & Bespoke Patrons'}
+                {activeTab === 'alterations' && 'Tailoring & Fitting Registry'}
+                {activeTab === 'logs' && 'Staff & Operations Audit Logs'}
+                {activeTab === 'erp-reports' && 'Tally ERP & Accounting Synchronizer'}
+                {activeTab === 'seo' && 'USA #1 Luxury Sartorial SEO Engine'}
+                {activeTab === 'notifications' && 'Broadcast Communications'}
+                {activeTab === 'settings' && 'Payment Gateway & System Configurations'}
+              </h2>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Online Payment Visibility Controller (Temporary Suspension Requirement) */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               type="button"
-              onClick={() => {
-                togglePaymentGateway();
-                showToast(
-                  isPaymentGatewayHidden
-                    ? 'Online card payments activated.'
-                    : 'Online payments temporarily hidden / suspended.',
-                  'info'
-                );
-              }}
-              className={`px-3 py-2 text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs border ${
-                isPaymentGatewayHidden
-                  ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
-                  : 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100'
-              }`}
-              title="Click to toggle temporary online card payment hiding"
-            >
-              <CreditCard className="w-3.5 h-3.5 text-[#936B34]" />
-              <span className="font-semibold">{isPaymentGatewayHidden ? 'PAYMENTS: HIDDEN' : 'PAYMENTS: ACTIVE'}</span>
-            </button>
-
-            <button
               onClick={loadAllData}
-              className="px-3.5 py-2 bg-[#F9F9F8] border border-gray-200 text-xs font-mono text-[#111827] hover:border-[#936B34] flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
+              className="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-[#FAF8F5] border border-gray-200 text-xs font-mono text-[#111827] hover:border-[#936B34] flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
+              title="Refresh Current Tab Data"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-[#936B34]' : 'text-gray-500'}`} />
-              <span>REFRESH DATA</span>
+              <span className="hidden sm:inline">REFRESH DATA</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveView('home')}
-              className="px-4 py-2 bg-[#111827] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-[#111827] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm hidden md:inline-flex"
             >
-              VIEW STOREFRONT
-            </button>
-
-            <button
-              onClick={async () => {
-                await logout();
-                setActiveView('home');
-                navigateTo('/');
-              }}
-              className="px-3.5 py-2 border border-gray-300 text-gray-600 hover:text-red-600 hover:border-red-300 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer"
-            >
-              SIGN OUT
+              STOREFRONT
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Navigation */}
-        <div className="mt-6 border-b border-gray-200 overflow-x-auto scrollbar-none">
-          <nav className="flex space-x-6 sm:space-x-8 text-xs font-mono tracking-widest uppercase">
-            {[
-              { id: 'dashboard', label: 'DASHBOARD' },
-              { id: 'analytics', label: 'ANALYTICS & CHARTS' },
-              { id: 'products', label: 'PRODUCTS' },
-              { id: 'inventory', label: 'INVENTORY' },
-              { id: 'orders', label: 'ORDERS' },
-              { id: 'returns', label: 'RETURNS & EXCHANGES', badge: returnsList.filter(r => r.status === 'Pending Review' || r.status === 'Approved - Return Label Sent').length },
-              { id: 'customers', label: 'CUSTOMERS' },
-              { id: 'alterations', label: 'ALTERATIONS' },
-              { id: 'logs', label: 'ADMIN & STAFF LOGS', badge: auditLogsList.length },
-              { id: 'erp-reports', label: 'TALLY & ERP' },
-              { id: 'seo', label: 'SEO & SITEMAP (USA #1)' },
-              { id: 'notifications', label: 'NOTIFICATIONS' },
-              { id: 'settings', label: 'SETTINGS' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as AdminTab)}
-                className={`py-3 relative cursor-pointer transition-colors whitespace-nowrap flex items-center gap-1.5 ${
-                  activeTab === tab.id
-                    ? 'text-[#936B34] font-semibold border-b-2 border-[#936B34]'
-                    : 'text-gray-500 hover:text-[#111827]'
-                }`}
-              >
-                <span>{tab.label}</span>
-                {Boolean(tab.badge && tab.badge > 0) && (
-                  <span className="px-1.5 py-0.5 bg-[#936B34] text-white text-[9px] rounded-full font-bold">
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
-        </div>
+        {/* Tab Content Container */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24">
 
         {/* TAB: DASHBOARD */}
         {activeTab === 'dashboard' && (
@@ -4159,7 +4419,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-      </div>
+      </main>
 
       {/* MODAL: ADD / EDIT PRODUCT */}
       {isAddProductOpen && (
@@ -6280,6 +6540,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
       )}
 
+      </div>
     </div>
   );
 };

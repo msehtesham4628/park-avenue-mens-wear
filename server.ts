@@ -13,6 +13,14 @@ import { seoService } from './server/services/seoService.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Suppress DEP0169 legacy url.parse deprecation warning emitted by Express 4 internal dependencies on Node 22
+const originalEmitWarning = process.emitWarning;
+process.emitWarning = (warning: any, ...args: any[]) => {
+  if (typeof warning === 'string' && warning.includes('DEP0169')) return;
+  if (warning && typeof warning === 'object' && warning.code === 'DEP0169') return;
+  return (originalEmitWarning as any).call(process, warning, ...args);
+};
+
 async function bootstrapServer() {
   const app = express();
 
@@ -24,6 +32,17 @@ async function bootstrapServer() {
     },
     credentials: true
   }));
+
+  // Disable ETag to prevent unwanted 304 Not Modified responses on dynamic API routes
+  app.set('etag', false);
+
+  // Prevent caching for all dynamic API routes
+  app.use('/api', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+  });
 
   // Secure headers
   app.use((_req, res, next) => {
