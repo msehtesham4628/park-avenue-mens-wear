@@ -4,6 +4,7 @@ import apiRouter from '../server/routes/index.js';
 import { connectDB } from '../server/config/db.js';
 import { seedInitialData } from '../server/config/seed.js';
 import { errorHandler } from '../server/middleware/errorHandler.js';
+import { seoService } from '../server/services/seoService.js';
 
 // Suppress DEP0169 legacy url.parse deprecation warning emitted by Express 4 internal dependencies on Node 22
 const originalEmitWarning = process.emitWarning;
@@ -28,6 +29,50 @@ app.use((_req, res, next) => {
 });
 
 app.use('/api', apiRouter);
+
+app.get(['/sitemap.xml', '/sitemap_index.xml'], async (_req, res) => {
+  try {
+    const xml = await seoService.generateMainSitemapIndexXml();
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+    return res.status(200).send(xml);
+  } catch (_) {
+    return res.status(500).type('application/xml').send('<error>Sitemap generation failed</error>');
+  }
+});
+
+app.get('/sitemap_pages.xml', async (_req, res) => {
+  try {
+    const xml = await seoService.generatePagesSitemapXml();
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+    return res.status(200).send(xml);
+  } catch (_) {
+    return res.status(500).type('application/xml').send('<error>Sitemap generation failed</error>');
+  }
+});
+
+app.get('/sitemap_products_:chunk.xml', async (req, res) => {
+  try {
+    const chunk = Number.parseInt(req.params.chunk, 10);
+    if (!Number.isInteger(chunk) || chunk < 1) {
+      return res.status(400).type('application/xml').send('<error>Invalid sitemap chunk</error>');
+    }
+    const xml = await seoService.generateProductSitemapXml(chunk);
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+    return res.status(200).send(xml);
+  } catch (_) {
+    return res.status(500).type('application/xml').send('<error>Sitemap generation failed</error>');
+  }
+});
+
+app.get('/robots.txt', (_req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  return res.status(200).send(seoService.generateRobotsTxt());
+});
+
 app.use('/', apiRouter);
 app.use('/api', errorHandler);
 app.use(errorHandler);
