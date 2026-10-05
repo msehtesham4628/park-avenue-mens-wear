@@ -162,9 +162,9 @@ export async function whitenImageFromUrlOrDataUrl(urlOrData: string): Promise<st
  */
 export async function compressImageFile(
   fileOrDataUrl: File | string,
-  maxWidth = 1200,
-  maxHeight = 1600,
-  quality = 0.84
+  maxWidth = 960,
+  maxHeight = 1280,
+  quality = 0.76
 ): Promise<string> {
   return new Promise((resolve) => {
     const processImg = (src: string) => {
@@ -231,7 +231,7 @@ export async function renderPdfPageToDataUrl(pdfData: ArrayBuffer | Uint8Array, 
 
     const page = await pdfDoc.getPage(pageNum);
     const unscaled = page.getViewport({ scale: 1.0 });
-    const targetScale = Math.min(1.5, Math.min(1200 / (unscaled.width || 600), 1600 / (unscaled.height || 800)));
+    const targetScale = Math.min(1.2, Math.min(960 / (unscaled.width || 600), 1280 / (unscaled.height || 800)));
     const viewport = page.getViewport({ scale: Math.max(0.8, targetScale) });
 
     const canvas = document.createElement('canvas');
@@ -248,7 +248,7 @@ export async function renderPdfPageToDataUrl(pdfData: ArrayBuffer | Uint8Array, 
       viewport
     }).promise;
 
-    return canvas.toDataURL('image/jpeg', 0.84);
+    return canvas.toDataURL('image/jpeg', 0.76);
   } catch (err) {
     console.warn('[PDF Processor] Page render error, using luxury canvas fallback:', err);
     return createPdfFallbackCanvas(fallbackName, pageNum, viewLabel);

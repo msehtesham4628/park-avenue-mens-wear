@@ -260,52 +260,32 @@ export const ProductService = {
   },
 
   async create(newProductData: Omit<Product, 'id' | 'totalStock'>): Promise<Product> {
-    const generatedId = `prod-${Date.now().toString(36)}-${Math.floor(Math.random() * 900 + 100)}`;
-    const totalStock = (newProductData.variants || []).reduce((acc, v) => acc + (v.stock || 0), 0);
-    const localProduct: Product = {
-      ...newProductData,
-      id: generatedId,
-      totalStock
-    };
+    const base = API_CONFIG.baseUrl || '/api';
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.TOKEN) : null;
+    
+    const res = await fetch(`${base.replace(/\/$/, '')}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(newProductData)
+    });
 
-    // Immediately persist in IndexedDB vault so it can never disappear on page refresh
-    await storageVault.saveProduct(localProduct);
-    productsCache = [localProduct, ...productsCache.filter(p => p.sku !== localProduct.sku && p.id !== localProduct.id)];
-
-    let remote: any = null;
-    try {
-      const base = API_CONFIG.baseUrl || '/api';
-      const token = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.TOKEN) : null;
-      const res = await fetch(`${base.replace(/\/$/, '')}/products`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(newProductData)
-      });
-      if (res.ok) {
-        const json = await res.json();
-        remote = json?.data || json;
-      } else {
-        const errJson = await res.json().catch(() => null);
-        console.warn('[ProductService.create] Remote POST failed:', errJson?.message || `HTTP ${res.status}`);
-      }
-    } catch (netErr) {
-      console.warn('[ProductService.create] Network call failed, safely preserved in persistent vault:', netErr);
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      const msg = errJson?.message || `Failed to save product in database (HTTP ${res.status})`;
+      console.error('[ProductService.create] Database save failure:', msg);
+      throw new Error(msg);
     }
 
-    if (remote) {
-      const mapped = mapBackendProductToFrontend(remote);
-      await storageVault.saveProduct(mapped);
-      if (mapped.id !== localProduct.id) {
-        await storageVault.deleteProduct(localProduct.id);
-      }
-      productsCache = [mapped, ...productsCache.filter(p => p.id !== mapped.id && p.id !== localProduct.id && p.sku !== mapped.sku)];
-      return mapped;
-    }
-
-    return localProduct;
+    const json = await res.json();
+    const remote = json?.data || json;
+    const mapped = mapBackendProductToFrontend(remote);
+    
+    await storageVault.saveProduct(mapped);
+    productsCache = [mapped, ...productsCache.filter(p => p.id !== mapped.id && p.sku !== mapped.sku)];
+    return mapped;
   },
 
   async batchCreate(products: Omit<Product, 'id' | 'totalStock'>[]): Promise<Product[]> {

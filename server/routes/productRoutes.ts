@@ -4,6 +4,11 @@ import { requireAdminOrStaff, requireAdmin, authenticateAdminOrStaffOrFallback }
 
 const router = Router();
 
+// Streaming & public endpoints (specific subpaths must precede generic :slug)
+router.get('/pdf/:pdfId', productController.getProductPdf);
+router.get('/:slug/pdf/:pdfId', productController.getProductPdf);
+router.get('/admin/:slug', productController.getProductBySlug);
+
 // Storefront public endpoints
 router.get('/', productController.getProducts);
 router.get('/:slug', productController.getProductBySlug);

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { ProductModel, IProduct, IProductVariant } from '../models/Product.js';
 import { auditService } from './auditService.js';
+import { connectDB } from '../config/db.js';
 
 
 const CATEGORY_ALIASES: Record<string, string[]> = {
@@ -39,6 +40,34 @@ export function generateSlug(name: string): string {
     .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Strips huge embedded base64 data from product responses and converts
+ * PDF documents into lightweight streaming URLs to keep JSON responses
+ * well within serverless function payload limits (preventing 413 errors).
+ */
+export function sanitizeProductPayload(prod: any, isList = false): any {
+  if (!prod) return prod;
+  const p = typeof prod.toObject === 'function' ? prod.toObject() : { ...prod };
+
+  if (Array.isArray(p.pdfDocuments)) {
+    p.pdfDocuments = p.pdfDocuments.map((doc: any) => {
+      const docId = doc.id || doc._id || 'doc-1';
+      const targetSlug = p.productId || p.slug || 'garment';
+      const isDataUrl = typeof doc.url === 'string' && doc.url.startsWith('data:');
+      return {
+        ...doc,
+        url: isDataUrl ? `/api/products/${encodeURIComponent(targetSlug)}/pdf/${encodeURIComponent(docId)}` : doc.url
+      };
+    });
+  }
+
+  if (isList && Array.isArray(p.images) && p.images.length > 4) {
+    p.images = p.images.slice(0, 4);
+  }
+
+  return p;
 }
 
 let inMemoryStore: any[] = [];
@@ -164,7 +193,7 @@ export const productService = {
     }
 
     return {
-      products,
+      products: products.map(p => sanitizeProductPayload(p, true)),
       pagination: {
         page,
         limit,
@@ -175,9 +204,9 @@ export const productService = {
   },
 
   /**
-   * Get single product by Slug or ID (robust case-insensitive and ObjectId lookup)
+   * Retrieve raw product document with full base64 data for binary streaming
    */
-  async getProductBySlugOrId(identifier: string): Promise<IProduct | null> {
+  async getProductRawBySlugOrId(identifier: string): Promise<any | null> {
     const clean = (identifier || '').trim();
     if (!clean) return null;
 
@@ -197,10 +226,10 @@ export const productService = {
           ]
         }).lean();
 
-        if (product) return product as IProduct;
+        if (product) return product;
 
         const byName = await ProductModel.findOne({ name: regex }).lean();
-        if (byName) return byName as IProduct;
+        if (byName) return byName;
       }
     } catch (dbErr) {
       console.warn('[ProductService] Database lookup warning:', dbErr);
@@ -221,6 +250,15 @@ export const productService = {
     }
 
     return null;
+  },
+
+  /**
+   * Get single product by Slug or ID with sanitized payload
+   */
+  async getProductBySlugOrId(identifier: string): Promise<IProduct | null> {
+    const raw = await this.getProductRawBySlugOrId(identifier);
+    if (!raw) return null;
+    return sanitizeProductPayload(raw, false) as IProduct;
   },
 
   /**
@@ -248,31 +286,48 @@ export const productService = {
     productViews?: { front?: string; back?: string; left?: string; right?: string; detail?: string };
     pdfDocuments?: any[];
   }, adminUser: { id: string; name: string; email: string; role: string }): Promise<IProduct> {
+    if (Number(mongoose.connection.readyState) !== 1) {
+      await connectDB();
+    }
+
     let finalSku = (data.sku || '').trim();
     if (!finalSku) {
       finalSku = `PA-${(data.category || 'GAR').slice(0, 4).toUpperCase()}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
     }
-    const existingSku = await ProductModel.findOne({ sku: finalSku });
-    if (existingSku) {
-      finalSku = `${finalSku}-${Math.floor(100 + Math.random() * 900)}`;
-    }
+    try {
+      const existingSku = await ProductModel.findOne({ sku: finalSku });
+      if (existingSku) {
+        finalSku = `${finalSku}-${Math.floor(100 + Math.random() * 900)}`;
+      }
+    } catch (_) {}
 
     let slug = generateSlug(data.name);
-    const existingSlug = await ProductModel.findOne({ slug });
-    if (existingSlug) {
-      slug = `${slug}-${Math.floor(1000 + Math.random() * 9000)}`;
-    }
+    try {
+      const existingSlug = await ProductModel.findOne({ slug });
+      if (existingSlug) {
+        slug = `${slug}-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
+    } catch (_) {}
 
     const productId = `PROD-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 900 + 100)}`;
 
-    const processedVariants: IProductVariant[] = data.variants.map((v: any, i) => ({
-      id: v.id || `var-${productId}-${i}`,
-      size: v.size,
-      color: v.color,
-      colorHex: v.colorHex,
-      stock: Math.max(0, v.stock || 0),
-      sku: v.sku || `${finalSku}-${v.size.replace(/\s+/g, '')}`
-    }));
+    const rawVariants = Array.isArray(data.variants) && data.variants.length > 0 ? data.variants : [
+      { size: '40R', color: 'Black', stock: 5 }
+    ];
+
+    const processedVariants: IProductVariant[] = rawVariants.map((v: any, i) => {
+      const size = String(v.size || 'Standard').trim();
+      const color = String(v.color || 'Standard').trim();
+      const stock = typeof v.stock === 'number' && !isNaN(v.stock) ? Math.max(0, v.stock) : (parseInt(String(v.stock || 0), 10) || 0);
+      return {
+        id: v.id || `var-${productId}-${i}`,
+        size,
+        color,
+        colorHex: v.colorHex || '#111827',
+        stock,
+        sku: v.sku || `${finalSku}-${size.replace(/\s+/g, '')}`
+      };
+    });
 
     const stockQuantity = processedVariants.reduce((sum, v) => sum + v.stock, 0);
     const sizes = Array.from(new Set(processedVariants.map(v => v.size)));
@@ -281,16 +336,19 @@ export const productService = {
       ...processedVariants.map(v => v.color)
     ].filter(Boolean)));
 
+    const cleanCategory = String(data.category || 'Suits').trim();
+    const cleanPrice = typeof data.price === 'number' ? data.price : parseFloat(String(data.price).replace(/[^0-9.]/g, '')) || 0;
+
     const product = new ProductModel({
       productId,
       sku: finalSku,
-      name: data.name,
+      name: data.name.trim(),
       slug,
-      description: data.description,
-      category: data.category,
+      description: data.description || 'Master crafted bespoke menswear.',
+      category: cleanCategory,
       subcategory: data.subcategory,
-      price: data.price,
-      salePrice: data.salePrice,
+      price: cleanPrice,
+      salePrice: data.salePrice !== undefined ? Number(data.salePrice) : undefined,
       images: data.images || [],
       colorImages: data.colorImages || {},
       sizes,
@@ -310,11 +368,21 @@ export const productService = {
     });
 
     try {
-      if (mongoose.connection.readyState === 1) {
+      if (Number(mongoose.connection.readyState) === 1) {
+        await product.save();
+      } else {
+        await connectDB();
         await product.save();
       }
     } catch (saveErr: any) {
-      console.warn('[ProductService] Database save fallback:', saveErr?.message);
+      console.warn('[ProductService] Initial save failure, checking duplicate key:', saveErr?.message);
+      if (saveErr?.code === 11000) {
+        product.sku = `${product.sku}-${Date.now().toString(36).slice(-3).toUpperCase()}`;
+        product.slug = `${product.slug}-${Date.now().toString(36).slice(-3)}`;
+        await product.save();
+      } else {
+        throw new Error(saveErr?.message || 'Failed to save product in database.');
+      }
     }
 
     const plainProduct = product.toObject ? product.toObject() : product;
@@ -330,7 +398,7 @@ export const productService = {
       });
     } catch (_) {}
 
-    return plainProduct;
+    return sanitizeProductPayload(plainProduct);
   },
 
   /**
@@ -362,11 +430,25 @@ export const productService = {
       product.colors = Array.from(new Set(updates.variants.map((v: IProductVariant) => v.color)));
     }
 
+    // Merge pdfDocuments safely: do not overwrite raw base64 data with streaming endpoint URLs
+    if (updates.pdfDocuments && Array.isArray(updates.pdfDocuments)) {
+      const existingDocs = product.pdfDocuments || [];
+      product.pdfDocuments = updates.pdfDocuments.map((doc: any) => {
+        if (typeof doc.url === 'string' && doc.url.startsWith('/api/products/')) {
+          const match = existingDocs.find((ed: any) => (ed.id && ed.id === doc.id) || ed.fileName === doc.fileName);
+          if (match && match.url) {
+            return { ...doc, url: match.url };
+          }
+        }
+        return doc;
+      });
+    }
+
     const fieldsToUpdate = [
       'description', 'category', 'subcategory', 'price', 'salePrice', 
       'images', 'colorImages', 'colors', 'lowStockThreshold', 'isFeatured', 'isNewArrival', 
       'isActive', 'fabric', 'fit', 'careInstructions', 'shippingCharge',
-      'productViews', 'pdfDocuments'
+      'productViews'
     ];
 
     fieldsToUpdate.forEach(field => {
@@ -386,7 +468,8 @@ export const productService = {
       newValue: product.toObject()
     });
 
-    return product;
+    const plain = product.toObject ? product.toObject() : product;
+    return sanitizeProductPayload(plain);
   },
 
   /**

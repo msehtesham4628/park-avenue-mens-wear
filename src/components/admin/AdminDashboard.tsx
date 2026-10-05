@@ -667,19 +667,27 @@ export const AdminDashboard: React.FC = () => {
         detail: productForm.views.detail || undefined
       };
 
+      const cleanPrice = parseFloat(String(productForm.price).replace(/[^0-9.]/g, '')) || 0;
+      const cleanShipping = productForm.shippingCharge ? (parseFloat(String(productForm.shippingCharge).replace(/[^0-9.]/g, '')) || 0) : 15;
+
+      if (cleanPrice <= 0) {
+        showToast('Please enter a valid price for this garment.', 'error');
+        return;
+      }
+
       if (editingProduct) {
         // Edit flow
         const updated: Product = {
           ...editingProduct,
-          name: productForm.name,
+          name: productForm.name.trim(),
           category: productForm.category,
-          price: parseFloat(productForm.price),
+          price: cleanPrice,
           sku: productForm.sku,
           description: productForm.description,
           fabric: productForm.fabric,
           fit: productForm.fit,
           colors: effectiveColors,
-          shippingCharge: productForm.shippingCharge ? parseFloat(productForm.shippingCharge) : 15,
+          shippingCharge: cleanShipping,
           variants: parsedVariants,
           totalStock,
           images: viewsList.length > 0 ? viewsList : (editingProduct.images?.length ? editingProduct.images : []),
@@ -691,10 +699,10 @@ export const AdminDashboard: React.FC = () => {
       } else {
         // Create flow
         await ProductService.create({
-          name: productForm.name,
+          name: productForm.name.trim(),
           subtitle: `${productForm.fabric || 'Super 150s Wool'} · Bespoke Cut`,
           category: productForm.category,
-          price: parseFloat(productForm.price),
+          price: cleanPrice,
           sku: productForm.sku,
           collection: 'Park Avenue Heritage',
           description: productForm.description || 'Precision crafted bespoke garment cut in our private atelier.',
@@ -710,9 +718,9 @@ export const AdminDashboard: React.FC = () => {
           isFeatured: true,
           isNewArrival: true,
           alterationEligible: true,
-          shippingCharge: productForm.shippingCharge ? parseFloat(productForm.shippingCharge) : 15
+          shippingCharge: cleanShipping
         });
-        showToast(`Product ${productForm.name} created successfully`, 'success');
+        showToast(`Product ${productForm.name} created and saved in database!`, 'success');
       }
 
       setIsAddProductOpen(false);
