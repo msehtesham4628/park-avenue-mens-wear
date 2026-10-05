@@ -119,7 +119,7 @@ export default async function handler(req: express.Request, res: express.Respons
     requestPath === '/sitemap_index.xml' ||
     requestPath === '/sitemap_pages.xml' ||
     requestPath === '/robots.txt' ||
-    /^\\/sitemap_products_\\d+\\.xml$/.test(requestPath);
+    /^\/sitemap_products_\d+\.xml$/.test(requestPath);
 
   try {
     if (!isSeoRequest) {
