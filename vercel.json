@@ -15,6 +15,10 @@
   ],
   "routes": [
     {
+      "src": "/(sitemap\\.xml|sitemap_index\\.xml|sitemap_pages\\.xml|sitemap_products_[0-9]+\\.xml|robots\\.txt)",
+      "dest": "/api/[...path].ts"
+    },
+    {
       "src": "/api/(.*)",
       "headers": {
         "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
