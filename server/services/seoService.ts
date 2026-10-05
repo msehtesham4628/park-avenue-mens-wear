@@ -269,7 +269,7 @@ export const seoService = {
     const products = await this.getAllActiveProducts();
     for (const prod of products) {
       const id = prod.productId || prod.id || prod.sku;
-      const loc = `${CANONICAL_DOMAIN}/product/${encodeURIComponent(id)}`;
+      const loc = `${CANONICAL_DOMAIN}/category/products/${encodeURIComponent(id)}`;
       const prodDate = prod.updatedAt ? new Date(prod.updatedAt).toISOString().split('T')[0] : today;
 
       if (existingMap[loc]) {
