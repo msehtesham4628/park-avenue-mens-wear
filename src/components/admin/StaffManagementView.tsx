@@ -26,13 +26,63 @@ import {
   Layers,
   Settings,
   ShieldAlert,
-  Sparkles
+  Sparkles,
+  Key,
+  Eye,
+  EyeOff,
+  Copy
 } from 'lucide-react';
 import { StaffMember, StaffPermissionItem, StaffRoleItem } from '../../types';
 import { StaffService } from '../../services/api';
 import { useShop } from '../../context/ShopContext';
 
 type ManagementSubTab = 'members' | 'roles' | 'permissions';
+
+const DEFAULT_SYSTEM_ROLES: StaffRoleItem[] = [
+  {
+    id: 'admin',
+    roleKey: 'admin',
+    name: 'Executive Administrator',
+    description: 'Complete operational clearance across all ateliers, financial exports, and staff access control.',
+    department: 'Executive Administration',
+    staffTitle: 'Executive Administrator',
+    baseRole: 'admin',
+    permissions: [
+      'orders:view', 'orders:manage', 'alterations:view', 'alterations:manage',
+      'inventory:view', 'inventory:manage', 'products:view', 'products:manage',
+      'returns:manage', 'customers:view', 'erp:access', 'staff:manage'
+    ],
+    isSystem: true
+  },
+  {
+    id: 'master-tailor',
+    roleKey: 'master-tailor',
+    name: 'Master Tailor & Fitter',
+    description: 'Specialized bespoke fitting and alterations workflow execution and garment status updates.',
+    department: 'Tailoring & Atelier',
+    staffTitle: 'Master Tailor & Fitter',
+    baseRole: 'staff',
+    permissions: [
+      'orders:view', 'alterations:view', 'alterations:manage',
+      'inventory:view', 'products:view'
+    ],
+    isSystem: true
+  },
+  {
+    id: 'inventory-lead',
+    roleKey: 'inventory-lead',
+    name: 'Inventory & Operations Lead',
+    description: 'Warehouse stock counts, SKU adjustments, order shipment verification, and dispatch log management.',
+    department: 'Inventory & Dispatch',
+    staffTitle: 'Inventory Lead',
+    baseRole: 'staff',
+    permissions: [
+      'orders:view', 'orders:manage', 'inventory:view', 'inventory:manage',
+      'products:view', 'returns:manage'
+    ],
+    isSystem: true
+  }
+];
 
 export const StaffManagementView: React.FC = () => {
   const { showToast, currentCustomer } = useShop();
@@ -42,7 +92,7 @@ export const StaffManagementView: React.FC = () => {
   // Staff members state
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [permissionDefs, setPermissionDefs] = useState<StaffPermissionItem[]>([]);
-  const [rolesList, setRolesList] = useState<StaffRoleItem[]>([]);
+  const [rolesList, setRolesList] = useState<StaffRoleItem[]>(DEFAULT_SYSTEM_ROLES);
   const [rolePresets, setRolePresets] = useState<Record<string, string[]>>({});
   
   const [isLoading, setIsLoading] = useState(true);
@@ -55,6 +105,16 @@ export const StaffManagementView: React.FC = () => {
   const [isEditStaffModalOpen, setIsEditStaffModalOpen] = useState(false);
   const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
   const [isAddPermissionModalOpen, setIsAddPermissionModalOpen] = useState(false);
+
+  // Dedicated Reset Password Modal state
+  const [resetPasswordStaff, setResetPasswordStaff] = useState<StaffMember | null>(null);
+  const [newPasswordVal, setNewPasswordVal] = useState('');
+  const [confirmPasswordVal, setConfirmPasswordVal] = useState('');
+  const [showResetPass, setShowResetPass] = useState(false);
+  const [showResetConfirmPass, setShowResetConfirmPass] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [copiedGenPassword, setCopiedGenPassword] = useState(false);
+  const [showEditPass, setShowEditPass] = useState(false);
 
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [deletingStaff, setDeletingStaff] = useState<StaffMember | null>(null);
@@ -88,7 +148,8 @@ export const StaffManagementView: React.FC = () => {
     department: '',
     permissions: [] as string[],
     status: 'active' as 'active' | 'suspended',
-    newPassword: ''
+    newPassword: '',
+    confirmPassword: ''
   });
 
   // New Role form state
@@ -123,15 +184,23 @@ export const StaffManagementView: React.FC = () => {
         StaffService.getRoles().catch(() => [])
       ]);
 
-      setStaffList(members);
-      if (permData.permissions && permData.permissions.length > 0) {
+      setStaffList(members || []);
+      if (permData?.permissions && permData.permissions.length > 0) {
         setPermissionDefs(permData.permissions);
-        setRolePresets(permData.rolePresets);
+        setRolePresets(permData.rolePresets || {});
       }
       if (customRoles && customRoles.length > 0) {
-        setRolesList(customRoles);
-      } else if (permData.roles && permData.roles.length > 0) {
-        setRolesList(permData.roles);
+        setRolesList(customRoles.map(r => ({
+          ...r,
+          permissions: Array.isArray(r.permissions) ? r.permissions : []
+        })));
+      } else if (permData?.roles && permData.roles.length > 0) {
+        setRolesList(permData.roles.map(r => ({
+          ...r,
+          permissions: Array.isArray(r.permissions) ? r.permissions : []
+        })));
+      } else {
+        setRolesList(DEFAULT_SYSTEM_ROLES);
       }
     } catch {
       showToast('Error loading staff directory and permissions from MongoDB.', 'error');
@@ -328,14 +397,27 @@ export const StaffManagementView: React.FC = () => {
       department: staff.department || '',
       permissions: staff.permissions || [],
       status: (staff.status as any) || 'active',
-      newPassword: ''
+      newPassword: '',
+      confirmPassword: ''
     });
+    setShowEditPass(false);
     setIsEditStaffModalOpen(true);
   };
 
   const handleUpdateStaffSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStaff) return;
+
+    if (editStaffForm.newPassword) {
+      if (editStaffForm.newPassword.length < 6) {
+        showToast('New password must be at least 6 characters.', 'error');
+        return;
+      }
+      if (editStaffForm.newPassword !== editStaffForm.confirmPassword) {
+        showToast('New passwords do not match. Please verify confirmation.', 'error');
+        return;
+      }
+    }
 
     setIsSubmitting(true);
     try {
@@ -347,7 +429,7 @@ export const StaffManagementView: React.FC = () => {
         role: editStaffForm.role,
         staffTitle: editStaffForm.staffTitle.trim(),
         department: editStaffForm.department.trim(),
-        permissions: editStaffForm.permissions,
+        permissions: editStaffForm.permissions || [],
         status: editStaffForm.status
       };
       if (editStaffForm.newPassword && editStaffForm.newPassword.trim().length >= 6) {
@@ -355,12 +437,59 @@ export const StaffManagementView: React.FC = () => {
       }
 
       const updated = await StaffService.update(editingStaff.customerId || editingStaff.id, payload);
-      showToast(`Updated permissions & profile for ${updated.name} in MongoDB!`, 'success');
+      showToast(`Updated credentials & permissions for ${updated.name} in MongoDB!`, 'success');
       setStaffList(prev => prev.map(s => (s.customerId === updated.customerId || s.id === updated.id) ? updated : s));
       setIsEditStaffModalOpen(false);
       setEditingStaff(null);
     } catch (err: any) {
       showToast(err.message || 'Failed to update staff member.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const generateSecurePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*';
+    let pass = 'PA-';
+    for (let i = 0; i < 9; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPasswordVal(pass);
+    setConfirmPasswordVal(pass);
+    setPasswordError('');
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(pass);
+      setCopiedGenPassword(true);
+      setTimeout(() => setCopiedGenPassword(false), 2500);
+      showToast('Generated secure password copied to clipboard!', 'info');
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPasswordStaff) return;
+
+    if (!newPasswordVal || newPasswordVal.trim().length < 6) {
+      setPasswordError('New password must be at least 6 characters in length.');
+      return;
+    }
+    if (newPasswordVal.trim() !== confirmPasswordVal.trim()) {
+      setPasswordError('Passwords do not match. Please verify confirmation.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setPasswordError('');
+    try {
+      const staffId = resetPasswordStaff.customerId || resetPasswordStaff.id;
+      const updated = await StaffService.resetPassword(staffId, newPasswordVal.trim());
+      showToast(`Password for ${updated.name || resetPasswordStaff.name} reset successfully in MongoDB!`, 'success');
+      setResetPasswordStaff(null);
+      setNewPasswordVal('');
+      setConfirmPasswordVal('');
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to reset password.');
+      showToast(err.message || 'Failed to reset password.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -880,6 +1009,22 @@ export const StaffManagementView: React.FC = () => {
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
+                                onClick={() => {
+                                  setResetPasswordStaff(staff);
+                                  setNewPasswordVal('');
+                                  setConfirmPasswordVal('');
+                                  setPasswordError('');
+                                  setShowResetPass(false);
+                                  setShowResetConfirmPass(false);
+                                }}
+                                className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-mono tracking-wider transition-colors cursor-pointer flex items-center gap-1 font-semibold"
+                                title="Reset Security Password"
+                              >
+                                <Key className="w-3 h-3 text-[#936B34]" />
+                                <span>Reset Password</span>
+                              </button>
+
+                              <button
                                 onClick={() => openEditModal(staff)}
                                 className="px-2.5 py-1.5 bg-white border border-gray-300 hover:border-[#936B34] text-gray-700 hover:text-[#936B34] text-[11px] font-mono tracking-wider transition-colors cursor-pointer flex items-center gap-1 font-medium"
                                 title="Edit Role and Granular Permissions"
@@ -983,17 +1128,17 @@ export const StaffManagementView: React.FC = () => {
                 <div className="pt-3 border-t border-gray-100 mt-2">
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="text-gray-500">Granted Permissions:</span>
-                    <span className="font-bold text-[#111827]">{role.permissions.length}</span>
+                    <span className="font-bold text-[#111827]">{(role.permissions || []).length}</span>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {role.permissions.slice(0, 4).map(p => (
+                    {(role.permissions || []).slice(0, 4).map(p => (
                       <span key={p} className="px-1.5 py-0.5 bg-[#FAF8F5] text-gray-700 text-[9px] border border-gray-200 font-mono">
                         {p.split(':')[1] || p}
                       </span>
                     ))}
-                    {role.permissions.length > 4 && (
+                    {(role.permissions || []).length > 4 && (
                       <span className="px-1.5 py-0.5 bg-gray-50 text-gray-400 text-[9px] font-mono">
-                        +{role.permissions.length - 4} more
+                        +{(role.permissions || []).length - 4} more
                       </span>
                     )}
                   </div>
@@ -1229,7 +1374,7 @@ export const StaffManagementView: React.FC = () => {
               <div className="pt-2 border-t border-gray-200">
                 <div className="flex items-center justify-between mb-3">
                   <label className="uppercase text-[10px] text-gray-600 font-semibold block">
-                    Assigned Granular Permissions ({newStaffForm.permissions.length} of {permissionDefs.length})
+                    Assigned Granular Permissions ({(newStaffForm.permissions || []).length} of {(permissionDefs || []).length})
                   </label>
                   <div className="flex items-center gap-2 text-[10px]">
                     <button
@@ -1464,24 +1609,69 @@ export const StaffManagementView: React.FC = () => {
               </div>
 
               {/* Password Reset Section */}
-              <div className="p-3 bg-amber-50/50 border border-amber-200">
-                <label className="block uppercase text-[10px] text-amber-900 mb-1 font-semibold">
-                  Reset Password (Leave blank to keep current password)
-                </label>
-                <input
-                  type="password"
-                  value={editStaffForm.newPassword}
-                  onChange={(e) => setEditStaffForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                  placeholder="Enter new password (min 6 characters) or leave blank"
-                  className="w-full bg-white border border-gray-300 p-2 text-xs text-[#111827] focus:border-[#936B34] focus:outline-none"
-                />
+              <div className="p-4 bg-amber-50/60 border border-amber-300 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-amber-900 font-semibold text-[11px] uppercase tracking-wider">
+                    <Key className="w-3.5 h-3.5 text-[#936B34]" />
+                    <span>Reset Staff Password (Optional)</span>
+                  </div>
+                  <span className="text-[10px] text-amber-700 font-mono">
+                    Leave blank to retain current password
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block uppercase text-[9px] text-gray-700 mb-1 font-semibold">
+                      New Password (Min 6 Characters)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showEditPass ? "text" : "password"}
+                        value={editStaffForm.newPassword}
+                        onChange={(e) => setEditStaffForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                        placeholder="Enter new password"
+                        className="w-full bg-white border border-gray-300 p-2 pr-8 text-xs text-[#111827] focus:border-[#936B34] focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditPass(prev => !prev)}
+                        className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                        title={showEditPass ? "Hide password" : "Show password"}
+                      >
+                        {showEditPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block uppercase text-[9px] text-gray-700 mb-1 font-semibold">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showEditPass ? "text" : "password"}
+                        value={editStaffForm.confirmPassword}
+                        onChange={(e) => setEditStaffForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        placeholder="Re-enter new password"
+                        className="w-full bg-white border border-gray-300 p-2 text-xs text-[#111827] focus:border-[#936B34] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+                {editStaffForm.newPassword && editStaffForm.newPassword.length < 6 && (
+                  <p className="text-[10px] text-red-600 font-mono">Password must be at least 6 characters long.</p>
+                )}
+                {editStaffForm.newPassword && editStaffForm.confirmPassword && editStaffForm.newPassword !== editStaffForm.confirmPassword && (
+                  <p className="text-[10px] text-red-600 font-mono">Passwords do not match.</p>
+                )}
               </div>
 
               {/* Granular Permissions Checklist */}
               <div className="pt-2 border-t border-gray-200">
                 <div className="flex items-center justify-between mb-3">
                   <label className="uppercase text-[10px] text-gray-600 font-semibold block">
-                    Granular Permissions ({editStaffForm.permissions.length} of {permissionDefs.length})
+                    Granular Permissions ({(editStaffForm.permissions || []).length} of {(permissionDefs || []).length})
                   </label>
                   <div className="flex items-center gap-2 text-[10px]">
                     <button
@@ -1665,7 +1855,7 @@ export const StaffManagementView: React.FC = () => {
               <div className="pt-2 border-t border-gray-200">
                 <div className="flex items-center justify-between mb-2">
                   <label className="uppercase text-[10px] text-gray-600 font-semibold block">
-                    Permissions Included in Role ({newRoleForm.permissions.length} selected)
+                    Permissions Included in Role ({(newRoleForm.permissions || []).length} selected)
                   </label>
                   <div className="flex items-center gap-2 text-[10px]">
                     <button
@@ -1962,6 +2152,145 @@ export const StaffManagementView: React.FC = () => {
                 {isSubmitting ? 'Deleting...' : 'Delete Permission'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ----------------------------------------------------
+       * MODAL: DEDICATED RESET PASSWORD FOR STAFF MEMBER
+       * ---------------------------------------------------- */}
+      {resetPasswordStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white border border-[#936B34] max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
+            <button
+              onClick={() => {
+                setResetPasswordStaff(null);
+                setPasswordError('');
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-[#111827] cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 bg-amber-100 text-amber-900 text-[9px] uppercase font-bold tracking-wider font-mono">
+                  CREDENTIAL RESET
+                </span>
+                <span className="text-[10px] font-mono text-gray-500 uppercase">
+                  {resetPasswordStaff.role} CLEARANCE
+                </span>
+              </div>
+              <h3 className="font-serif text-2xl text-[#111827]">
+                Reset Staff Password
+              </h3>
+              <p className="text-xs text-gray-500 font-mono mt-1">
+                Assign a new authentication password for <span className="font-semibold text-gray-900">{resetPasswordStaff.name}</span> ({resetPasswordStaff.email}).
+              </p>
+            </div>
+
+            {passwordError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-mono flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
+                <span>{passwordError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleResetPasswordSubmit} className="space-y-4 text-xs font-mono">
+              <div>
+                <label className="block uppercase text-[10px] text-gray-600 mb-1 font-semibold">
+                  New Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showResetPass ? 'text' : 'password'}
+                    required
+                    value={newPasswordVal}
+                    onChange={(e) => {
+                      setNewPasswordVal(e.target.value);
+                      setPasswordError('');
+                    }}
+                    placeholder="Enter new password (min 6 characters)"
+                    className="w-full bg-[#FAF8F5] border border-gray-300 p-2.5 pr-10 text-xs text-[#111827] focus:border-[#936B34] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPass(prev => !prev)}
+                    className="absolute right-2.5 top-3 text-gray-400 hover:text-gray-700 cursor-pointer"
+                    title={showResetPass ? 'Hide password' : 'Show password'}
+                  >
+                    {showResetPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block uppercase text-[10px] text-gray-600 mb-1 font-semibold">
+                  Confirm New Password *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showResetConfirmPass ? 'text' : 'password'}
+                    required
+                    value={confirmPasswordVal}
+                    onChange={(e) => {
+                      setConfirmPasswordVal(e.target.value);
+                      setPasswordError('');
+                    }}
+                    placeholder="Re-enter new password to verify"
+                    className="w-full bg-[#FAF8F5] border border-gray-300 p-2.5 pr-10 text-xs text-[#111827] focus:border-[#936B34] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetConfirmPass(prev => !prev)}
+                    className="absolute right-2.5 top-3 text-gray-400 hover:text-gray-700 cursor-pointer"
+                    title={showResetConfirmPass ? 'Hide password' : 'Show password'}
+                  >
+                    {showResetConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Password Generator Helper */}
+              <div className="pt-2 flex items-center justify-between border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={generateSecurePassword}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF8F5] border border-gray-300 hover:border-[#936B34] text-gray-800 text-[11px] font-mono tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
+                  <span>Generate Secure Temporary Password</span>
+                </button>
+
+                {copiedGenPassword && (
+                  <span className="text-[10px] text-emerald-600 font-mono flex items-center gap-1 font-semibold">
+                    <Check className="w-3 h-3" />
+                    Copied!
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetPasswordStaff(null);
+                    setPasswordError('');
+                  }}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-mono uppercase cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer font-semibold disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Key className="w-3.5 h-3.5" />
+                  <span>{isSubmitting ? 'Updating MongoDB...' : 'Update Password'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

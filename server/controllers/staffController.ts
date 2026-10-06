@@ -105,6 +105,37 @@ export const staffController = {
   },
 
   /**
+   * PUT /api/staff/:id/password or POST /api/staff/:id/reset-password
+   */
+  async resetPassword(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const passwordToSet = req.body.password || req.body.newPassword;
+
+      if (!passwordToSet || typeof passwordToSet !== 'string' || passwordToSet.trim().length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 6 characters in length.'
+        });
+      }
+
+      const modifier = req.user ? { id: req.user.id || req.user.customerId, name: req.user.name } : undefined;
+      const updated = await staffService.resetStaffPassword(id, passwordToSet.trim(), modifier);
+
+      return res.status(200).json({
+        success: true,
+        data: updated,
+        message: `Security password for ${updated.name} reset successfully.`
+      });
+    } catch (err: any) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'Failed to reset password.'
+      });
+    }
+  },
+
+  /**
    * DELETE /api/staff/:id (Remove staff member)
    */
   async deleteStaff(req: AuthenticatedRequest, res: Response) {

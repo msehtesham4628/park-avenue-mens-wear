@@ -303,23 +303,27 @@ export const staffService = {
   }, modifier?: { id: string; name: string }) {
     await this.ensureSeeded();
 
+    const cleanId = (id || '').trim();
     const staff = await CustomerModel.findOne({
       $or: [
-        { customerId: id },
-        { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }
+        { customerId: cleanId },
+        { email: cleanId.toLowerCase() },
+        { username: cleanId.toLowerCase() },
+        ...(cleanId.match(/^[0-9a-fA-F]{24}$/) ? [{ _id: cleanId }] : [])
       ]
     });
 
     if (!staff) {
-      throw new Error(`Staff member ${id} not found in database.`);
+      throw new Error(`Staff member '${id}' not found in database.`);
     }
 
     if (data.firstName !== undefined) staff.firstName = data.firstName.trim();
     if (data.lastName !== undefined) staff.lastName = data.lastName.trim();
-    if (data.name !== undefined) {
+    if (!staff.lastName) staff.lastName = '';
+    if (data.name !== undefined && data.name.trim()) {
       staff.name = data.name.trim();
     } else if (data.firstName !== undefined || data.lastName !== undefined) {
-      staff.name = `${staff.firstName} ${staff.lastName}`.trim();
+      staff.name = `${staff.firstName || ''} ${staff.lastName || ''}`.trim() || staff.name || 'Staff Member';
     }
     if (data.phone !== undefined) staff.phone = data.phone.trim();
     if (data.role !== undefined) staff.role = data.role;
@@ -328,22 +332,31 @@ export const staffService = {
     if (data.status !== undefined) staff.status = data.status;
     if (Array.isArray(data.permissions)) staff.permissions = data.permissions;
 
-    if (data.password && data.password.trim().length >= 6) {
-      staff.passwordHash = await authService.hashPassword(data.password.trim());
+    if (data.password !== undefined && data.password.trim().length > 0) {
+      const cleanPass = data.password.trim();
+      if (cleanPass.length < 6) {
+        throw new Error('New password must be at least 6 characters in length.');
+      }
+      staff.passwordHash = await authService.hashPassword(cleanPass);
     }
 
     await staff.save();
 
-    // Record audit log entry
+    // Record audit log entry safely adhering to AuditLogSchema
     try {
       await AuditLogModel.create({
-        action: 'UPDATE_STAFF_MEMBER',
-        userId: modifier?.id || 'SYSTEM_ADMIN',
-        userName: modifier?.name || 'Administrator',
-        userRole: 'admin',
-        targetType: 'STAFF',
-        targetId: staff.customerId,
-        details: {
+        auditId: `AUD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        adminUser: {
+          id: modifier?.id || 'CUST-ADMIN-PARKAMW',
+          name: modifier?.name || 'Administrator',
+          email: 'admin@parkavenuemenswear.com',
+          role: 'admin'
+        },
+        action: data.password ? 'RESET_STAFF_PASSWORD' : 'UPDATE_STAFF_MEMBER',
+        entity: 'Staff',
+        entityId: staff.customerId || staff._id.toString(),
+        notes: data.password ? `Security password reset for staff ${staff.name}` : `Staff profile & permissions updated for ${staff.name}`,
+        newValue: {
           staffName: staff.name,
           email: staff.email,
           role: staff.role,
@@ -362,6 +375,20 @@ export const staffService = {
       ...resObj,
       id: staff.customerId
     };
+  },
+
+  /**
+   * Reset staff member password with validation and audit trail
+   */
+  async resetStaffPassword(id: string, newPass: string, modifier?: { id: string; name: string }) {
+    await this.ensureSeeded();
+
+    const cleanPass = (newPass || '').trim();
+    if (!cleanPass || cleanPass.length < 6) {
+      throw new Error('New password must be at least 6 characters in length.');
+    }
+
+    return this.updateStaff(id, { password: cleanPass }, modifier);
   },
 
   /**

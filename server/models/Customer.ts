@@ -52,7 +52,7 @@ const CustomerAddressSchema = new Schema<ICustomerAddress>({
 const CustomerSchema = new Schema<ICustomer>({
   customerId: { type: String, required: true, unique: true, index: true },
   firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
+  lastName: { type: String, required: false, default: '' },
   name: { type: String, required: true, index: true },
   username: { type: String, lowercase: true, trim: true, sparse: true, index: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },

@@ -20,6 +20,8 @@ router.delete('/roles/:roleKey', optionalAuthenticateJWT, staffController.delete
 
 // Staff member CRUD
 router.post('/', optionalAuthenticateJWT, staffController.createStaff);
+router.put('/:id/password', optionalAuthenticateJWT, staffController.resetPassword);
+router.post('/:id/reset-password', optionalAuthenticateJWT, staffController.resetPassword);
 router.put('/:id', optionalAuthenticateJWT, staffController.updateStaff);
 router.delete('/:id', optionalAuthenticateJWT, staffController.deleteStaff);
 

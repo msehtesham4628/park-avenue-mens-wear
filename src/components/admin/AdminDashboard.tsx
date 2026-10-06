@@ -151,6 +151,7 @@ export const AdminDashboard: React.FC = () => {
     if (lower === 'notifications') return 'notifications';
     if (lower === 'seo') return 'seo';
     if (lower === 'settings') return 'settings';
+    if (lower === 'staff' || lower === 'staff-management') return 'staff-management';
     return 'dashboard';
   };
 

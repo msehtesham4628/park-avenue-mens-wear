@@ -2760,32 +2760,103 @@ export const StaffService = {
     permissions?: string[];
     status?: 'active' | 'suspended';
   }): Promise<StaffMember> {
-    const remote = await fetchRemote<StaffMember>('/staff', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-    if (remote && remote.id) {
-      return remote;
+    try {
+      const base = API_CONFIG.baseUrl || '/api';
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.TOKEN) : null;
+      const res = await fetch(`${base.replace(/\/$/, '')}/staff`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.message || `Failed to create staff member (HTTP ${res.status})`);
+      }
+      return json.data || json;
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to create staff member');
     }
-    throw new Error('Failed to create staff member');
   },
 
   async update(id: string, data: Partial<StaffMember> & { password?: string }): Promise<StaffMember> {
-    const remote = await fetchRemote<StaffMember>(`/staff/${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-    if (remote && remote.id) {
-      return remote;
+    try {
+      const base = API_CONFIG.baseUrl || '/api';
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.TOKEN) : null;
+      const res = await fetch(`${base.replace(/\/$/, '')}/staff/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.message || `Failed to update staff member (HTTP ${res.status})`);
+      }
+      return json.data || json;
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to update staff member');
     }
-    throw new Error('Failed to update staff member');
+  },
+
+  async resetPassword(id: string, password: string): Promise<StaffMember> {
+    try {
+      const base = API_CONFIG.baseUrl || '/api';
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.TOKEN) : null;
+      const cleanPass = password.trim();
+      if (cleanPass.length < 6) {
+        throw new Error('New password must be at least 6 characters.');
+      }
+
+      const res = await fetch(`${base.replace(/\/$/, '')}/staff/${encodeURIComponent(id)}/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ password: cleanPass })
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success) {
+        return json.data || json;
+      }
+      // If /password route returned an error message, throw it
+      if (json?.message) {
+        throw new Error(json.message);
+      }
+      // Fallback to updating directly via PUT /staff/:id with password
+      return await this.update(id, { password: cleanPass });
+    } catch (err: any) {
+      if (err.message && !err.message.includes('HTTP 404')) {
+        throw err;
+      }
+      return await this.update(id, { password });
+    }
   },
 
   async delete(id: string): Promise<boolean> {
-    const remote = await fetchRemote<any>(`/staff/${encodeURIComponent(id)}`, {
-      method: 'DELETE'
-    });
-    return Boolean(remote && remote.success);
+    try {
+      const base = API_CONFIG.baseUrl || '/api';
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.TOKEN) : null;
+      const res = await fetch(`${base.replace(/\/$/, '')}/staff/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.message || `Failed to delete staff member (HTTP ${res.status})`);
+      }
+      return true;
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to delete staff member');
+    }
   }
 };
 
