@@ -21,6 +21,18 @@ process.emitWarning = (warning: any, ...args: any[]) => {
   return (originalEmitWarning as any).call(process, warning, ...args);
 };
 
+// Catch unhandled errors gracefully to keep the server process alive
+process.on('uncaughtException', (err: any) => {
+  if (err && (err.message?.includes('Port 24678') || err.code === 'ECONNRESET' || err.code === 'EPIPE')) {
+    return;
+  }
+  console.error('[Park Avenue Server] Uncaught exception caught safely:', err?.message || err);
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  console.warn('[Park Avenue Server] Unhandled promise rejection caught safely:', reason?.message || reason);
+});
+
 async function bootstrapServer() {
   const app = express();
 
@@ -59,16 +71,6 @@ async function bootstrapServer() {
     }
   }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-  // Connect to Database & Seed initial data
-  try {
-    const isConnected = await connectDB();
-    if (isConnected) {
-      await seedInitialData();
-    }
-  } catch (dbErr: any) {
-    console.warn('[Park Avenue Server] Database initialization warning:', dbErr?.message);
-  }
 
   // Direct root search engine crawl endpoints for https://www.parkavenuemenswear.com
   app.get(['/sitemap.xml', '/sitemap_index.xml'], async (_req, res) => {
@@ -155,11 +157,16 @@ async function bootstrapServer() {
 
   // Vite development middleware or production static serving
   const isProduction = process.env.NODE_ENV === 'production';
+  const isHmrDisabled = process.env.DISABLE_HMR === 'true';
 
   if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: isHmrDisabled ? false : undefined,
+        watch: isHmrDisabled ? null : {}
+      },
       appType: 'spa'
     });
     app.use(vite.middlewares);
@@ -176,7 +183,7 @@ async function bootstrapServer() {
       }
       next();
     });
-    console.info('[Park Avenue Server] Mounted Vite development middleware with HMR.');
+    console.info(`[Park Avenue Server] Mounted Vite development middleware (HMR ${isHmrDisabled ? 'disabled' : 'enabled'}).`);
   } else {
     const distPath = path.resolve(__dirname, 'dist');
     app.use(express.static(distPath));
@@ -190,7 +197,7 @@ async function bootstrapServer() {
   app.use(errorHandler);
 
   const PORT = ENV.PORT || 3000;
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.info(`========================================================`);
     console.info(` PARK AVENUE MENSWEAR — LUXURY SARTORIAL BACKEND API`);
     console.info(` Server active on: http://0.0.0.0:${PORT}`);
@@ -198,9 +205,34 @@ async function bootstrapServer() {
     console.info(` Health check:     http://0.0.0.0:${PORT}/api/health`);
     console.info(`========================================================`);
   });
+
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`[Park Avenue Server] Port ${PORT} temporarily busy, retrying in 1s...`);
+      setTimeout(() => {
+        try {
+          server.close();
+        } catch (_) {}
+        server.listen(PORT, '0.0.0.0');
+      }, 1000);
+    } else {
+      console.error('[Park Avenue Server] Server network error:', err);
+    }
+  });
+
+  // Connect to Database & Seed initial data asynchronously so HTTP server responds immediately
+  (async () => {
+    try {
+      const isConnected = await connectDB();
+      if (isConnected) {
+        await seedInitialData();
+      }
+    } catch (dbErr: any) {
+      console.warn('[Park Avenue Server] Database initialization warning:', dbErr?.message);
+    }
+  })();
 }
 
 bootstrapServer().catch((err) => {
   console.error('[Park Avenue Server] Fatal startup failure:', err);
-  process.exit(1);
 });

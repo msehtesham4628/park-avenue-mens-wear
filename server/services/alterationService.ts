@@ -25,14 +25,31 @@ export const alterationService = {
    */
   async generateAlterationId(): Promise<string> {
     const year = new Date().getFullYear();
-    const count = await AlterationModel.countDocuments();
-    const sequence = (count + 1).toString().padStart(6, '0');
-    let alterationId = `ALT-${year}-${sequence}`;
+    const existingTickets = await AlterationModel.find(
+      { alterationId: { $regex: new RegExp(`^ALT-${year}-\\d+$`, 'i') } },
+      { alterationId: 1 }
+    ).lean();
 
-    const exists = await AlterationModel.findOne({ alterationId });
-    if (exists) {
-      alterationId = `ALT-${year}-${(count + Math.floor(Math.random() * 1000) + 1).toString().padStart(6, '0')}`;
+    let maxNum = 0;
+    for (const doc of existingTickets) {
+      const match = (doc.alterationId || '').match(new RegExp(`^ALT-${year}-(\\d+)$`, 'i'));
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
     }
+
+    const count = await AlterationModel.countDocuments();
+    let candidateNum = Math.max(maxNum, count) + 1;
+    let alterationId = `ALT-${year}-${candidateNum.toString().padStart(6, '0')}`;
+
+    while (await AlterationModel.exists({ alterationId })) {
+      candidateNum++;
+      alterationId = `ALT-${year}-${candidateNum.toString().padStart(6, '0')}`;
+    }
+
     return alterationId;
   },
 

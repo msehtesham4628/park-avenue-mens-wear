@@ -36,15 +36,31 @@ export const orderService = {
    */
   async generateOrderId(): Promise<string> {
     const year = new Date().getFullYear();
-    const count = await OrderModel.countDocuments();
-    const sequence = (count + 1).toString().padStart(6, '0');
-    let orderId = `PA-${year}-${sequence}`;
+    const existingOrders = await OrderModel.find(
+      { orderId: { $regex: new RegExp(`^PA-${year}-\\d+$`, 'i') } },
+      { orderId: 1 }
+    ).lean();
 
-    // Verify uniqueness
-    const exists = await OrderModel.findOne({ orderId });
-    if (exists) {
-      orderId = `PA-${year}-${(count + Math.floor(Math.random() * 1000) + 1).toString().padStart(6, '0')}`;
+    let maxNum = 0;
+    for (const doc of existingOrders) {
+      const match = (doc.orderId || '').match(new RegExp(`^PA-${year}-(\\d+)$`, 'i'));
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
     }
+
+    const count = await OrderModel.countDocuments();
+    let candidateNum = Math.max(maxNum, count) + 1;
+    let orderId = `PA-${year}-${candidateNum.toString().padStart(6, '0')}`;
+
+    while (await OrderModel.exists({ orderId })) {
+      candidateNum++;
+      orderId = `PA-${year}-${candidateNum.toString().padStart(6, '0')}`;
+    }
+
     return orderId;
   },
 

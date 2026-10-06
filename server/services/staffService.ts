@@ -204,6 +204,42 @@ export const staffService = {
   },
 
   /**
+   * Collision-proof generator for staff IDs (e.g. STF-0106)
+   */
+  async generateUniqueStaffId(): Promise<string> {
+    const staffDocs = await CustomerModel.find(
+      { customerId: { $regex: /^STF-\d+$/i } },
+      { customerId: 1 }
+    ).lean();
+
+    let maxNum = 100;
+    for (const doc of staffDocs) {
+      const match = (doc.customerId || '').match(/^STF-(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
+
+    const totalCount = await CustomerModel.countDocuments();
+    if (totalCount + 100 > maxNum) {
+      maxNum = Math.max(maxNum, totalCount + 100);
+    }
+
+    let nextNum = maxNum + 1;
+    let candidateId = `STF-${String(nextNum).padStart(4, '0')}`;
+
+    while (await CustomerModel.exists({ customerId: candidateId })) {
+      nextNum++;
+      candidateId = `STF-${String(nextNum).padStart(4, '0')}`;
+    }
+
+    return candidateId;
+  },
+
+  /**
    * Create a new staff member with hashed password and permissions in MongoDB
    */
   async createStaff(data: {
@@ -231,46 +267,95 @@ export const staffService = {
       throw new Error(`An account with email ${cleanEmail} is already registered.`);
     }
 
+    // Determine unique username
+    let finalUsername = (data.username || cleanEmail.split('@')[0]).toLowerCase().trim();
+    if (data.username && data.username.trim()) {
+      const existingUser = await CustomerModel.findOne({ username: finalUsername });
+      if (existingUser) {
+        throw new Error(`The username "${finalUsername}" is already taken. Please choose another username.`);
+      }
+    } else {
+      let candidateUsername = finalUsername;
+      let counter = 1;
+      while (await CustomerModel.exists({ username: candidateUsername })) {
+        candidateUsername = `${finalUsername}${counter}`;
+        counter++;
+      }
+      finalUsername = candidateUsername;
+    }
+
     const passwordHash = await authService.hashPassword(data.password);
-    const count = await CustomerModel.countDocuments();
-    const staffId = `STF-${String(count + 101).padStart(4, '0')}`;
     const fullName = `${data.firstName.trim()} ${data.lastName?.trim() || ''}`.trim();
     const role: CustomerRole = data.role === 'admin' ? 'admin' : 'staff';
     const permissions = data.permissions && data.permissions.length > 0 
       ? data.permissions 
       : (role === 'admin' ? SYSTEM_STAFF_PERMISSIONS.map(p => p.id) : ['orders:view', 'alterations:view', 'inventory:view']);
 
-    const doc = await CustomerModel.create({
-      customerId: staffId,
-      firstName: data.firstName.trim(),
-      lastName: (data.lastName || '').trim(),
-      name: fullName,
-      username: (data.username || data.email.split('@')[0]).toLowerCase().trim(),
-      email: cleanEmail,
-      phone: (data.phone || '+1 (800) 555-7276').trim(),
-      passwordHash,
-      role,
-      status: data.status || 'active',
-      staffTitle: (data.staffTitle || (role === 'admin' ? 'Executive Administrator' : 'Staff Artisan')).trim(),
-      department: (data.department || (role === 'admin' ? 'Executive Administration' : 'Tailoring & Atelier')).trim(),
-      permissions,
-      addresses: []
-    });
+    let doc: any = null;
+    let lastError: any = null;
 
-    // Record audit log entry
+    // Retry loop on ID collisions to guarantee resilient creation
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const staffId = await this.generateUniqueStaffId();
+        doc = await CustomerModel.create({
+          customerId: staffId,
+          firstName: data.firstName.trim(),
+          lastName: (data.lastName || '').trim(),
+          name: fullName,
+          username: finalUsername,
+          email: cleanEmail,
+          phone: (data.phone || '+1 (800) 555-7276').trim(),
+          passwordHash,
+          role,
+          status: data.status || 'active',
+          staffTitle: (data.staffTitle || (role === 'admin' ? 'Executive Administrator' : 'Staff Artisan')).trim(),
+          department: (data.department || (role === 'admin' ? 'Executive Administration' : 'Tailoring & Atelier')).trim(),
+          permissions,
+          addresses: []
+        });
+        break;
+      } catch (err: any) {
+        lastError = err;
+        if (err?.code === 11000 || (err?.message && err.message.includes('E11000'))) {
+          // If collision is on customerId, retry with a freshly computed higher ID
+          if (err?.keyPattern?.customerId || err?.message?.includes('customerId')) {
+            continue;
+          }
+          if (err?.keyPattern?.email || err?.message?.includes('email')) {
+            throw new Error(`An account with email ${cleanEmail} is already registered.`);
+          }
+          if (err?.keyPattern?.username || err?.message?.includes('username')) {
+            throw new Error(`The username "${finalUsername}" is already taken. Please choose another username.`);
+          }
+        }
+        throw err;
+      }
+    }
+
+    if (!doc) {
+      throw lastError || new Error('Failed to generate a unique staff identifier. Please try again.');
+    }
+
+    // Record audit log entry safely adhering to AuditLogSchema
     try {
       await AuditLogModel.create({
+        auditId: `AUD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        adminUser: {
+          id: creator?.id || 'CUST-ADMIN-PARKAMW',
+          name: creator?.name || 'Administrator',
+          email: 'admin@parkavenuemenswear.com',
+          role: 'admin'
+        },
         action: 'CREATE_STAFF_MEMBER',
-        userId: creator?.id || 'SYSTEM_ADMIN',
-        userName: creator?.name || 'Administrator',
-        userRole: 'admin',
-        targetType: 'STAFF',
-        targetId: staffId,
-        details: {
+        entity: 'Staff',
+        entityId: doc.customerId,
+        newValue: {
           staffName: fullName,
           email: cleanEmail,
           role,
           staffTitle: doc.staffTitle,
+          department: doc.department,
           permissionsCount: permissions.length
         }
       });
@@ -425,13 +510,17 @@ export const staffService = {
     // Record audit log entry
     try {
       await AuditLogModel.create({
+        auditId: `AUD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        adminUser: {
+          id: requesterId || 'CUST-ADMIN-PARKAMW',
+          name: 'Administrator',
+          email: 'admin@parkavenuemenswear.com',
+          role: 'admin'
+        },
         action: 'DELETE_STAFF_MEMBER',
-        userId: requesterId || 'SYSTEM_ADMIN',
-        userName: 'Administrator',
-        userRole: 'admin',
-        targetType: 'STAFF',
-        targetId: staff.customerId,
-        details: {
+        entity: 'Staff',
+        entityId: staff.customerId,
+        previousValue: {
           staffName: staff.name,
           email: staff.email,
           role: staff.role
@@ -496,13 +585,17 @@ export const staffService = {
 
     try {
       await AuditLogModel.create({
+        auditId: `AUD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        adminUser: {
+          id: creator?.id || 'CUST-ADMIN-PARKAMW',
+          name: creator?.name || 'Administrator',
+          email: 'admin@parkavenuemenswear.com',
+          role: 'admin'
+        },
         action: 'CREATE_STAFF_PERMISSION',
-        userId: creator?.id || 'SYSTEM_ADMIN',
-        userName: creator?.name || 'Administrator',
-        userRole: 'admin',
-        targetType: 'PERMISSION',
-        targetId: cleanId,
-        details: { permissionName: doc.name, category: doc.category }
+        entity: 'Permission',
+        entityId: cleanId,
+        newValue: { permissionName: doc.name, category: doc.category }
       });
     } catch {
       // audit log failure non-blocking
@@ -548,13 +641,17 @@ export const staffService = {
 
     try {
       await AuditLogModel.create({
+        auditId: `AUD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        adminUser: {
+          id: deleter?.id || 'CUST-ADMIN-PARKAMW',
+          name: deleter?.name || 'Administrator',
+          email: 'admin@parkavenuemenswear.com',
+          role: 'admin'
+        },
         action: 'DELETE_STAFF_PERMISSION',
-        userId: deleter?.id || 'SYSTEM_ADMIN',
-        userName: deleter?.name || 'Administrator',
-        userRole: 'admin',
-        targetType: 'PERMISSION',
-        targetId: id,
-        details: { permissionName: perm.name }
+        entity: 'Permission',
+        entityId: id,
+        previousValue: { permissionName: perm.name }
       });
     } catch {
       // non-blocking
@@ -634,13 +731,17 @@ export const staffService = {
 
     try {
       await AuditLogModel.create({
+        auditId: `AUD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        adminUser: {
+          id: creator?.id || 'CUST-ADMIN-PARKAMW',
+          name: creator?.name || 'Administrator',
+          email: 'admin@parkavenuemenswear.com',
+          role: 'admin'
+        },
         action: 'CREATE_STAFF_ROLE',
-        userId: creator?.id || 'SYSTEM_ADMIN',
-        userName: creator?.name || 'Administrator',
-        userRole: 'admin',
-        targetType: 'ROLE',
-        targetId: key,
-        details: { roleName: doc.name, permissionsCount: doc.permissions.length }
+        entity: 'Role',
+        entityId: key,
+        newValue: { roleName: doc.name, permissionsCount: doc.permissions.length }
       });
     } catch {
       // non-blocking
@@ -678,13 +779,17 @@ export const staffService = {
 
     try {
       await AuditLogModel.create({
+        auditId: `AUD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        adminUser: {
+          id: deleter?.id || 'CUST-ADMIN-PARKAMW',
+          name: deleter?.name || 'Administrator',
+          email: 'admin@parkavenuemenswear.com',
+          role: 'admin'
+        },
         action: 'DELETE_STAFF_ROLE',
-        userId: deleter?.id || 'SYSTEM_ADMIN',
-        userName: deleter?.name || 'Administrator',
-        userRole: 'admin',
-        targetType: 'ROLE',
-        targetId: roleKey,
-        details: { roleName: role.name }
+        entity: 'Role',
+        entityId: roleKey,
+        previousValue: { roleName: role.name }
       });
     } catch {
       // non-blocking

@@ -21,11 +21,11 @@ export const returnService = {
    * Generate human-readable Return ID in format RET-XXXX
    */
   async generateReturnId(): Promise<string> {
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    let returnId = `RET-${randomNum}`;
-    const exists = await ReturnModel.findOne({ returnId });
-    if (exists) {
+    let returnId = `RET-${Math.floor(1000 + Math.random() * 9000)}`;
+    let attempts = 0;
+    while (await ReturnModel.exists({ returnId }) && attempts < 25) {
       returnId = `RET-${Math.floor(10000 + Math.random() * 90000)}`;
+      attempts++;
     }
     return returnId;
   },

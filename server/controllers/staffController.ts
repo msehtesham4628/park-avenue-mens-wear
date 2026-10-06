@@ -75,9 +75,25 @@ export const staffController = {
         message: `Staff member ${created.name} (${created.customerId}) successfully added to MongoDB.`
       });
     } catch (err: any) {
-      return res.status(400).json({
+      let message = err?.message || 'Failed to onboard staff member.';
+      let statusCode = 400;
+
+      if (err?.code === 11000 || (err?.message && err.message.includes('E11000'))) {
+        statusCode = 409;
+        if (err.message.includes('email') || err?.keyPattern?.email) {
+          message = 'An account with this email address is already registered.';
+        } else if (err.message.includes('username') || err?.keyPattern?.username) {
+          message = 'This username is already taken. Please choose another username.';
+        } else if (err.message.includes('customerId') || err?.keyPattern?.customerId) {
+          message = 'A staff identifier collision occurred. Please submit again.';
+        } else {
+          message = 'A record with duplicate details already exists in the database.';
+        }
+      }
+
+      return res.status(statusCode).json({
         success: false,
-        message: err.message || 'Failed to onboard staff member.'
+        message
       });
     }
   },
