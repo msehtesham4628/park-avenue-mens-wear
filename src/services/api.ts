@@ -500,7 +500,14 @@ export const ProductService = {
     return true;
   },
 
-  async generateTitle(params: { text?: string; category?: string; fabric?: string; fit?: string }): Promise<any> {
+  async generateTitle(params: {
+    text?: string;
+    rawText?: string;
+    category?: string;
+    fabric?: string;
+    fit?: string;
+    color?: string;
+  }): Promise<any> {
     const remote = await fetchRemote<any>('/products/generate-title', {
       method: 'POST',
       body: JSON.stringify(params)
@@ -509,14 +516,23 @@ export const ProductService = {
       return remote;
     }
     return generateSartorialTitleFromText({
-      rawText: params.text || '',
+      rawText: params.rawText || params.text || '',
       currentCategory: params.category,
       currentFabric: params.fabric,
-      currentFit: params.fit
+      currentFit: params.fit,
+      currentColor: params.color
     });
   },
 
-  async generateSku(params: { name: string; category: string; fabric?: string; color?: string; existingSkus?: string[] }): Promise<{ sku: string; categoryCode: string; colorCode: string; sequence: string }> {
+  async generateSku(params: {
+    name: string;
+    category: string;
+    fabric?: string;
+    color?: string;
+    existingSkus?: string[];
+    currentSku?: string;
+    customSequence?: number | string;
+  }): Promise<{ sku: string; categoryCode: string; colorCode: string; sequence: string; nextAvailableSequence?: number }> {
     const remote = await fetchRemote<any>('/products/generate-sku', {
       method: 'POST',
       body: JSON.stringify(params)
@@ -529,6 +545,8 @@ export const ProductService = {
       category: params.category,
       fabric: params.fabric,
       color: params.color,
+      currentSku: params.currentSku,
+      customSequence: params.customSequence,
       existingSkus: params.existingSkus || productsCache.map(p => p.sku)
     });
     return res;

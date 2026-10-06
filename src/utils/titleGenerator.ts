@@ -1,23 +1,26 @@
 /**
  * Park Avenue Menswear — Sartorial Title & Naming NLP Generator
  * Generates prestigious, high-converting, luxury fashion product titles
- * from raw input text (client notes, WhatsApp specs, vendor descriptions, PDF extracts).
+ * with category-aware fabric matching and rotating prestige collections.
  */
 
 export interface TitleGenerationOptions {
-  rawText: string;
+  rawText?: string;
   currentCategory?: string;
   currentFabric?: string;
   currentFit?: string;
+  currentColor?: string;
+}
+
+export interface TitleVariation {
+  label: string;
+  title: string;
+  style: 'bespoke' | 'editorial' | 'modern' | 'seo' | 'heritage';
 }
 
 export interface GeneratedTitleResult {
   title: string;
-  variations: {
-    label: string;
-    title: string;
-    style: 'bespoke' | 'editorial' | 'modern' | 'seo';
-  }[];
+  variations: TitleVariation[];
   detectedCategory?: string;
   detectedFabric?: string;
   detectedFit?: string;
@@ -26,18 +29,8 @@ export interface GeneratedTitleResult {
   source: 'gemini-ai' | 'sartorial-engine';
 }
 
-const LUXURY_PREDICATES = [
-  'The Park Avenue',
-  'Sovereign',
-  'Atelier',
-  'Signature',
-  'Bespoke Cut',
-  'Mayfair',
-  'Napoli'
-];
-
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  'Suits': ['suit', 'tuxedo', 'tux', 'smoking', 'dinner jacket', '3 piece', '3-piece', 'three-piece', 'double breasted suit', 'two-piece', 'tailcoat', 'morning coat'],
+  'Suits': ['suit', 'tuxedo', 'tux', 'smoking', 'dinner jacket', '3 piece', '3-piece', 'three-piece', 'double breasted suit', 'two-piece'],
   'Blazers & Jackets': ['blazer', 'sports coat', 'sport coat', 'sport jacket', 'smoking jacket', 'dinner coat', 'safari jacket'],
   'Leather jackets': ['leather jacket', 'biker jacket', 'shearling', 'suede jacket', 'bomber leather', 'moto jacket'],
   'Dress shirts': ['dress shirt', 'shirt', 'chemise', 'oxford shirt', 'poplin shirt', 'french cuff', 'spread collar', 'cutaway', 'tuxedo shirt'],
@@ -45,14 +38,47 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   'Pants': ['trousers', 'pants', 'dress pants', 'chinos', 'slacks', 'pleated trousers', 'flannels'],
   'Jeans': ['jeans', 'denim', 'selvedge', 'japanese denim', 'five-pocket'],
   'Outerwear': ['overcoat', 'coat', 'trench', 'peacoat', 'chesterfield', 'topcoat', 'parka', 'car coat'],
-  'Coats': ['coat', 'overcoat', 'greatcoat', 'trench coat', 'wool coat'],
   'Sweaters': ['sweater', 'pullover', 'cardigan', 'knitwear', 'turtleneck', 'rollneck', 'crewneck', 'v-neck', 'vest'],
-  'Shoe': ['shoe', 'oxford', 'derby', 'derbies', 'monk strap', 'monkstrap', 'dress shoes'],
-  'Loofers': ['loafer', 'loafers', 'loofers', 'penny loafer', 'tassel loafer', 'horsebit loafer', 'driving shoes', 'slip on'],
-  'Boots': ['boot', 'boots', 'chelsea boot', 'chukka', 'jodhpur', 'dress boot'],
+  'Shoe': ['oxford', 'oxfords', 'derby', 'derbies', 'monk strap', 'monkstrap', 'dress shoes', 'wholecut'],
+  'Loofers': ['loafer', 'loafers', 'penny loafer', 'tassel loafer', 'horsebit loafer', 'driving shoes', 'belgian loafer'],
+  'Boots': ['boot', 'boots', 'chelsea boot', 'chukka', 'jodhpur', 'balmoral boot'],
   'Ties': ['tie', 'ties', 'necktie', 'bow tie', 'bowtie', 'cravat', 'grenadine tie'],
   'Shorts': ['shorts', 'bermuda', 'tailored shorts', 'linen shorts']
 };
+
+const CATEGORY_FABRICS: Record<string, string[]> = {
+  'suits': ['Super 150s Italian Virgin Wool', 'Super 160s English Worsted Wool', 'Vitale Barberis Worsted Flannel', 'Super 180s Biella Wool'],
+  'blazers & jackets': ['Loro Piana Wool-Silk-Linen Blend', 'Vitale Barberis Textured Hopsack', 'Heritage Scottish Tweed'],
+  'leather jackets': ['Full-Grain French Plonge Lambskin', 'Tuscan Hand-Burnished Nappa Leather', 'Supple Spanish Suede'],
+  'dress shirts': ['140/2 Two-Ply Egyptian Giza 87 Twill', 'West Indian Sea Island Cotton', 'Crisp Italian Royal Oxford', 'Pure Irish Linen'],
+  'polo shirts': ['Sea Island Knit Silk-Cotton', 'Mercerized Piqué Cotton', 'Ultra-Fine Silk Knit'],
+  'pants': ['Super 130s Wool Flannel', 'High-Twist Tropical Worsted Wool', 'Breathable Pure Irish Linen'],
+  'jeans': ['14.5oz Kurabo Japanese Selvedge Denim', 'Kaihara Shuttle-Loomed Denim'],
+  'outerwear': ['Double-Faced Pure Mongolian Cashmere', 'Heavy 650g Italian Melton Wool', 'Piacenza Wool-Cashmere'],
+  'sweaters': ['Todd & Duncan 4-Ply Scottish Cashmere', 'Superfine 18-Gauge Merino Wool', 'Inner Mongolian Cashmere'],
+  'shoe': ['French Box Calf Full-Grain Leather', 'Hand-Burnished French Crust Leather'],
+  'loofers': ['Unlined Reversed Italian Suede', 'Glove-Soft Tuscan Calfskin'],
+  'boots': ['French Calfskin & English Repello Suede', 'Dainite-Sole Box Calf'],
+  'ties': ['Como Silk Grenadine Garza Fina', 'Hand-Rolled 3-Fold Jacquard Silk'],
+  'shorts': ['Baird McNutt Tailored Irish Linen', 'Tropical Worsted Wool']
+};
+
+const PRESTIGE_COLLECTIONS = [
+  'The Sovereign',
+  'The Carlyle',
+  'The Vanderbilt',
+  'The Mayfair',
+  'The Savoy',
+  'The Fifth Avenue',
+  'The Madison',
+  'The Lexington',
+  'The Belgravia',
+  'The St. James',
+  'The Milano Atelier',
+  'The Royal Ascot',
+  'The Knightsbridge',
+  'The Whitehall'
+];
 
 const FABRIC_KEYWORDS: { pattern: RegExp; canonical: string }[] = [
   { pattern: /super\s*180s?/i, canonical: 'Super 180s Italian Virgin Wool' },
@@ -62,21 +88,21 @@ const FABRIC_KEYWORDS: { pattern: RegExp; canonical: string }[] = [
   { pattern: /super\s*130s?/i, canonical: 'Super 130s Fine Wool' },
   { pattern: /super\s*120s?/i, canonical: 'Super 120s All-Season Wool' },
   { pattern: /cashmere/i, canonical: 'Pure Mongolian Cashmere' },
-  { pattern: /giza\s*(?:45|87|cotton)?/i, canonical: 'Egyptian Giza Cotton' },
+  { pattern: /giza\s*(?:45|87|cotton)?/i, canonical: 'Egyptian Giza 87 Cotton' },
   { pattern: /egyptian\s*cotton/i, canonical: 'Egyptian Long-Staple Cotton' },
   { pattern: /sea\s*island/i, canonical: 'West Indian Sea Island Cotton' },
-  { pattern: /irish\s*linen/i, canonical: 'Pure Irish Linen' },
+  { pattern: /irish\s*linen/i, canonical: 'Baird McNutt Irish Linen' },
   { pattern: /linen/i, canonical: 'Breathable Artisan Linen' },
   { pattern: /silk\s*blend/i, canonical: 'Mulberry Silk Blend' },
+  { pattern: /grenadine/i, canonical: 'Como Silk Grenadine' },
   { pattern: /silk/i, canonical: 'Pure Como Silk' },
-  { pattern: /vicuña|vicuna/i, canonical: 'Peruvian Royal Vicuña' },
   { pattern: /flannel/i, canonical: 'Italian Worsted Wool Flannel' },
   { pattern: /tweed|harris/i, canonical: 'Heritage Scottish Tweed' },
   { pattern: /velvet/i, canonical: 'Silk-Cotton Micro Velvet' },
-  { pattern: /calfskin|calf\s*leather/i, canonical: 'Full-Grain French Calfskin' },
+  { pattern: /calfskin|calf\s*leather/i, canonical: 'French Box Calf Full-Grain Leather' },
   { pattern: /suede/i, canonical: 'Tuscan Velour Suede' },
-  { pattern: /seersucker/i, canonical: 'Italian Cotton Seersucker' },
-  { pattern: /worsted/i, canonical: 'Worsted Wool Crepe' }
+  { pattern: /selvedge|denim/i, canonical: '14.5oz Japanese Selvedge Denim' },
+  { pattern: /lambskin|plonge/i, canonical: 'French Plonge Lambskin' }
 ];
 
 const COLOR_KEYWORDS: { pattern: RegExp; canonical: string }[] = [
@@ -87,15 +113,16 @@ const COLOR_KEYWORDS: { pattern: RegExp; canonical: string }[] = [
   { pattern: /charcoal(?:\s*grey)?/i, canonical: 'Charcoal Grey' },
   { pattern: /slate(?:\s*grey)?/i, canonical: 'Slate Grey' },
   { pattern: /heather(?:\s*grey)?/i, canonical: 'Heather Grey' },
-  { pattern: /black|noir/i, canonical: 'Sovereign Black' },
+  { pattern: /black|noir|onyx/i, canonical: 'Sovereign Black' },
   { pattern: /optic\s*white|crisp\s*white|pure\s*white/i, canonical: 'Crisp White' },
   { pattern: /white|blanc/i, canonical: 'Ivory White' },
-  { pattern: /burgundy|bordeaux|wine/i, canonical: 'Burgundy' },
+  { pattern: /cream|ecru|off-white/i, canonical: 'Champagne Ecru' },
+  { pattern: /burgundy|bordeaux|wine|oxblood/i, canonical: 'Burgundy Wine' },
   { pattern: /emerald|forest\s*green/i, canonical: 'Forest Green' },
   { pattern: /olive|sage/i, canonical: 'Olive Drab' },
-  { pattern: /camel|tan|cognac/i, canonical: 'Cognac Camel' },
-  { pattern: /chocolate|tobacco|brown/i, canonical: 'Espresso Brown' },
-  { pattern: /champagne|cream|ecru/i, canonical: 'Champagne Ecru' },
+  { pattern: /camel|tan/i, canonical: 'Classic Camel' },
+  { pattern: /cognac/i, canonical: 'Deep Cognac' },
+  { pattern: /espresso|chocolate|brown|tobacco/i, canonical: 'Espresso Brown' },
   { pattern: /plum|purple/i, canonical: 'Royal Plum' }
 ];
 
@@ -107,13 +134,13 @@ const FIT_KEYWORDS: { pattern: RegExp; canonical: string }[] = [
   { pattern: /peak\s*lapel/i, canonical: 'Peak Lapel' },
   { pattern: /notch\s*lapel/i, canonical: 'Notch Lapel' },
   { pattern: /shawl\s*lapel|shawl\s*collar/i, canonical: 'Shawl Collar' },
-  { pattern: /slim\s*fit/i, canonical: 'Slim Tailored Fit' },
-  { pattern: /modern\s*fit/i, canonical: 'Modern Fit' },
-  { pattern: /classic\s*fit|traditional/i, canonical: 'Classic English Cut' },
   { pattern: /french\s*cuff/i, canonical: 'French Cuff' },
   { pattern: /spread\s*collar/i, canonical: 'Spread Collar' },
-  { pattern: /pleated/i, canonical: 'Single Pleat' },
-  { pattern: /flat\s*front/i, canonical: 'Flat Front' }
+  { pattern: /cutaway\s*collar/i, canonical: 'Cutaway Collar' },
+  { pattern: /single\s*pleat|pleated/i, canonical: 'Single Pleat' },
+  { pattern: /flat\s*front/i, canonical: 'Flat Front' },
+  { pattern: /wholecut/i, canonical: 'Wholecut' },
+  { pattern: /goodyear/i, canonical: 'Goodyear-Welted' }
 ];
 
 export function generateSartorialTitleFromText(options: TitleGenerationOptions): GeneratedTitleResult {
@@ -121,7 +148,7 @@ export function generateSartorialTitleFromText(options: TitleGenerationOptions):
   
   // 1. Detect Category
   let detectedCategory = options.currentCategory;
-  if (!detectedCategory || detectedCategory === 'Suits') {
+  if (!detectedCategory || detectedCategory === 'Suits' || detectedCategory === 'Garment') {
     for (const [cat, words] of Object.entries(CATEGORY_KEYWORDS)) {
       for (const w of words) {
         const regex = new RegExp(`\\b${w.replace(/[-]/g, '[- ]')}\\b`, 'i');
@@ -134,6 +161,7 @@ export function generateSartorialTitleFromText(options: TitleGenerationOptions):
     }
   }
   if (!detectedCategory) detectedCategory = 'Suits';
+  const catLower = detectedCategory.toLowerCase();
 
   // 2. Detect Fabric
   let detectedFabric = options.currentFabric;
@@ -144,14 +172,30 @@ export function generateSartorialTitleFromText(options: TitleGenerationOptions):
     }
   }
 
+  // If no fabric detected, pick authentic fabric for category
+  if (!detectedFabric) {
+    let matchedFabrics: string[] = CATEGORY_FABRICS['suits'];
+    for (const [k, fabList] of Object.entries(CATEGORY_FABRICS)) {
+      if (catLower.includes(k) || k.includes(catLower)) {
+        matchedFabrics = fabList;
+        break;
+      }
+    }
+    detectedFabric = matchedFabrics[Math.floor(Math.random() * matchedFabrics.length)];
+  }
+
   // 3. Detect Color
-  let detectedColor: string | undefined;
+  let detectedColor = options.currentColor;
   for (const item of COLOR_KEYWORDS) {
     if (item.pattern.test(text)) {
       detectedColor = item.canonical;
       break;
     }
   }
+
+  // Dynamic rotation if no color is detected
+  const fallbackColors = ['Midnight Navy', 'Charcoal Grey', 'Sovereign Black', 'Deep Slate', 'Espresso Brown', 'Classic Camel', 'Crisp White'];
+  const finalColor = detectedColor || fallbackColors[Math.floor(Math.random() * fallbackColors.length)];
 
   // 4. Detect Fit & Silhouette
   let detectedFit = options.currentFit;
@@ -163,53 +207,54 @@ export function generateSartorialTitleFromText(options: TitleGenerationOptions):
     }
   }
 
-  // Fallbacks if nothing detected
-  const colorStr = detectedColor || 'Midnight Navy';
-  const fabricShort = detectedFabric ? detectedFabric.replace(/^Pure\s+|^Italian\s+/, '') : 'Italian Wool';
-  const categorySingular = detectedCategory === 'Dress shirts' ? 'Dress Shirt'
+  // Clean singular garment noun
+  const catSingular = detectedCategory === 'Dress shirts' ? 'Dress Shirt'
     : detectedCategory === 'Polo shirts' ? 'Polo Shirt'
     : detectedCategory === 'Leather jackets' ? 'Leather Jacket'
     : detectedCategory === 'Dress pants' ? 'Dress Pants'
+    : detectedCategory === 'Pants' ? 'Tailored Trousers'
+    : detectedCategory === 'Shoe' ? 'Wholecut Oxford Shoe'
+    : detectedCategory === 'Loofers' ? 'Belgian Loafers'
+    : detectedCategory === 'Boots' ? 'Balmoral Boots'
+    : detectedCategory === 'Sweaters' ? 'Cashmere Crewneck'
+    : detectedCategory === 'Ties' ? 'Silk Grenadine Tie'
     : detectedCategory.replace(/s$/, '');
 
-  const featureStr = detectedFeatures.length > 0 ? detectedFeatures[0] : '';
+  const fabricShort = (detectedFabric || 'Super 150s Wool')
+    .replace(/^100%\s+/, '')
+    .replace(/^Grade-A\s+/, '')
+    .replace(/^Pure\s+/, '')
+    .replace(/^Italian\s+/, '');
 
-  // Generate 4 distinctive variations:
-  // 1. Bespoke Atelier Edition
-  const bespokeTitle = `The Park Avenue ${colorStr} ${featureStr ? featureStr + ' ' : ''}${fabricShort} ${categorySingular}`
-    .replace(/\s+/g, ' ')
-    .trim();
+  // Rotate prestige collections
+  const randomCollection1 = PRESTIGE_COLLECTIONS[Math.floor(Math.random() * PRESTIGE_COLLECTIONS.length)];
+  let randomCollection2 = PRESTIGE_COLLECTIONS[Math.floor(Math.random() * PRESTIGE_COLLECTIONS.length)];
+  if (randomCollection2 === randomCollection1) {
+    randomCollection2 = PRESTIGE_COLLECTIONS[(PRESTIGE_COLLECTIONS.indexOf(randomCollection1) + 1) % PRESTIGE_COLLECTIONS.length];
+  }
 
-  // 2. Editorial Signature Edition
-  const editorialTitle = `Atelier ${featureStr ? featureStr + ' ' : ''}${categorySingular} in ${colorStr} ${fabricShort}`
-    .replace(/\s+/g, ' ')
-    .trim();
+  const featureStr = detectedFeatures.length > 0 ? `${detectedFeatures[0]} ` : '';
 
-  // 3. Modern Luxury Minimalist
-  const modernTitle = `Park Avenue ${colorStr} ${categorySingular} (${fabricShort})`
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  // 4. US E-Commerce SEO High-Intent Title
-  const seoTitle = `Men's Luxury ${colorStr} ${categorySingular} - ${fabricShort} ${detectedFit || 'Tailored Fit'}`
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  // Pick primary recommendation:
-  const primaryTitle = bespokeTitle;
+  // 5 distinctive variations:
+  const bespokeTitle = `${randomCollection1} ${finalColor} ${featureStr}${fabricShort} ${catSingular}`.replace(/\s+/g, ' ').trim();
+  const editorialTitle = `Atelier ${featureStr}${catSingular} in ${finalColor} ${fabricShort}`.replace(/\s+/g, ' ').trim();
+  const modernTitle = `Park Avenue ${finalColor} ${catSingular} (${fabricShort})`.replace(/\s+/g, ' ').trim();
+  const seoTitle = `Men's Luxury ${finalColor} ${catSingular} - ${fabricShort} ${detectedFit || 'Tailored Fit'}`.replace(/\s+/g, ' ').trim();
+  const heritageTitle = `${randomCollection2} Signature ${finalColor} ${catSingular}`.replace(/\s+/g, ' ').trim();
 
   return {
-    title: primaryTitle,
+    title: bespokeTitle,
     variations: [
       { label: 'Executive Atelier (Recommended)', title: bespokeTitle, style: 'bespoke' },
       { label: 'Sartorial Editorial', title: editorialTitle, style: 'editorial' },
       { label: 'Modern Minimalist', title: modernTitle, style: 'modern' },
-      { label: 'USA E-Commerce SEO', title: seoTitle, style: 'seo' }
+      { label: 'USA E-Commerce SEO', title: seoTitle, style: 'seo' },
+      { label: 'Heritage Signature', title: heritageTitle, style: 'heritage' }
     ],
     detectedCategory,
     detectedFabric,
     detectedFit,
-    detectedColor,
+    detectedColor: finalColor,
     detectedFeatures,
     source: 'sartorial-engine'
   };

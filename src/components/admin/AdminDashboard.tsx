@@ -418,20 +418,19 @@ export const AdminDashboard: React.FC = () => {
   } | null>(null);
 
   const handleGenerateTitleFromText = async (textToUse?: string) => {
-    const text = (textToUse !== undefined ? textToUse : (rawTitleSourceText || productForm.description || productForm.fabric || productForm.name)).trim();
-    if (!text) {
-      showToast('Please enter or paste some text describing the garment.', 'error');
-      return;
-    }
+    const raw = (textToUse !== undefined ? textToUse : (rawTitleSourceText || productForm.description || productForm.fabric || productForm.name)).trim();
+    const text = raw || `Luxury ${productForm.category || 'Suits'} tailored garment`;
     setIsGeneratingTitle(true);
     try {
       const res = await ProductService.generateTitle({
         text,
         category: productForm.category,
         fabric: productForm.fabric,
-        fit: productForm.fit
+        fit: productForm.fit,
+        color: (productForm.colors && productForm.colors[0]) || ''
       });
       setGeneratedTitleResult(res);
+      setIsAutoTitleOpen(true);
       setProductForm(prev => ({
         ...prev,
         name: res.title || prev.name,
@@ -466,19 +465,38 @@ export const AdminDashboard: React.FC = () => {
         name: productForm.name || 'Garment',
         category: productForm.category,
         fabric: productForm.fabric,
+        color: (productForm.colors && productForm.colors[0]) || '',
+        currentSku: productForm.sku,
         existingSkus: productsList.map(p => p.sku)
       });
       setProductForm(prev => ({ ...prev, sku: res.sku }));
-      showToast(`Generated SKU: ${res.sku}`, 'success');
+      showToast(`Generated SKU: ${res.sku} (Seq #${res.sequence})`, 'success');
     } catch {
       const local = generateAutoSku({
         name: productForm.name || 'Garment',
         category: productForm.category,
         fabric: productForm.fabric,
+        color: (productForm.colors && productForm.colors[0]) || '',
+        currentSku: productForm.sku,
         existingSkus: productsList.map(p => p.sku)
       });
       setProductForm(prev => ({ ...prev, sku: local.sku }));
-      showToast(`Generated SKU: ${local.sku}`, 'success');
+      showToast(`Generated SKU: ${local.sku} (Seq #${local.sequence})`, 'success');
+    }
+  };
+
+  const handleNextSequenceSku = () => {
+    const currentSku = (productForm.sku || '').trim();
+    const match = currentSku.match(/^(.*[-_])(\d+)(.*)$/);
+    if (match) {
+      const prefix = match[1];
+      const num = parseInt(match[2], 10) + 1;
+      const suffix = match[3];
+      const newSku = `${prefix}${String(num).padStart(Math.max(3, match[2].length), '0')}${suffix}`;
+      setProductForm(prev => ({ ...prev, sku: newSku }));
+      showToast(`Advanced SKU: ${newSku} (Seq #${String(num).padStart(3, '0')})`, 'info');
+    } else {
+      handleAutoGenerateSingleSku();
     }
   };
 
@@ -4711,13 +4729,25 @@ export const AdminDashboard: React.FC = () => {
                     {/* Result Variations */}
                     {generatedTitleResult && (
                       <div className="mt-2.5 pt-2.5 border-t border-gray-200/70 space-y-2">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold">
                             Choose Title Style:
                           </span>
-                          <span className="text-[9px] font-mono text-gray-500 font-semibold px-2 py-0.5 bg-gray-100 border border-gray-200">
-                            Engine: Sartorial Engine
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-mono text-gray-600 font-semibold px-2 py-0.5 bg-gray-100 border border-gray-200">
+                              Engine: {generatedTitleResult.source === 'gemini-ai' ? '✨ Gemini AI' : 'Sartorial Engine'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleGenerateTitleFromText()}
+                              disabled={isGeneratingTitle}
+                              className="text-[10px] font-mono text-[#936B34] hover:underline flex items-center gap-1 font-semibold uppercase cursor-pointer"
+                              title="Generate another set of distinct titles"
+                            >
+                              <RefreshCw className={`w-3 h-3 ${isGeneratingTitle ? 'animate-spin' : ''}`} />
+                              <span>Regenerate New</span>
+                            </button>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -4857,15 +4887,26 @@ export const AdminDashboard: React.FC = () => {
                     <label className="text-[10px] font-mono uppercase text-gray-500 font-medium">
                       SKU *
                     </label>
-                    <button
-                      type="button"
-                      onClick={handleAutoGenerateSingleSku}
-                      className="text-[10px] font-mono text-[#936B34] hover:underline flex items-center gap-1 font-semibold uppercase cursor-pointer"
-                      title="Auto-generate structured luxury SKU (e.g. PA-SUIT-NVY-001)"
-                    >
-                      <Zap className="w-3 h-3 text-[#936B34]" />
-                      <span>Auto SKU</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAutoGenerateSingleSku}
+                        className="text-[10px] font-mono text-[#936B34] hover:underline flex items-center gap-1 font-semibold uppercase cursor-pointer"
+                        title="Auto-detect next sequential SKU based on category, color and existing products"
+                      >
+                        <Zap className="w-3 h-3 text-[#936B34]" />
+                        <span>Auto SKU</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleNextSequenceSku}
+                        className="text-[10px] font-mono text-gray-600 hover:text-black hover:underline flex items-center gap-1 font-semibold uppercase cursor-pointer px-1.5 py-0.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
+                        title="Increment sequence number (+1)"
+                      >
+                        <Plus className="w-2.5 h-2.5" />
+                        <span>+1 Next</span>
+                      </button>
+                    </div>
                   </div>
                   <input
                     type="text"
@@ -4875,6 +4916,14 @@ export const AdminDashboard: React.FC = () => {
                     placeholder="PA-SUIT-NVY-001"
                     className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                   />
+                  <div className="mt-1 flex items-center justify-between text-[9px] font-mono text-gray-500">
+                    <span>Format: PA-[CAT]-[COLOR]-[SEQ]</span>
+                    {productForm.sku && (
+                      <span className="text-[#936B34] font-semibold">
+                        Sequence: #{productForm.sku.split('-').pop() || '001'}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div>

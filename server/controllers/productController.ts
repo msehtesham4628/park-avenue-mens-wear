@@ -279,11 +279,19 @@ export const productController = {
    */
   async generateSku(req: Request, res: Response) {
     try {
-      const { name, category, fabric, color } = req.body;
+      const { name, category, fabric, color, existingSkus, currentSku, customSequence } = req.body;
       if (!name && !category) {
         return res.status(400).json({ success: false, message: 'Garment name or category is required.' });
       }
-      const result = await skuService.generateSku({ name: name || 'Garment', category: category || 'Suits', fabric, color });
+      const result = await skuService.generateSku({
+        name: name || 'Garment',
+        category: category || 'Suits',
+        fabric,
+        color,
+        existingSkus,
+        currentSku,
+        customSequence
+      });
       return res.status(200).json({
         success: true,
         data: result,
