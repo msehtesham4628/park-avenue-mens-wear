@@ -15,6 +15,8 @@ export interface SkuOptions {
   color?: string;
   existingSkus?: string[];
   currentSku?: string;
+  categoryCount?: number;
+  totalCatalogCount?: number;
   customSequence?: number | string;
 }
 
@@ -62,6 +64,24 @@ const CATEGORY_CODE_MAP: Record<string, string> = {
   'shorts': 'SHRT'
 };
 
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  'SUIT': ['PA-SUIT', 'PA-ST', 'PA-BLAZER'],
+  'BLAZ': ['PA-BLAZ', 'PA-BLAZER', 'PA-ST'],
+  'SHRT': ['PA-SHRT', 'PA-SH', 'PA-POLO'],
+  'POLO': ['PA-POLO', 'PA-PO', 'PA-SHRT'],
+  'PANT': ['PA-PANT', 'PA-TR', 'PA-JN'],
+  'JEAN': ['PA-JEAN', 'PA-JN'],
+  'OUTR': ['PA-OUTR', 'PA-CT', 'PA-LJ'],
+  'COAT': ['PA-COAT', 'PA-CT', 'PA-OUTR'],
+  'SWTR': ['PA-SWTR', 'PA-SW', 'PA-CASH'],
+  'SHOE': ['PA-SHOE', 'PA-SH', 'PA-BT', 'PA-LF'],
+  'BOOT': ['PA-BOOT', 'PA-BT'],
+  'LOAF': ['PA-LOAF', 'PA-LF'],
+  'TIES': ['PA-TIES', 'PA-TI'],
+  'ACCS': ['PA-ACCS', 'PA-ACC'],
+  'LTHR': ['PA-LTHR', 'PA-LJ']
+};
+
 const COLOR_PATTERNS: { regex: RegExp; code: string }[] = [
   { regex: /\b(midnight|navy|blue|azure|sapphire|indigo|cobalt)\b/i, code: 'NVY' },
   { regex: /\b(black|noir|onyx|jet|obsidian)\b/i, code: 'BLK' },
@@ -106,8 +126,8 @@ export function generateAutoSku(options: SkuOptions): GeneratedSkuResult {
   const colorSource = `${options.name || ''} ${options.color || ''} ${options.fabric || ''}`;
   const colorCode = detectColorCode(colorSource);
 
-  const catPrefix = `PA-${categoryCode}-`;
   const fullPrefix = `PA-${categoryCode}-${colorCode}-`;
+  const aliases = CATEGORY_ALIASES[categoryCode] || [`PA-${categoryCode}`];
 
   const existingSet = new Set<string>();
   const categoryNumbers: number[] = [];
@@ -117,7 +137,9 @@ export function generateAutoSku(options: SkuOptions): GeneratedSkuResult {
     const clean = s.trim().toUpperCase();
     existingSet.add(clean);
 
-    if (clean.startsWith(catPrefix)) {
+    // Check if SKU matches this category prefix or any of its historical aliases
+    const matchesCategory = aliases.some(alias => clean.startsWith(alias.toUpperCase())) || clean.includes(categoryCode);
+    if (matchesCategory) {
       const match = clean.match(/[-_](\d{1,4})(?:$|[-_])/);
       if (match) {
         const num = parseInt(match[1], 10);
@@ -146,12 +168,20 @@ export function generateAutoSku(options: SkuOptions): GeneratedSkuResult {
   // Determine highest existing sequence number in this category
   let maxFound = categoryNumbers.length > 0 ? Math.max(...categoryNumbers) : 0;
 
+  // If client provided a category count or total catalog count, ensure sequence exceeds it
+  if (typeof options.categoryCount === 'number' && options.categoryCount > maxFound) {
+    maxFound = options.categoryCount;
+  }
+  if (maxFound === 0 && typeof options.totalCatalogCount === 'number' && options.totalCatalogCount > 0) {
+    maxFound = options.totalCatalogCount;
+  }
+
   let nextNum: number;
   if (options.customSequence !== undefined && options.customSequence !== '') {
     const parsed = parseInt(String(options.customSequence), 10);
     nextNum = !isNaN(parsed) && parsed >= 1 ? parsed : 1;
   } else {
-    // If we have an existing sequence, advance past it
+    // Increment past highest recorded sequence number
     nextNum = maxFound > 0 ? maxFound + 1 : 1;
 
     // If current SKU in input had a number, ensure we advance to next

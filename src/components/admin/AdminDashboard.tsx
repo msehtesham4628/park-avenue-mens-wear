@@ -337,6 +337,69 @@ export const AdminDashboard: React.FC = () => {
     }>
   });
 
+  // Real-time Title and SKU validation feedback
+  const isTitleDuplicate = useMemo(() => {
+    const trimmed = productForm.name.trim().toLowerCase();
+    if (!trimmed) return false;
+    return productsList.some(p => p.id !== editingProduct?.id && (p.name || '').trim().toLowerCase() === trimmed);
+  }, [productForm.name, productsList, editingProduct]);
+
+  const titleValidation = useMemo(() => {
+    const trimmed = productForm.name.trim();
+    if (!trimmed) {
+      return { valid: false, duplicate: false, message: 'Garment title is required.' };
+    }
+    if (trimmed.length < 3) {
+      return { valid: false, duplicate: false, message: 'Garment title should be at least 3 characters.' };
+    }
+    if (isTitleDuplicate) {
+      return { 
+        valid: false, 
+        duplicate: true, 
+        message: `Duplicate Title: Another product is already named "${trimmed}" in your catalog.` 
+      };
+    }
+    return { valid: true, duplicate: false, message: 'Garment title is unique and available in your catalog.' };
+  }, [productForm.name, isTitleDuplicate]);
+
+  const isSkuDuplicate = useMemo(() => {
+    const cleanSku = productForm.sku.trim().toUpperCase();
+    if (!cleanSku) return false;
+    return productsList.some(p => {
+      if (p.id === editingProduct?.id) return false;
+      if (p.sku && p.sku.trim().toUpperCase() === cleanSku) return true;
+      if (Array.isArray(p.variants)) {
+        return p.variants.some(v => v.sku && v.sku.trim().toUpperCase() === cleanSku);
+      }
+      return false;
+    });
+  }, [productForm.sku, productsList, editingProduct]);
+
+  const skuValidation = useMemo(() => {
+    const cleanSku = productForm.sku.trim().toUpperCase();
+    if (!cleanSku) {
+      return { valid: false, duplicate: false, warning: false, message: 'SKU is required (e.g. PA-SUIT-NVY-002).' };
+    }
+    if (isSkuDuplicate) {
+      return {
+        valid: false,
+        duplicate: true,
+        warning: false,
+        message: `Duplicate SKU: "${cleanSku}" is already assigned to another product in the catalog. Click "+1 Next" to increment.`
+      };
+    }
+    const hasStructuredFormat = /^PA-[A-Z0-9]+-[A-Z0-9]+-\d+$/i.test(cleanSku) || /^PA-[A-Z0-9]+-\d+$/i.test(cleanSku);
+    if (!hasStructuredFormat) {
+      return {
+        valid: true,
+        duplicate: false,
+        warning: true,
+        message: 'Format tip: Recommended luxury format is PA-[CATEGORY]-[COLOR]-[SEQ] (e.g. PA-SUIT-NVY-002).'
+      };
+    }
+    return { valid: true, duplicate: false, warning: false, message: 'SKU is unique and correctly structured.' };
+  }, [productForm.sku, isSkuDuplicate]);
+
   // Custom Color Builder state for Product Modal
   const [customColorName, setCustomColorName] = useState('');
   const [customColorHex, setCustomColorHex] = useState('#1B2A4A');
@@ -460,13 +523,16 @@ export const AdminDashboard: React.FC = () => {
   const [seoPreviewDevice, setSeoPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
 
   const handleAutoGenerateSingleSku = async () => {
+    const categoryCount = productsList.filter(p => (p.category || '').toLowerCase() === (productForm.category || '').toLowerCase()).length;
     try {
       const res = await ProductService.generateSku({
         name: productForm.name || 'Garment',
         category: productForm.category,
         fabric: productForm.fabric,
-        color: (productForm.colors && productForm.colors[0]) || '',
+        color: (productForm.colors && productForm.colors.split(',')[0]?.trim()) || '',
         currentSku: productForm.sku,
+        categoryCount,
+        totalCatalogCount: productsList.length,
         existingSkus: productsList.map(p => p.sku)
       });
       setProductForm(prev => ({ ...prev, sku: res.sku }));
@@ -476,8 +542,10 @@ export const AdminDashboard: React.FC = () => {
         name: productForm.name || 'Garment',
         category: productForm.category,
         fabric: productForm.fabric,
-        color: (productForm.colors && productForm.colors[0]) || '',
+        color: (productForm.colors && productForm.colors.split(',')[0]?.trim()) || '',
         currentSku: productForm.sku,
+        categoryCount,
+        totalCatalogCount: productsList.length,
         existingSkus: productsList.map(p => p.sku)
       });
       setProductForm(prev => ({ ...prev, sku: local.sku }));
@@ -498,6 +566,34 @@ export const AdminDashboard: React.FC = () => {
     } else {
       handleAutoGenerateSingleSku();
     }
+  };
+
+  const handleOpenAddProductModal = () => {
+    setEditingProduct(null);
+    const suitsCount = productsList.filter(p => (p.category || '').toLowerCase() === 'suits').length;
+    const initSku = generateAutoSku({
+      name: 'Garment',
+      category: 'Suits',
+      color: 'Midnight Navy',
+      categoryCount: suitsCount,
+      totalCatalogCount: productsList.length,
+      existingSkus: productsList.map(p => p.sku)
+    });
+    setProductForm({
+      name: '',
+      category: 'Suits',
+      price: '',
+      sku: initSku.sku,
+      description: '',
+      fabric: '',
+      fit: '',
+      colors: 'Midnight Navy, Sovereign Black',
+      shippingCharge: '15',
+      sizeStock: '38R:4, 40R:6, 42R:2',
+      views: { front: '', back: '', left: '', right: '', detail: '' },
+      pdfDocuments: []
+    });
+    setIsAddProductOpen(true);
   };
 
   const handleGenerateAiDescription = async (tone: 'editorial' | 'ecommerce_seo' | 'bespoke_tailor' = descriptionTone) => {
@@ -726,6 +822,16 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     if (!productForm.name || !productForm.price || !productForm.sku) {
       showToast('Please provide name, price and SKU', 'error');
+      return;
+    }
+
+    if (isTitleDuplicate) {
+      showToast(`Cannot save: A product named "${productForm.name.trim()}" already exists. Please choose a unique title.`, 'error');
+      return;
+    }
+
+    if (isSkuDuplicate) {
+      showToast(`Cannot save: SKU "${productForm.sku.trim().toUpperCase()}" is already assigned to another product. Click "+1 Next" to auto-increment.`, 'error');
       return;
     }
 
@@ -1928,24 +2034,7 @@ export const AdminDashboard: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => {
-                    setEditingProduct(null);
-                    setProductForm({
-                      name: '',
-                      category: 'Suits',
-                      price: '',
-                      sku: '',
-                      description: '',
-                      fabric: '',
-                      fit: '',
-                      colors: 'Midnight Navy, Sovereign Black',
-                      shippingCharge: '15',
-                      sizeStock: '38R:4, 40R:6, 42R:2',
-                      views: { front: '', back: '', left: '', right: '', detail: '' },
-                      pdfDocuments: []
-                    });
-                    setIsAddProductOpen(true);
-                  }}
+                  onClick={handleOpenAddProductModal}
                   className="px-4 py-2 bg-[#111827] text-white font-semibold text-xs uppercase tracking-wider hover:bg-[#936B34] transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Plus className="w-4 h-4" />
@@ -2052,7 +2141,7 @@ export const AdminDashboard: React.FC = () => {
                   No inventory has been published. Use the Add Product button above to create a garment or sync from the backend API.
                 </p>
                 <button
-                  onClick={() => setIsAddProductOpen(true)}
+                  onClick={handleOpenAddProductModal}
                   className="px-6 py-3 bg-[#111827] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#936B34] transition-colors cursor-pointer shadow-sm"
                 >
                   ADD FIRST PRODUCT
@@ -4819,9 +4908,35 @@ export const AdminDashboard: React.FC = () => {
                   required
                   value={productForm.name}
                   onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                  placeholder="e.g. The Park Avenue Midnight Navy Suit"
-                  className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                  placeholder="e.g. The Sovereign Midnight Navy Super 150s Suit"
+                  className={`w-full bg-[#F9F9F8] border px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none transition-colors ${
+                    isTitleDuplicate 
+                      ? 'border-red-500 bg-red-50/20 text-red-950 focus:border-red-600' 
+                      : productForm.name.trim().length >= 3 
+                        ? 'border-emerald-500/70 focus:border-emerald-600'
+                        : 'border-gray-200 focus:border-[#936B34]'
+                  }`}
                 />
+                {productForm.name && (
+                  <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-mono">
+                    {isTitleDuplicate ? (
+                      <div className="flex items-center gap-1.5 text-red-600 bg-red-50 p-1.5 border border-red-200 w-full font-semibold">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
+                        <span>{titleValidation.message}</span>
+                      </div>
+                    ) : productForm.name.trim().length < 3 ? (
+                      <div className="flex items-center gap-1 text-amber-700">
+                        <AlertCircle className="w-3 h-3 shrink-0 text-amber-600" />
+                        <span>{titleValidation.message}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-emerald-700 font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                        <span>{titleValidation.message}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -4831,7 +4946,19 @@ export const AdminDashboard: React.FC = () => {
                   </label>
                   <select
                     value={productForm.category}
-                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value as ProductCategory })}
+                    onChange={(e) => {
+                      const newCat = e.target.value as ProductCategory;
+                      const newCatCount = productsList.filter(p => (p.category || '').toLowerCase() === newCat.toLowerCase()).length;
+                      const autoSku = generateAutoSku({
+                        name: productForm.name || 'Garment',
+                        category: newCat,
+                        color: (productForm.colors && productForm.colors.split(',')[0]?.trim()) || 'Navy',
+                        categoryCount: newCatCount,
+                        totalCatalogCount: productsList.length,
+                        existingSkus: productsList.map(p => p.sku)
+                      });
+                      setProductForm(prev => ({ ...prev, category: newCat, sku: autoSku.sku }));
+                    }}
                     className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34] cursor-pointer"
                   >
                     <option value="Suits">Suits</option>
@@ -4912,18 +5039,52 @@ export const AdminDashboard: React.FC = () => {
                     type="text"
                     required
                     value={productForm.sku}
-                    onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
-                    placeholder="PA-SUIT-NVY-001"
-                    className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
+                    onChange={(e) => setProductForm({ ...productForm, sku: e.target.value.toUpperCase() })}
+                    placeholder="PA-SUIT-NVY-002"
+                    className={`w-full bg-[#F9F9F8] border px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none transition-colors ${
+                      isSkuDuplicate
+                        ? 'border-red-500 bg-red-50/20 text-red-950 focus:border-red-600'
+                        : skuValidation.warning
+                          ? 'border-amber-400 focus:border-amber-500'
+                          : productForm.sku.trim()
+                            ? 'border-emerald-500/70 focus:border-emerald-600'
+                            : 'border-gray-200 focus:border-[#936B34]'
+                    }`}
                   />
-                  <div className="mt-1 flex items-center justify-between text-[9px] font-mono text-gray-500">
-                    <span>Format: PA-[CAT]-[COLOR]-[SEQ]</span>
-                    {productForm.sku && (
-                      <span className="text-[#936B34] font-semibold">
-                        Sequence: #{productForm.sku.split('-').pop() || '001'}
-                      </span>
-                    )}
-                  </div>
+                  {productForm.sku && (
+                    <div className="mt-1.5 space-y-1">
+                      {isSkuDuplicate ? (
+                        <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-red-600 bg-red-50 p-1.5 border border-red-200">
+                          <div className="flex items-center gap-1.5">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
+                            <span className="font-semibold">{skuValidation.message}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleNextSequenceSku}
+                            className="px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white text-[9px] font-bold uppercase tracking-wider shrink-0 cursor-pointer shadow-2xs transition-colors"
+                          >
+                            Auto-Fix (+1)
+                          </button>
+                        </div>
+                      ) : skuValidation.warning ? (
+                        <div className="flex items-center gap-1 text-[10px] font-mono text-amber-700">
+                          <AlertCircle className="w-3 h-3 shrink-0 text-amber-600" />
+                          <span>{skuValidation.message}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between text-[10px] font-mono text-emerald-700">
+                          <div className="flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>{skuValidation.message}</span>
+                          </div>
+                          <span className="text-[#936B34] font-semibold">
+                            Sequence: #{productForm.sku.split('-').pop() || '001'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>

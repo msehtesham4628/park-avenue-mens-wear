@@ -351,7 +351,7 @@ export const StaffManagementView: React.FC = () => {
         firstName: newStaffForm.firstName.trim(),
         lastName: newStaffForm.lastName.trim(),
         email: newStaffForm.email.trim().toLowerCase(),
-        username: newStaffForm.username.trim() || newStaffForm.email.split('@')[0],
+        username: newStaffForm.username.trim() || undefined,
         password: newStaffForm.password,
         phone: newStaffForm.phone.trim(),
         role: newStaffForm.role,
@@ -1292,6 +1292,24 @@ export const StaffManagementView: React.FC = () => {
                     onChange={(e) => setNewStaffForm(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="e.g. matteo@parkavenuemenswear.com"
                     className="w-full bg-[#FAF8F5] border border-gray-300 p-2 text-xs text-[#111827] focus:border-[#936B34] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block uppercase text-[10px] text-gray-600 font-semibold">
+                      Username (Optional)
+                    </label>
+                    <span className="text-[9px] font-mono text-gray-400">
+                      Auto-generated & collision-safe if blank
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={newStaffForm.username}
+                    onChange={(e) => setNewStaffForm(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, '') }))}
+                    placeholder={newStaffForm.email ? newStaffForm.email.split('@')[0] : 'e.g. dev_01'}
+                    className="w-full bg-[#FAF8F5] border border-gray-300 p-2 text-xs text-[#111827] focus:border-[#936B34] focus:outline-none font-mono"
                   />
                 </div>
 

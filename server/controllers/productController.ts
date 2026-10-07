@@ -279,7 +279,7 @@ export const productController = {
    */
   async generateSku(req: Request, res: Response) {
     try {
-      const { name, category, fabric, color, existingSkus, currentSku, customSequence } = req.body;
+      const { name, category, fabric, color, existingSkus, currentSku, customSequence, categoryCount, totalCatalogCount } = req.body;
       if (!name && !category) {
         return res.status(400).json({ success: false, message: 'Garment name or category is required.' });
       }
@@ -290,7 +290,9 @@ export const productController = {
         color,
         existingSkus,
         currentSku,
-        customSequence
+        customSequence,
+        categoryCount,
+        totalCatalogCount
       });
       return res.status(200).json({
         success: true,

@@ -267,22 +267,20 @@ export const staffService = {
       throw new Error(`An account with email ${cleanEmail} is already registered.`);
     }
 
-    // Determine unique username
-    let finalUsername = (data.username || cleanEmail.split('@')[0]).toLowerCase().trim();
-    if (data.username && data.username.trim()) {
-      const existingUser = await CustomerModel.findOne({ username: finalUsername });
-      if (existingUser) {
-        throw new Error(`The username "${finalUsername}" is already taken. Please choose another username.`);
-      }
-    } else {
-      let candidateUsername = finalUsername;
-      let counter = 1;
-      while (await CustomerModel.exists({ username: candidateUsername })) {
-        candidateUsername = `${finalUsername}${counter}`;
-        counter++;
-      }
-      finalUsername = candidateUsername;
+    // Determine unique username (auto-resolve collision if already taken)
+    let baseUsername = (data.username?.trim() || cleanEmail.split('@')[0])
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_.-]/g, '');
+    if (!baseUsername) baseUsername = 'staff';
+
+    let candidateUsername = baseUsername;
+    let counter = 2;
+    while (await CustomerModel.exists({ username: candidateUsername })) {
+      candidateUsername = `${baseUsername}${counter}`;
+      counter++;
     }
+    const finalUsername = candidateUsername;
 
     const passwordHash = await authService.hashPassword(data.password);
     const fullName = `${data.firstName.trim()} ${data.lastName?.trim() || ''}`.trim();

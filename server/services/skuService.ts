@@ -7,6 +7,8 @@ export interface GenerateSkuOptions {
   color?: string;
   existingSkus?: string[];
   currentSku?: string;
+  categoryCount?: number;
+  totalCatalogCount?: number;
   customSequence?: number | string;
 }
 
@@ -98,8 +100,27 @@ export const skuService = {
     const prefix = `PA-${catCode}-${colorCode}-`;
     const catPrefix = `PA-${catCode}-`;
 
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  'SUIT': ['PA-SUIT', 'PA-ST', 'PA-BLAZER'],
+  'BLAZ': ['PA-BLAZ', 'PA-BLAZER', 'PA-ST'],
+  'SHRT': ['PA-SHRT', 'PA-SH', 'PA-POLO'],
+  'POLO': ['PA-POLO', 'PA-PO', 'PA-SHRT'],
+  'PANT': ['PA-PANT', 'PA-TR', 'PA-JN'],
+  'JEAN': ['PA-JEAN', 'PA-JN'],
+  'OUTR': ['PA-OUTR', 'PA-CT', 'PA-LJ'],
+  'COAT': ['PA-COAT', 'PA-CT', 'PA-OUTR'],
+  'SWTR': ['PA-SWTR', 'PA-SW', 'PA-CASH'],
+  'SHOE': ['PA-SHOE', 'PA-SH', 'PA-BT', 'PA-LF'],
+  'BOOT': ['PA-BOOT', 'PA-BT'],
+  'LOAF': ['PA-LOAF', 'PA-LF'],
+  'TIES': ['PA-TIES', 'PA-TI'],
+  'ACCS': ['PA-ACCS', 'PA-ACC'],
+  'LTHR': ['PA-LTHR', 'PA-LJ']
+};
+
     const allExistingSkusSet = new Set<string>();
     const categorySequenceNumbers: number[] = [];
+    const aliases = CATEGORY_ALIASES[catCode] || [`PA-${catCode}`];
 
     // Helper to register SKU string and extract sequence
     const registerSku = (skuStr: string, belongsToCategory: boolean) => {
@@ -107,8 +128,9 @@ export const skuService = {
       const clean = skuStr.trim().toUpperCase();
       allExistingSkusSet.add(clean);
 
-      // If SKU belongs to this category or matches PA-{CAT}-
-      if (belongsToCategory || clean.startsWith(catPrefix)) {
+      // If SKU belongs to this category or matches PA-{CAT}- or any category alias
+      const matchesCategory = belongsToCategory || aliases.some(alias => clean.startsWith(alias.toUpperCase())) || clean.includes(catCode);
+      if (matchesCategory) {
         // Extract sequence number: e.g. PA-SUIT-NVY-002 -> 2, PA-SUIT-005 -> 5
         const match = clean.match(/[-_](\d{1,4})(?:$|[-_])/);
         if (match) {
@@ -177,9 +199,15 @@ export const skuService = {
       maxFound = Math.max(...categorySequenceNumbers);
     }
 
-    // If there are existing products in this category, ensure sequence is at least past the count
+    // Incorporate client and database category counts so sequence always exceeds existing count
+    if (typeof params.categoryCount === 'number' && params.categoryCount > maxFound) {
+      maxFound = params.categoryCount;
+    }
     if (catProductCount > maxFound) {
       maxFound = Math.max(maxFound, catProductCount);
+    }
+    if (maxFound === 0 && typeof params.totalCatalogCount === 'number' && params.totalCatalogCount > 0) {
+      maxFound = params.totalCatalogCount;
     }
 
     // 5. Determine starting sequence number

@@ -531,6 +531,8 @@ export const ProductService = {
     color?: string;
     existingSkus?: string[];
     currentSku?: string;
+    categoryCount?: number;
+    totalCatalogCount?: number;
     customSequence?: number | string;
   }): Promise<{ sku: string; categoryCode: string; colorCode: string; sequence: string; nextAvailableSequence?: number }> {
     const remote = await fetchRemote<any>('/products/generate-sku', {
@@ -546,6 +548,8 @@ export const ProductService = {
       fabric: params.fabric,
       color: params.color,
       currentSku: params.currentSku,
+      categoryCount: params.categoryCount,
+      totalCatalogCount: params.totalCatalogCount,
       customSequence: params.customSequence,
       existingSkus: params.existingSkus || productsCache.map(p => p.sku)
     });
