@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx server/tests/runTests.ts"
+    "test": "tsx server/tests/runTests.ts",
+    "reset:admin": "tsx server/scripts/setAdminPassword.ts",
+    "clear:accounts": "tsx server/scripts/clearAllAccounts.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

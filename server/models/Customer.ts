@@ -60,8 +60,9 @@ const CustomerSchema = new Schema<ICustomer>({
   passwordHash: { type: String },
   role: { 
     type: String, 
-    enum: ['customer', 'admin', 'staff'], 
+    enum: ['customer', 'admin', 'staff', 'Admin', 'Staff', 'Customer', 'ADMIN', 'STAFF', 'CUSTOMER'], 
     default: 'customer',
+    set: (val: string) => (val ? String(val).toLowerCase().trim() : 'customer'),
     index: true 
   },
   status: { 

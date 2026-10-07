@@ -15,7 +15,11 @@ export async function seedInitialData() {
     const seedStaffPassword = process.env.SEED_STAFF_PASSWORD || 'Tailor@2026';
     const seedPatronPassword = process.env.SEED_PATRON_PASSWORD || 'Patron@2026';
 
-    // 1. Seed Admin accounts
+    // 1. Seed Admin accounts (only if clean slate is not explicitly requested)
+    const shouldSeedAccounts = process.env.SEED_ACCOUNTS !== 'false' && process.env.SKIP_SEED_ACCOUNTS !== 'true';
+    if (!shouldSeedAccounts) {
+      console.info('[Park Avenue DB Seed] Clean slate mode active: skipping default accounts seeding.');
+    } else {
     const adminAccounts = [
       {
         id: 'CUST-ADMIN-PARKAMW',
@@ -140,6 +144,7 @@ export async function seedInitialData() {
         }]
       });
       console.info('[Park Avenue DB Seed] Created default patron: patron@parkavenuemenswear.com');
+    }
     }
 
     // 2. Seed Luxury Products if empty

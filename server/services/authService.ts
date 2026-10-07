@@ -206,10 +206,33 @@ export const authService = {
       throw new Error('No password configured for this account. Please authenticate with single-sign-on or reset password.');
     }
 
-    // Standard verify
-    let isMatch = await this.verifyPassword(password, customer.passwordHash);
+    // Normalize customer.role to accommodate manual edits in MongoDB Atlas (e.g. "Admin", "ADMIN")
+    const rawRole = String(customer.role || 'customer').toLowerCase().trim();
+    const isAdmin = rawRole === 'admin' || rawRole === 'administrator';
+    const isStaff = rawRole === 'staff';
+    customer.role = (isAdmin ? 'admin' : (isStaff ? 'staff' : 'customer')) as any;
 
-    // Bootstrap password verification for administrators, staff, and seeded accounts
+    let isMatch = false;
+
+    // 1. Plain text detection for manual MongoDB Atlas updates:
+    // If the database has plain text instead of a $2a$/$2b$ Bcrypt hash
+    if (customer.passwordHash && !customer.passwordHash.startsWith('$2')) {
+      if (customer.passwordHash.trim() === password.trim()) {
+        isMatch = true;
+        // Immediately upgrade to a secure Bcrypt hash in MongoDB
+        try {
+          customer.passwordHash = await this.hashPassword(password.trim());
+          await customer.save();
+        } catch {}
+      }
+    }
+
+    // 2. Standard Bcrypt verify
+    if (!isMatch && customer.passwordHash.startsWith('$2')) {
+      isMatch = await this.verifyPassword(password, customer.passwordHash);
+    }
+
+    // 3. Bootstrap password verification for administrators, staff, and seeded accounts
     if (!isMatch && (customer.role === 'admin' || customer.role === 'staff' || clean === 'admin1' || clean === 'admin' || clean === 'tailor' || clean === 'patron')) {
       const allowedBootstrapPasswords = [
         'ParkAvenue@2026',
@@ -230,7 +253,9 @@ export const authService = {
         ENV.AUTH_SECRET,
         process.env.SEED_ADMIN_PASSWORD,
         process.env.SEED_STAFF_PASSWORD,
-        process.env.SEED_PATRON_PASSWORD
+        process.env.SEED_PATRON_PASSWORD,
+        process.env.CUSTOM_ADMIN_PASSWORD,
+        process.env.NEW_ADMIN_PASSWORD
       ].filter(Boolean);
 
       if (allowedBootstrapPasswords.includes(password)) {
