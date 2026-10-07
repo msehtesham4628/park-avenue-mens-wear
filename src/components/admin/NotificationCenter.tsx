@@ -240,7 +240,7 @@ export const NotificationCenter: React.FC = () => {
           <div className="font-serif text-2xl text-[#111827] mt-1 font-normal">{stats.newsDispatches || historyLogs.filter(l => l.category === 'news').length}</div>
           <div className="text-[10px] font-mono text-gray-400 mt-0.5">Sartorial Journal Stories</div>
         </div>
-        <div className="border border-gray-200 bg-[#F9F9F8] p-4 shadow-2xs">
+        <div className="col-span-2 sm:col-span-1 lg:col-span-1 border border-gray-200 bg-[#F9F9F8] p-4 shadow-2xs">
           <div className="text-[9px] font-mono uppercase tracking-widest text-emerald-700">VIP PRIVILEGES</div>
           <div className="font-serif text-2xl text-emerald-800 mt-1 font-normal">{stats.promotions || historyLogs.filter(l => l.category === 'promotion').length}</div>
           <div className="text-[10px] font-mono text-gray-400 mt-0.5">Tailoring Perks &amp; Events</div>

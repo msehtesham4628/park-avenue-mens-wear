@@ -113,37 +113,40 @@ export const NotificationDrawer: React.FC = () => {
         onClick={() => setIsNotificationsOpen(false)}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white border-l border-gray-200 shadow-2xl flex flex-col text-[#111827]">
+      {/* Drawer Container */}
+      <div className="fixed inset-y-0 right-0 max-w-full flex w-full sm:w-auto sm:pl-10 justify-end pointer-events-none">
+        <div className="w-full sm:w-[440px] max-w-full bg-white border-l border-gray-200 shadow-2xl flex flex-col text-[#111827] h-full h-[100dvh] pointer-events-auto overflow-hidden">
           {/* Header */}
-          <div className="p-5 border-b border-gray-200 bg-[#FAF8F5]">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-[#936B34]" />
-                <h2 className="font-serif text-lg text-[#111827] tracking-wide font-normal">
-                  Client Dispatches &amp; Updates
+          <div className="p-4 sm:p-5 border-b border-gray-200 bg-[#FAF8F5] shrink-0">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Bell className="w-4 h-4 text-[#936B34] shrink-0" />
+                <h2 className="font-serif text-base sm:text-lg text-[#111827] tracking-wide font-normal truncate">
+                  Alerts &amp; Dispatches
                 </h2>
                 {unreadCount > 0 && (
-                  <span className="px-1.5 py-0.2 bg-[#936B34] text-white text-[9px] font-mono font-bold">
+                  <span className="px-1.5 py-0.5 bg-[#936B34] text-white text-[9px] font-mono font-bold shrink-0">
                     {unreadCount} NEW
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2 shrink-0">
                 {unreadCount > 0 && (
                   <button
+                    type="button"
                     onClick={markAllNotificationsRead}
-                    className="text-[11px] text-gray-500 hover:text-[#936B34] transition-colors flex items-center gap-1 cursor-pointer font-mono"
+                    className="text-[11px] text-gray-500 hover:text-[#936B34] transition-colors flex items-center gap-1 cursor-pointer font-mono whitespace-nowrap"
                     title="Mark all as read"
                   >
-                    <CheckCheck className="w-3.5 h-3.5" />
-                    <span>Mark read</span>
+                    <CheckCheck className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline sm:inline">Mark read</span>
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => setIsNotificationsOpen(false)}
-                  className="p-1 text-gray-400 hover:text-[#111827] transition-colors cursor-pointer"
-                  aria-label="Close"
+                  className="p-1.5 -mr-1 text-gray-500 hover:text-[#111827] hover:bg-black/5 rounded-xs transition-colors cursor-pointer"
+                  aria-label="Close Alerts"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -151,7 +154,7 @@ export const NotificationDrawer: React.FC = () => {
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
               {[
                 { id: 'all', label: 'All' },
                 { id: 'product', label: 'Garments' },
@@ -175,7 +178,7 @@ export const NotificationDrawer: React.FC = () => {
           </div>
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-white">
             {filteredNotifications.length === 0 ? (
               <div className="py-20 text-center text-gray-500">
                 <div className="w-12 h-12 bg-[#FAF8F5] border border-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 text-[#936B34]">
@@ -196,7 +199,7 @@ export const NotificationDrawer: React.FC = () => {
                   <div
                     key={notif.id}
                     onClick={() => handleNotificationClick(notif)}
-                    className={`p-4 transition-all cursor-pointer border group relative ${
+                    className={`p-3.5 sm:p-4 transition-all cursor-pointer border group relative ${
                       notif.read
                         ? 'bg-white border-gray-200 hover:border-[#936B34]/60 hover:bg-[#FAF8F5]'
                         : 'bg-[#FAF8F5] border-[#936B34]/50 shadow-2xs hover:border-[#936B34]'
@@ -207,19 +210,19 @@ export const NotificationDrawer: React.FC = () => {
                       <div className="absolute top-0 left-0 bottom-0 w-1 bg-[#936B34]" />
                     )}
 
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                         <span className={`px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider font-semibold border flex items-center gap-1 ${badge.color}`}>
-                          <BadgeIcon className="w-2.5 h-2.5" />
+                          <BadgeIcon className="w-2.5 h-2.5 shrink-0" />
                           <span>{badge.label}</span>
                         </span>
                         {isHighPriority && (
-                          <span className="text-[9px] font-mono text-[#936B34] font-bold uppercase tracking-wider">
+                          <span className="text-[9px] font-mono text-[#936B34] font-bold uppercase tracking-wider shrink-0">
                             ● PRIORITY
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                         <span className="text-[10px] font-mono text-gray-400 whitespace-nowrap">
                           {notif.timestamp}
                         </span>
@@ -229,7 +232,7 @@ export const NotificationDrawer: React.FC = () => {
                             e.stopPropagation();
                             dismissNotification(notif.id);
                           }}
-                          className="p-1 -mr-1 text-gray-400 hover:text-red-600 hover:bg-gray-100 rounded-xs transition-colors cursor-pointer"
+                          className="p-1 -mr-0.5 text-gray-400 hover:text-red-600 hover:bg-gray-100 rounded-xs transition-colors cursor-pointer shrink-0"
                           title="Close / Dismiss notification"
                           aria-label="Dismiss notification"
                         >
@@ -238,11 +241,11 @@ export const NotificationDrawer: React.FC = () => {
                       </div>
                     </div>
 
-                    <h4 className="text-xs font-semibold text-[#111827] group-hover:text-[#936B34] transition-colors font-sans mb-1">
+                    <h4 className="text-xs font-semibold text-[#111827] group-hover:text-[#936B34] transition-colors font-sans mb-1 break-words">
                       {notif.title}
                     </h4>
 
-                    <p className="text-xs text-gray-600 leading-relaxed font-sans mb-3 line-clamp-3">
+                    <p className="text-xs text-gray-600 leading-relaxed font-sans mb-3 line-clamp-3 break-words">
                       {notif.message}
                     </p>
 
@@ -264,7 +267,7 @@ export const NotificationDrawer: React.FC = () => {
           </div>
 
           {/* Footer note */}
-          <div className="p-3.5 bg-[#FAF8F5] border-t border-gray-200 text-center text-[10px] text-gray-500 font-mono">
+          <div className="p-3 bg-[#FAF8F5] border-t border-gray-200 text-center text-[10px] text-gray-500 font-mono shrink-0">
             <span>Park Avenue Atelier Dispatches &bull; Synchronized via Concierge Gateway</span>
           </div>
         </div>

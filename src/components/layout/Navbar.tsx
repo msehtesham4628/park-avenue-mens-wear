@@ -147,10 +147,10 @@ export const Navbar: React.FC = () => {
               : 'py-2 sm:py-2.5'
           }`}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+          <div className="max-w-6xl mx-auto px-3 sm:px-6 flex items-center justify-between gap-2">
           
             {/* Brand Logo */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink min-w-0">
               <button 
                 onClick={() => {
                   setActiveView('home');
@@ -162,7 +162,7 @@ export const Navbar: React.FC = () => {
                 <ParkAvenueLogo 
                   variant="horizontal" 
                   size={isScrolled ? 'sm' : 'md'} 
-                  className={`transition-all duration-300 ${
+                  className={`transition-all duration-300 max-w-[130px] xs:max-w-[155px] sm:max-w-[180px] md:max-w-none ${
                     isTransparent 
                       ? 'brightness-0 invert drop-shadow-md group-hover:brightness-125' 
                       : 'text-[#111827] group-hover:text-[#936B34]'
@@ -470,7 +470,7 @@ export const Navbar: React.FC = () => {
             </div>
 
             {/* Mobile Right Controls: SEARCH, ALERTS, WISHLIST, ACCOUNT, CART, MENU */}
-            <div className="flex lg:hidden items-center gap-2.5">
+            <div className="flex lg:hidden items-center gap-1 sm:gap-2 shrink-0">
               <button
                 onClick={() => setIsSearchOpen(true)}
                 className={`p-1.5 cursor-pointer transition-colors ${
