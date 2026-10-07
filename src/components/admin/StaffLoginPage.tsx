@@ -154,7 +154,20 @@ export const StaffLoginPage: React.FC = () => {
                 </span>
                 <span className="text-[9px] font-mono text-gray-400">Click to fill</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 pt-0.5">
+              <div className="grid grid-cols-3 gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsernameOrEmail('admin');
+                    setPassword('Admin@2026');
+                    setErrorMessage('');
+                  }}
+                  className="text-left p-1.5 bg-white border border-gray-200 hover:border-[#936B34] hover:bg-amber-50/40 transition-all cursor-pointer group"
+                >
+                  <div className="text-[9px] font-mono uppercase text-[#936B34] font-semibold">Admin (DB)</div>
+                  <div className="text-[11px] font-mono text-[#111827] group-hover:text-[#936B34]">admin</div>
+                  <div className="text-[8px] font-mono text-gray-400">Admin@2026</div>
+                </button>
                 <button
                   type="button"
                   onClick={() => {

@@ -349,7 +349,21 @@ export const LoginPage: React.FC = () => {
                     <span className="text-[10px] font-mono text-gray-400">Tap to auto-fill</span>
                   </div>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginUsername('admin');
+                        setLoginPassword('Admin@2026');
+                        setErrorMessage(null);
+                      }}
+                      className="text-left p-2 bg-white border border-gray-200 hover:border-[#936B34] hover:bg-amber-50/40 transition-all cursor-pointer group"
+                    >
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-[#936B34] font-semibold">Admin (DB)</div>
+                      <div className="text-xs font-mono text-[#111827] group-hover:text-[#936B34] font-medium">admin</div>
+                      <div className="text-[9px] font-mono text-gray-400">Admin@2026</div>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {
@@ -359,9 +373,9 @@ export const LoginPage: React.FC = () => {
                       }}
                       className="text-left p-2 bg-white border border-gray-200 hover:border-[#936B34] hover:bg-amber-50/40 transition-all cursor-pointer group"
                     >
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-[#936B34] font-semibold">Administrator</div>
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-[#936B34] font-semibold">Admin 1</div>
                       <div className="text-xs font-mono text-[#111827] group-hover:text-[#936B34] font-medium">admin1</div>
-                      <div className="text-[9px] font-mono text-gray-400">Pass: Admin@2026</div>
+                      <div className="text-[9px] font-mono text-gray-400">Admin@2026</div>
                     </button>
 
                     <button
@@ -375,7 +389,7 @@ export const LoginPage: React.FC = () => {
                     >
                       <div className="text-[10px] font-mono uppercase tracking-wider text-[#936B34] font-semibold">Staff Tailor</div>
                       <div className="text-xs font-mono text-[#111827] group-hover:text-[#936B34] font-medium">tailor</div>
-                      <div className="text-[9px] font-mono text-gray-400">Pass: Tailor@2026</div>
+                      <div className="text-[9px] font-mono text-gray-400">Tailor@2026</div>
                     </button>
 
                     <button
@@ -387,9 +401,9 @@ export const LoginPage: React.FC = () => {
                       }}
                       className="text-left p-2 bg-white border border-gray-200 hover:border-[#936B34] hover:bg-amber-50/40 transition-all cursor-pointer group"
                     >
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-[#936B34] font-semibold">Client Patron</div>
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-[#936B34] font-semibold">Patron (DB)</div>
                       <div className="text-xs font-mono text-[#111827] group-hover:text-[#936B34] font-medium">patron</div>
-                      <div className="text-[9px] font-mono text-gray-400">Pass: Patron@2026</div>
+                      <div className="text-[9px] font-mono text-gray-400">Patron@2026</div>
                     </button>
                   </div>
                 </div>
