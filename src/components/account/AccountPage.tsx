@@ -5,6 +5,7 @@ import {
   Ruler, 
   ArrowRight,
   Trash2,
+  Heart,
   LogOut,
   LogIn,
   ShieldCheck,
@@ -42,6 +43,8 @@ export const AccountPage: React.FC = () => {
     currentCustomer, 
     logout,
     wishlist, 
+    wishlistCount,
+    clearWishlist,
     products, 
     toggleWishlist, 
     addToCart, 
@@ -171,7 +174,18 @@ export const AccountPage: React.FC = () => {
     loadProfile();
   }, [currentCustomer]);
 
-  const wishlistedProducts = products.filter(p => wishlist.includes(p.id));
+  const wishlistedProducts = products.filter(p => 
+    wishlist.includes(p.id) || 
+    ((p as any).productId && wishlist.includes((p as any).productId)) || 
+    (p.sku && wishlist.includes(p.sku))
+  );
+
+  // Auto-prune any orphaned IDs if catalog is loaded but no products match
+  useEffect(() => {
+    if (products.length > 0 && wishlist.length > 0 && wishlistedProducts.length === 0) {
+      clearWishlist();
+    }
+  }, [products.length, wishlist.length, wishlistedProducts.length]);
 
   const handleTrackOrder = (order: Order) => {
     setCurrentOrder(order);
@@ -394,7 +408,7 @@ export const AccountPage: React.FC = () => {
             { id: 'orders', label: `MY ORDERS (${customerOrders.length})`, icon: Package },
             { id: 'returns', label: `RETURN & ORDERS (${returnRequests.length})`, icon: RotateCcw },
             { id: 'alterations', label: `ALTERATIONS (${customerAlterations.length})`, icon: Scissors },
-            { id: 'wishlist', label: `WISHLIST (${wishlistedProducts.length})`, icon: Trash2 }
+            { id: 'wishlist', label: `WISHLIST (${wishlistedProducts.length})`, icon: Heart }
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1068,7 +1082,21 @@ export const AccountPage: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
+                  <span className="text-xs font-mono uppercase tracking-widest text-[#936B34] font-medium">
+                    {wishlistedProducts.length} SAVED {wishlistedProducts.length === 1 ? 'GARMENT' : 'GARMENTS'}
+                  </span>
+                  <button
+                    onClick={clearWishlist}
+                    className="text-xs font-mono uppercase text-gray-500 hover:text-red-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    title="Clear all saved garments"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>CLEAR WISHLIST</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {wishlistedProducts.map((product, pIdx) => {
                   const productKey = product.id || (product as any).productId || (product as any)._id || `wish-${pIdx}`;
                   return (
@@ -1109,6 +1137,7 @@ export const AccountPage: React.FC = () => {
                     </div>
                   );
                 })}
+                </div>
               </div>
             )}
           </div>

@@ -99,8 +99,10 @@ interface ShopContextType {
 
   // Wishlist
   wishlist: string[];
+  wishlistCount: number;
   toggleWishlist: (productId: string) => void;
   isInWishlist: (productId: string) => boolean;
+  clearWishlist: () => void;
 
   // Orders & Alterations
   currentOrder: Order | null;
@@ -151,6 +153,39 @@ interface ShopContextType {
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
+
+// Helper to extract all valid identifiable IDs for a product catalog
+const getCatalogProductIds = (productList: Product[]): Set<string> => {
+  const ids = new Set<string>();
+  for (const p of productList) {
+    if (p.id) ids.add(p.id);
+    if ((p as any).productId) ids.add((p as any).productId);
+    if ((p as any)._id) ids.add(String((p as any)._id));
+    if (p.sku) ids.add(p.sku);
+  }
+  return ids;
+};
+
+// Known legacy/seed dummy IDs that should never count as valid wishlist items
+const LEGACY_FAKE_PRODUCT_IDS = new Set([
+  'prod-suit-01',
+  'prod-tie-01',
+  'prod-suit-db-01',
+  'prod-trousers-flannel',
+  'PA-SUIT-001',
+  'PA-SUIT-002',
+  'PA-SUIT-003',
+  'PA-BLZ-001',
+  'PA-SHIRT-001',
+  'PA-SUIT-BLK-001',
+  'PA-SUIT-NVY-001',
+  'PA-SHIRT-WHT-001',
+  'prod-1',
+  'prod-2',
+  'prod-3',
+  'prod-4',
+  'prod-5'
+]);
 
 export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const initialPath = useMemo(() => {
@@ -277,15 +312,30 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
-  // Wishlist with customer-isolated localStorage persistence
+  // Wishlist with customer-isolated localStorage persistence and catalog integrity
   const [wishlist, setWishlist] = useState<string[]>(() => {
     try {
       const stored = AuthService.getCurrentUser();
       const userKey = (stored?.email || stored?.id || 'guest').toLowerCase().trim();
       const saved = localStorage.getItem(`pa_wishlist_${userKey}`) || localStorage.getItem('pa_wishlist');
-      return saved ? JSON.parse(saved) : ['prod-suit-01', 'prod-tie-01'];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter(
+            id => typeof id === 'string' && id.trim().length > 0 && !LEGACY_FAKE_PRODUCT_IDS.has(id.trim())
+          );
+          if (cleaned.length !== parsed.length) {
+            try {
+              localStorage.setItem(`pa_wishlist_${userKey}`, JSON.stringify(cleaned));
+              localStorage.setItem('pa_wishlist', JSON.stringify(cleaned));
+            } catch {}
+          }
+          return cleaned;
+        }
+      }
+      return [];
     } catch {
-      return ['prod-suit-01', 'prod-tie-01'];
+      return [];
     }
   });
 
@@ -396,10 +446,30 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const saved = localStorage.getItem(`pa_wishlist_${userKey}`) || localStorage.getItem('pa_wishlist');
       if (saved) {
-        setWishlist(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter(
+            id => typeof id === 'string' && id.trim().length > 0 && !LEGACY_FAKE_PRODUCT_IDS.has(id.trim())
+          );
+          if (products.length > 0) {
+            const validIds = getCatalogProductIds(products);
+            const verified = cleaned.filter(id => validIds.has(id));
+            setWishlist(verified);
+            try {
+              localStorage.setItem(`pa_wishlist_${userKey}`, JSON.stringify(verified));
+              localStorage.setItem('pa_wishlist', JSON.stringify(verified));
+            } catch {}
+            return;
+          }
+          setWishlist(cleaned);
+          return;
+        }
       }
-    } catch {}
-  }, [currentCustomer]);
+      setWishlist([]);
+    } catch {
+      setWishlist([]);
+    }
+  }, [currentCustomer, products]);
 
   // Sync wishlist to localStorage per customer
   useEffect(() => {
@@ -411,6 +481,32 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error(e);
     }
   }, [wishlist, currentCustomer]);
+
+  // Automatically sanitize wishlist against active product catalog once products are loaded
+  useEffect(() => {
+    if (products.length > 0) {
+      const validProductIds = getCatalogProductIds(products);
+      setWishlist(prev => {
+        const cleaned = prev.filter(id => validProductIds.has(id));
+        if (cleaned.length !== prev.length) {
+          const userKey = (currentCustomer?.email || currentCustomer?.id || 'guest').toLowerCase().trim();
+          try {
+            localStorage.setItem(`pa_wishlist_${userKey}`, JSON.stringify(cleaned));
+            localStorage.setItem('pa_wishlist', JSON.stringify(cleaned));
+          } catch {}
+          return cleaned;
+        }
+        return prev;
+      });
+    }
+  }, [products, currentCustomer]);
+
+  // Compute true valid wishlist count (only counts products that actually exist in the active catalog)
+  const wishlistCount = useMemo(() => {
+    if (!products || products.length === 0) return 0;
+    const validIds = getCatalogProductIds(products);
+    return wishlist.filter(id => validIds.has(id)).length;
+  }, [wishlist, products]);
 
   // Load products, notifications & default customer on mount
   const refreshProducts = async () => {
@@ -575,15 +671,38 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const toggleWishlist = (productId: string) => {
+    if (!productId) return;
     setWishlist(prev => {
       const exists = prev.includes(productId);
       const next = exists ? prev.filter(id => id !== productId) : [...prev, productId];
       showToast(exists ? 'Removed from your Wishlist' : 'Saved to your Wishlist', 'info');
+      const userKey = (currentCustomer?.email || currentCustomer?.id || 'guest').toLowerCase().trim();
+      try {
+        localStorage.setItem(`pa_wishlist_${userKey}`, JSON.stringify(next));
+        localStorage.setItem('pa_wishlist', JSON.stringify(next));
+      } catch (e) {
+        console.error(e);
+      }
       return next;
     });
   };
 
-  const isInWishlist = (productId: string) => wishlist.includes(productId);
+  const isInWishlist = (productId: string) => {
+    if (!productId) return false;
+    return wishlist.includes(productId);
+  };
+
+  const clearWishlist = () => {
+    setWishlist([]);
+    const userKey = (currentCustomer?.email || currentCustomer?.id || 'guest').toLowerCase().trim();
+    try {
+      localStorage.setItem(`pa_wishlist_${userKey}`, JSON.stringify([]));
+      localStorage.setItem('pa_wishlist', JSON.stringify([]));
+    } catch (e) {
+      console.error(e);
+    }
+    showToast('Your wishlist has been cleared', 'info');
+  };
 
   // Cart operations with inventory check
   const addToCart = (product: Product, size: string, color: string, quantity: number) => {
@@ -771,8 +890,10 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         cartSubtotal,
         cartCount,
         wishlist,
+        wishlistCount,
         toggleWishlist,
         isInWishlist,
+        clearWishlist,
         currentOrder,
         setCurrentOrder,
         currentAlteration,

@@ -31,6 +31,7 @@ export const Navbar: React.FC = () => {
     setIsCartOpen,
     cartCount,
     wishlist,
+    wishlistCount,
     unreadNotificationCount,
     setIsNotificationsOpen,
     currentCustomer,
@@ -428,20 +429,20 @@ export const Navbar: React.FC = () => {
                   isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
                 }`}
                 aria-label="Wishlist"
-                title={`Curated Wishlist (${wishlist.length} saved)`}
+                title={wishlistCount > 0 ? `Curated Wishlist (${wishlistCount} saved)` : 'Curated Wishlist'}
               >
                 <div className="relative">
-                  <Heart className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'} ${wishlist.length > 0 ? (isTransparent ? 'fill-[#E5C384]/40' : 'fill-[#936B34]/30') : ''}`} />
-                  {wishlist.length > 0 && (
+                  <Heart className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'} ${wishlistCount > 0 ? (isTransparent ? 'fill-[#E5C384]/40' : 'fill-[#936B34]/30') : ''}`} />
+                  {wishlistCount > 0 && (
                     <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-mono font-bold flex items-center justify-center rounded-full leading-none shadow-xs">
-                      {wishlist.length}
+                      {wishlistCount}
                     </span>
                   )}
                 </div>
                 <span>WISHLIST</span>
-                {wishlist.length > 0 && (
+                {wishlistCount > 0 && (
                   <span className={`ml-0.5 text-[9px] font-mono font-semibold ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
-                    ({wishlist.length})
+                    ({wishlistCount})
                   </span>
                 )}
               </button>
@@ -513,12 +514,12 @@ export const Navbar: React.FC = () => {
                   isTransparent ? 'text-white hover:text-[#E5C384]' : 'text-gray-700 hover:text-[#936B34]'
                 }`}
                 aria-label="Wishlist"
-                title={`Wishlist (${wishlist.length})`}
+                title={wishlistCount > 0 ? `Wishlist (${wishlistCount})` : 'Wishlist'}
               >
-                <Heart className={`w-4 h-4 ${wishlist.length > 0 ? (isTransparent ? 'fill-[#E5C384]/40' : 'fill-[#936B34]/30') : ''}`} />
-                {wishlist.length > 0 && (
+                <Heart className={`w-4 h-4 ${wishlistCount > 0 ? (isTransparent ? 'fill-[#E5C384]/40' : 'fill-[#936B34]/30') : ''}`} />
+                {wishlistCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-xs leading-none">
-                    {wishlist.length}
+                    {wishlistCount}
                   </span>
                 )}
               </button>

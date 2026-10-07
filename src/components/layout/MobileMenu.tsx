@@ -17,6 +17,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
     openCategoriesIndex,
     setIsSearchOpen,
     wishlist,
+    wishlistCount,
     unreadNotificationCount,
     setIsNotificationsOpen,
     currentCustomer,
@@ -269,14 +270,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
             className="flex items-center gap-2 hover:text-black transition-colors cursor-pointer"
           >
             <div className="relative">
-              <Heart className={`w-4 h-4 text-[#936B34] ${wishlist.length > 0 ? 'fill-[#936B34]/30' : ''}`} />
-              {wishlist.length > 0 && (
+              <Heart className={`w-4 h-4 text-[#936B34] ${wishlistCount > 0 ? 'fill-[#936B34]/30' : ''}`} />
+              {wishlistCount > 0 && (
                 <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-xs leading-none">
-                  {wishlist.length}
+                  {wishlistCount}
                 </span>
               )}
             </div>
-            <span>Wishlist ({wishlist.length})</span>
+            <span>Wishlist{wishlistCount > 0 ? ` (${wishlistCount})` : ''}</span>
           </button>
           <button
             onClick={() => {

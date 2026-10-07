@@ -32,7 +32,8 @@ export const CustomerDashboard: React.FC = () => {
     setActiveView, 
     showToast,
     setCurrentOrder,
-    wishlist
+    wishlist,
+    wishlistCount
   } = useShop();
 
   // If no customer is authenticated, display the Sign In / Registration page
@@ -176,7 +177,7 @@ export const CustomerDashboard: React.FC = () => {
       desc: 'Browse and acquire saved bespoke suits, Italian blazers, and luxury knitwear reserved for your wardrobe.',
       icon: Heart,
       actionText: 'View Saved Wishlist',
-      badge: `${wishlist.length} Saved`,
+      badge: wishlistCount > 0 ? `${wishlistCount} Saved` : 'Empty',
       onClick: () => {
         const el = document.getElementById('wishlist-section');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -212,8 +213,8 @@ export const CustomerDashboard: React.FC = () => {
                 }}
                 className="px-4 py-2 bg-white border border-[#936B34]/40 hover:border-[#936B34] text-[#936B34] text-xs font-mono uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer font-medium shadow-2xs"
               >
-                <Heart className={`w-3.5 h-3.5 ${wishlist.length > 0 ? 'fill-[#936B34]' : ''}`} />
-                <span>WISHLIST ({wishlist.length})</span>
+                <Heart className={`w-3.5 h-3.5 ${wishlistCount > 0 ? 'fill-[#936B34]' : ''}`} />
+                <span>WISHLIST{wishlistCount > 0 ? ` (${wishlistCount})` : ' (0)'}</span>
               </button>
 
               {currentCustomer ? (

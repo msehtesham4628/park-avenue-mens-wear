@@ -22,7 +22,9 @@ interface WishlistSectionProps {
 export const WishlistSection: React.FC<WishlistSectionProps> = ({ onBrowseShop }) => {
   const { 
     wishlist, 
+    wishlistCount,
     toggleWishlist, 
+    clearWishlist,
     products, 
     addToCart, 
     navigateToProduct, 
@@ -33,8 +35,19 @@ export const WishlistSection: React.FC<WishlistSectionProps> = ({ onBrowseShop }
 
   const [addingId, setAddingId] = useState<string | null>(null);
 
-  // Match wishlist IDs with current product catalog
-  const savedProducts: Product[] = products.filter(p => wishlist.includes(p.id));
+  // Match wishlist IDs with current product catalog (matching id, productId, or sku)
+  const savedProducts: Product[] = products.filter(p => 
+    wishlist.includes(p.id) || 
+    ((p as any).productId && wishlist.includes((p as any).productId)) || 
+    (p.sku && wishlist.includes(p.sku))
+  );
+
+  // Auto-prune any orphaned IDs if catalog is loaded but no products match
+  React.useEffect(() => {
+    if (products.length > 0 && wishlist.length > 0 && savedProducts.length === 0) {
+      clearWishlist();
+    }
+  }, [products.length, wishlist.length, savedProducts.length]);
 
   const totalValue = savedProducts.reduce((sum, p) => sum + (p.price || 0), 0);
 
@@ -114,6 +127,14 @@ export const WishlistSection: React.FC<WishlistSectionProps> = ({ onBrowseShop }
             >
               <ShoppingBag className="w-3.5 h-3.5 text-[#E5C384]" />
               <span>MOVE ALL TO BAG</span>
+            </button>
+            <button
+              onClick={clearWishlist}
+              className="px-3 py-2.5 bg-white border border-gray-300 text-gray-700 hover:text-red-700 hover:border-red-300 text-xs font-mono uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer font-medium"
+              title="Clear all saved garments"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>CLEAR</span>
             </button>
           </div>
         )}
