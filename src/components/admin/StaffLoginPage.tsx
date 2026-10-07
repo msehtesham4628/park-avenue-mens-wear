@@ -143,60 +143,6 @@ export const StaffLoginPage: React.FC = () => {
             <Lock className="w-3.5 h-3.5 text-[#E5C384]" />
             <span>{isAuthenticating ? 'VERIFYING CREDENTIALS...' : 'AUTHENTICATE ACCESS'}</span>
           </button>
-
-          {/* Quick Credential Assistant */}
-          <div className="pt-3 border-t border-gray-100">
-            <div className="bg-[#F9F9F8] border border-gray-200 p-3 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-gray-700 font-semibold flex items-center gap-1">
-                  <KeyRound className="w-3 h-3 text-[#936B34]" />
-                  <span>Authorized Personnel Accounts</span>
-                </span>
-                <span className="text-[9px] font-mono text-gray-400">Click to fill</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUsernameOrEmail('admin');
-                    setPassword('Admin@2026');
-                    setErrorMessage('');
-                  }}
-                  className="text-left p-1.5 bg-white border border-gray-200 hover:border-[#936B34] hover:bg-amber-50/40 transition-all cursor-pointer group"
-                >
-                  <div className="text-[9px] font-mono uppercase text-[#936B34] font-semibold">Admin (DB)</div>
-                  <div className="text-[11px] font-mono text-[#111827] group-hover:text-[#936B34]">admin</div>
-                  <div className="text-[8px] font-mono text-gray-400">Admin@2026</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUsernameOrEmail('admin1');
-                    setPassword('Admin@2026');
-                    setErrorMessage('');
-                  }}
-                  className="text-left p-1.5 bg-white border border-gray-200 hover:border-[#936B34] hover:bg-amber-50/40 transition-all cursor-pointer group"
-                >
-                  <div className="text-[9px] font-mono uppercase text-[#936B34] font-semibold">Admin 1</div>
-                  <div className="text-[11px] font-mono text-[#111827] group-hover:text-[#936B34]">admin1</div>
-                  <div className="text-[8px] font-mono text-gray-400">Admin@2026</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUsernameOrEmail('tailor');
-                    setPassword('Tailor@2026');
-                    setErrorMessage('');
-                  }}
-                  className="text-left p-1.5 bg-white border border-gray-200 hover:border-[#936B34] hover:bg-amber-50/40 transition-all cursor-pointer group"
-                >
-                  <div className="text-[9px] font-mono uppercase text-[#936B34] font-semibold">Staff Tailor</div>
-                  <div className="text-[11px] font-mono text-[#111827] group-hover:text-[#936B34]">tailor</div>
-                  <div className="text-[8px] font-mono text-gray-400">Tailor@2026</div>
-                </button>
-              </div>
-            </div>
-          </div>
         </form>
 
         {/* Footer Navigation Options */}

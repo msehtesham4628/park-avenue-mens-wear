@@ -111,7 +111,7 @@ export const authService = {
       email: cleanEmail,
       phone: data.phone ? data.phone.trim() : '',
       passwordHash,
-      role: data.role || 'customer',
+      role: 'customer', // Strictly customer role on registration
       status: 'active',
       addresses: []
     });
@@ -138,7 +138,7 @@ export const authService = {
     if (!clean) throw new Error('Username or email is required.');
 
     // Query across email, username, or customerId for robust login matching
-    let customer = await CustomerModel.findOne({
+    const customer = await CustomerModel.findOne({
       $or: [
         { email: clean },
         { username: clean },
@@ -146,53 +146,6 @@ export const authService = {
         { customerId: identifier.trim().toUpperCase() }
       ]
     });
-
-    // Fallback: If identifier is admin1, admin01, or admin, find any configured admin account
-    if (!customer && (clean === 'admin1' || clean === 'admin01' || clean === 'admin')) {
-      customer = await CustomerModel.findOne({
-        $or: [
-          { username: 'admin1' },
-          { username: 'admin' },
-          { email: 'admin1@parkavenuemenswear.com' },
-          { email: 'admin@parkavenuemenswear.com' },
-          { username: 'parkamw' },
-          { role: 'admin' }
-        ]
-      });
-    }
-
-    // Fallback: If identifier matches repository owner or tailor
-    if (!customer && (clean.includes('ehtesham') || clean === 'owner')) {
-      customer = await CustomerModel.findOne({
-        $or: [
-          { email: 'ehtesham4628@gmail.com' },
-          { username: 'ehtesham4628' },
-          { role: 'admin' }
-        ]
-      });
-    }
-
-    // If still not found and logging in as an administrator, provision administrative account on demand
-    if (!customer && (clean === 'admin1' || clean === 'admin' || clean === 'parkamw')) {
-      try {
-        const passwordHash = await this.hashPassword(password || 'ParkAvenue@2026');
-        customer = await CustomerModel.create({
-          customerId: `CUST-ADMIN-${clean.toUpperCase()}`,
-          firstName: 'Park Avenue',
-          lastName: 'Administrator',
-          name: 'Park Avenue Administrator',
-          username: clean,
-          email: `${clean}@parkavenuemenswear.com`,
-          phone: '+1 (800) 555-7275',
-          passwordHash,
-          role: 'admin',
-          status: 'active',
-          addresses: []
-        });
-      } catch {
-        // Fall through to error
-      }
-    }
 
     if (!customer) {
       throw new Error('Invalid username, email, or credentials.');
@@ -206,7 +159,7 @@ export const authService = {
       throw new Error('No password configured for this account. Please authenticate with single-sign-on or reset password.');
     }
 
-    // Normalize customer.role to accommodate manual edits in MongoDB Atlas (e.g. "Admin", "ADMIN")
+    // Normalize customer.role to accommodate manual edits in MongoDB Atlas (e.g. "admin", "Admin", "ADMIN")
     const rawRole = String(customer.role || 'customer').toLowerCase().trim();
     const isAdmin = rawRole === 'admin' || rawRole === 'administrator';
     const isStaff = rawRole === 'staff';
@@ -228,44 +181,8 @@ export const authService = {
     }
 
     // 2. Standard Bcrypt verify
-    if (!isMatch && customer.passwordHash.startsWith('$2')) {
+    if (!isMatch && customer.passwordHash && customer.passwordHash.startsWith('$2')) {
       isMatch = await this.verifyPassword(password, customer.passwordHash);
-    }
-
-    // 3. Bootstrap password verification for administrators, staff, and seeded accounts
-    if (!isMatch && (customer.role === 'admin' || customer.role === 'staff' || clean === 'admin1' || clean === 'admin' || clean === 'tailor' || clean === 'patron')) {
-      const allowedBootstrapPasswords = [
-        'ParkAvenue@2026',
-        'Admin@2026',
-        'Tailor@2026',
-        'Patron@2026',
-        'Admin12345',
-        'admin12345',
-        'Admin@1234',
-        'admin@1234',
-        'Admin@123',
-        'admin123',
-        'admin1',
-        'admin',
-        'ParkAvenue',
-        'ParkAvenue1',
-        'password',
-        ENV.AUTH_SECRET,
-        process.env.SEED_ADMIN_PASSWORD,
-        process.env.SEED_STAFF_PASSWORD,
-        process.env.SEED_PATRON_PASSWORD,
-        process.env.CUSTOM_ADMIN_PASSWORD,
-        process.env.NEW_ADMIN_PASSWORD
-      ].filter(Boolean);
-
-      if (allowedBootstrapPasswords.includes(password)) {
-        isMatch = true;
-        // Self-heal: update passwordHash to this password so subsequent logins verify instantly
-        try {
-          customer.passwordHash = await this.hashPassword(password);
-          await customer.save();
-        } catch {}
-      }
     }
 
     if (!isMatch) {

@@ -99,7 +99,7 @@ export const authController = {
         email: effectiveEmail,
         phone: effectivePhone,
         password,
-        role: role === 'admin' && req.user?.role === 'admin' ? 'admin' : 'customer'
+        role: 'customer'
       });
 
       const customerObj = customer.toObject();
