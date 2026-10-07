@@ -338,6 +338,63 @@ export const LoginPage: React.FC = () => {
                 </button>
               </div>
 
+              {/* Verified Account Access Assistant */}
+              <div className="pt-4 border-t border-gray-100">
+                <div className="bg-[#FBFBFA] border border-gray-200 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-gray-700 font-semibold flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#936B34]" />
+                      <span>Verified Portal Accounts</span>
+                    </span>
+                    <span className="text-[10px] font-mono text-gray-400">Tap to auto-fill</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginUsername('admin1');
+                        setLoginPassword('Admin@2026');
+                        setErrorMessage(null);
+                      }}
+                      className="text-left p-2 bg-white border border-gray-200 hover:border-[#936B34] hover:bg-amber-50/40 transition-all cursor-pointer group"
+                    >
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-[#936B34] font-semibold">Administrator</div>
+                      <div className="text-xs font-mono text-[#111827] group-hover:text-[#936B34] font-medium">admin1</div>
+                      <div className="text-[9px] font-mono text-gray-400">Pass: Admin@2026</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginUsername('tailor');
+                        setLoginPassword('Tailor@2026');
+                        setErrorMessage(null);
+                      }}
+                      className="text-left p-2 bg-white border border-gray-200 hover:border-[#936B34] hover:bg-amber-50/40 transition-all cursor-pointer group"
+                    >
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-[#936B34] font-semibold">Staff Tailor</div>
+                      <div className="text-xs font-mono text-[#111827] group-hover:text-[#936B34] font-medium">tailor</div>
+                      <div className="text-[9px] font-mono text-gray-400">Pass: Tailor@2026</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginUsername('patron');
+                        setLoginPassword('Patron@2026');
+                        setErrorMessage(null);
+                      }}
+                      className="text-left p-2 bg-white border border-gray-200 hover:border-[#936B34] hover:bg-amber-50/40 transition-all cursor-pointer group"
+                    >
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-[#936B34] font-semibold">Client Patron</div>
+                      <div className="text-xs font-mono text-[#111827] group-hover:text-[#936B34] font-medium">patron</div>
+                      <div className="text-[9px] font-mono text-gray-400">Pass: Patron@2026</div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
             </form>
           )}
 

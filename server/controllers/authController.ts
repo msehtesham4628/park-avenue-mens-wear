@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { authService } from '../services/authService.js';
 import { CustomerModel } from '../models/Customer.js';
 import { customerService } from '../services/customerService.js';
+import { connectDB, isDbConnected } from '../config/db.js';
 
 export const authController = {
   async register(req: AuthenticatedRequest, res: Response) {
@@ -130,6 +131,12 @@ export const authController = {
           success: false,
           message: 'Please provide Username and Password.'
         });
+      }
+
+      if (!isDbConnected()) {
+        try {
+          await connectDB();
+        } catch (_) {}
       }
 
       const { customer, token } = await authService.login(identifier, password);

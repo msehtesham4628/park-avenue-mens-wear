@@ -34,6 +34,22 @@ export async function seedInitialData() {
         name: 'Park Avenue Administrator'
       },
       {
+        id: 'CUST-ADMIN-002',
+        email: 'admin1@parkavenuemenswear.com',
+        username: 'admin1',
+        firstName: 'Park Avenue',
+        lastName: 'Administrator 1',
+        name: 'Park Avenue Admin 1'
+      },
+      {
+        id: 'CUST-ADMIN-OWNER',
+        email: 'ehtesham4628@gmail.com',
+        username: 'ehtesham4628',
+        firstName: 'Ehtesham',
+        lastName: 'Admin',
+        name: 'Ehtesham Administrator'
+      },
+      {
         id: 'CUST-ADMIN-PARKMENS',
         email: 'parkmens@admin.com',
         username: 'parkmens',
