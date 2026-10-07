@@ -1,6 +1,21 @@
-import React from 'react';
-import { X, Bell, CheckCheck, Truck, Scissors, Clock, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  X, 
+  Bell, 
+  CheckCheck, 
+  Truck, 
+  Scissors, 
+  Clock, 
+  ArrowRight,
+  ShoppingBag,
+  Newspaper,
+  Sparkles,
+  Radio,
+  ExternalLink,
+  Tag
+} from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
+import { navigateTo } from '../../utils/router';
 
 export const NotificationDrawer: React.FC = () => {
   const {
@@ -11,36 +26,83 @@ export const NotificationDrawer: React.FC = () => {
     markAllNotificationsRead,
     lookupOrder,
     lookupAlteration,
-    setActiveView
+    setActiveView,
+    navigateToProduct
   } = useShop();
+
+  const [filterTab, setFilterTab] = useState<'all' | 'product' | 'news' | 'promotion' | 'orders'>('all');
 
   if (!isNotificationsOpen) return null;
 
   const handleNotificationClick = async (notif: any) => {
     await markNotificationRead(notif.id);
+
     if (notif.orderId) {
       await lookupOrder(notif.orderId);
       setActiveView('track-order');
       setIsNotificationsOpen(false);
-    } else if (notif.alterationId) {
+      return;
+    } 
+    
+    if (notif.alterationId) {
       await lookupAlteration(notif.alterationId);
       setActiveView('track-alteration');
       setIsNotificationsOpen(false);
+      return;
+    }
+
+    if (notif.productId) {
+      navigateToProduct(notif.productId);
+      setIsNotificationsOpen(false);
+      return;
+    }
+
+    if (notif.link) {
+      const cleanLink = notif.link.trim();
+      if (cleanLink.startsWith('http://') || cleanLink.startsWith('https://')) {
+        window.open(cleanLink, '_blank');
+      } else {
+        navigateTo(cleanLink);
+      }
+      setIsNotificationsOpen(false);
+      return;
     }
   };
 
-  const getIcon = (type: string) => {
-    switch (type) {
+  const getCategoryBadge = (notif: any) => {
+    const cat = notif.category || notif.type;
+    switch (cat) {
+      case 'product':
+        return { label: 'GARMENT ALERT', color: 'bg-indigo-50 text-indigo-900 border-indigo-200', icon: ShoppingBag };
+      case 'news':
+        return { label: 'EDITORIAL JOURNAL', color: 'bg-amber-50 text-amber-900 border-amber-200', icon: Newspaper };
+      case 'promotion':
+        return { label: 'VIP PRIVILEGE', color: 'bg-emerald-50 text-emerald-900 border-emerald-200', icon: Sparkles };
       case 'shipment':
       case 'delivery':
-        return <Truck className="w-4 h-4 text-[#936B34]" />;
+      case 'order_update':
+      case 'order':
+        return { label: 'ORDER DISPATCH', color: 'bg-blue-50 text-blue-900 border-blue-200', icon: Truck };
       case 'alteration_update':
       case 'ready_for_pickup':
-        return <Scissors className="w-4 h-4 text-[#936B34]" />;
+      case 'alteration':
+        return { label: 'ATELIER FITTING', color: 'bg-amber-50 text-amber-900 border-amber-200', icon: Scissors };
       default:
-        return <Clock className="w-4 h-4 text-[#936B34]" />;
+        return { label: 'DISPATCH', color: 'bg-gray-100 text-gray-800 border-gray-200', icon: Radio };
     }
   };
+
+  const filteredNotifications = notifications.filter(n => {
+    if (filterTab === 'all') return true;
+    const cat = n.category || n.type;
+    if (filterTab === 'product') return cat === 'product';
+    if (filterTab === 'news') return cat === 'news';
+    if (filterTab === 'promotion') return cat === 'promotion';
+    if (filterTab === 'orders') return cat === 'order' || cat === 'order_update' || cat === 'shipment' || cat === 'delivery' || cat === 'alteration' || cat === 'alteration_update';
+    return true;
+  });
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -51,84 +113,144 @@ export const NotificationDrawer: React.FC = () => {
       />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white border-l border-gray-200 shadow-2xl flex flex-col text-[#F8FAFC]">
+        <div className="w-screen max-w-md bg-white border-l border-gray-200 shadow-2xl flex flex-col text-[#111827]">
           {/* Header */}
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-[#F9F9F8]">
-            <div className="flex items-center gap-2.5">
-              <Bell className="w-5 h-5 text-[#936B34]" />
-              <h2 className="font-serif text-lg text-[#111827] tracking-wide">
-                Client Dispatches &amp; Updates
-              </h2>
+          <div className="p-5 border-b border-gray-200 bg-[#FAF8F5]">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-[#936B34]" />
+                <h2 className="font-serif text-lg text-[#111827] tracking-wide font-normal">
+                  Client Dispatches &amp; Updates
+                </h2>
+                {unreadCount > 0 && (
+                  <span className="px-1.5 py-0.2 bg-[#936B34] text-white text-[9px] font-mono font-bold">
+                    {unreadCount} NEW
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2.5">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllNotificationsRead}
+                    className="text-[11px] text-gray-500 hover:text-[#936B34] transition-colors flex items-center gap-1 cursor-pointer font-mono"
+                    title="Mark all as read"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    <span>Mark read</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsNotificationsOpen(false)}
+                  className="p-1 text-gray-400 hover:text-[#111827] transition-colors cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={markAllNotificationsRead}
-                className="text-xs text-gray-500 hover:text-[#936B34] transition-colors flex items-center gap-1 cursor-pointer font-mono"
-                title="Mark all as read"
-              >
-                <CheckCheck className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Mark read</span>
-              </button>
-              <button
-                onClick={() => setIsNotificationsOpen(false)}
-                className="p-1 text-gray-500 hover:text-[#111827] transition-colors cursor-pointer"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'product', label: 'Garments' },
+                { id: 'news', label: 'Journal' },
+                { id: 'promotion', label: 'VIP Privileges' },
+                { id: 'orders', label: 'Orders' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilterTab(tab.id as any)}
+                  className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap border ${
+                    filterTab === tab.id
+                      ? 'border-[#936B34] bg-[#936B34] text-white font-semibold'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-gray-100 p-4 space-y-3 bg-white">
-            {notifications.length === 0 ? (
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
+            {filteredNotifications.length === 0 ? (
               <div className="py-20 text-center text-gray-500">
-                <Bell className="w-8 h-8 text-[#936B34]/50 mx-auto mb-3" />
-                <p className="font-serif text-base text-[#111827]">No notifications</p>
-                <p className="text-xs mt-1 text-gray-500">Updates on your orders and alterations will appear here.</p>
+                <div className="w-12 h-12 bg-[#FAF8F5] border border-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 text-[#936B34]">
+                  <Bell className="w-5 h-5" />
+                </div>
+                <p className="font-serif text-base text-[#111827]">No dispatches found</p>
+                <p className="text-xs mt-1 text-gray-400 max-w-xs mx-auto">
+                  Updates on new atelier garment drops, editorial journals, and orders will appear here.
+                </p>
               </div>
             ) : (
-              notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  onClick={() => handleNotificationClick(notif)}
-                  className={`p-4 transition-colors cursor-pointer border ${
-                    notif.read
-                      ? 'bg-white border-gray-200 hover:bg-[#F9F9F8]'
-                      : 'bg-[#F9F9F8] border-[#936B34]/40 hover:border-[#936B34]'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3 mb-1.5">
-                    <div className="flex items-center gap-2">
-                      {getIcon(notif.type)}
-                      <h4 className="text-sm font-medium text-[#111827]">
-                        {notif.title}
-                      </h4>
-                    </div>
+              filteredNotifications.map((notif) => {
+                const badge = getCategoryBadge(notif);
+                const BadgeIcon = badge.icon;
+                const isHighPriority = notif.priority === 'high' || notif.priority === 'urgent';
+
+                return (
+                  <div
+                    key={notif.id}
+                    onClick={() => handleNotificationClick(notif)}
+                    className={`p-4 transition-all cursor-pointer border group relative ${
+                      notif.read
+                        ? 'bg-white border-gray-200 hover:border-[#936B34]/60 hover:bg-[#FAF8F5]'
+                        : 'bg-[#FAF8F5] border-[#936B34]/50 shadow-2xs hover:border-[#936B34]'
+                    }`}
+                  >
+                    {/* Unread Indicator Bar */}
                     {!notif.read && (
-                      <span className="w-2 h-2 rounded-full bg-[#936B34] shrink-0 mt-1" />
+                      <div className="absolute top-0 left-0 bottom-0 w-1 bg-[#936B34]" />
                     )}
-                  </div>
-                  <p className="text-xs text-gray-600 leading-relaxed mb-3 pl-6">
-                    {notif.message}
-                  </p>
-                  <div className="flex items-center justify-between text-[11px] text-gray-500 pl-6 font-mono">
-                    <span>{notif.timestamp}</span>
-                    {(notif.orderId || notif.alterationId) && (
-                      <span className="text-[#936B34] flex items-center gap-1 hover:underline">
-                        <span>View Details</span>
-                        <ArrowRight className="w-3 h-3" />
+
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider font-semibold border flex items-center gap-1 ${badge.color}`}>
+                          <BadgeIcon className="w-2.5 h-2.5" />
+                          <span>{badge.label}</span>
+                        </span>
+                        {isHighPriority && (
+                          <span className="text-[9px] font-mono text-[#936B34] font-bold uppercase tracking-wider">
+                            ● PRIORITY
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-mono text-gray-400 whitespace-nowrap shrink-0">
+                        {notif.timestamp}
                       </span>
+                    </div>
+
+                    <h4 className="text-xs font-semibold text-[#111827] group-hover:text-[#936B34] transition-colors font-sans mb-1">
+                      {notif.title}
+                    </h4>
+
+                    <p className="text-xs text-gray-600 leading-relaxed font-sans mb-3 line-clamp-3">
+                      {notif.message}
+                    </p>
+
+                    {/* Action link if available */}
+                    {(notif.link || notif.productId || notif.orderId || notif.alterationId) && (
+                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[10px] font-mono text-[#936B34] font-medium">
+                        <span>
+                          {notif.orderId ? `View Order #${notif.orderId}` :
+                           notif.alterationId ? `View Alteration #${notif.alterationId}` :
+                           notif.productId ? 'Explore Garment' : 'Explore Details'}
+                        </span>
+                        <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                      </div>
                     )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
           {/* Footer note */}
-          <div className="p-4 bg-[#F9F9F8] border-t border-gray-200 text-center text-[11px] text-gray-500 font-mono">
-            <span>Dispatch notifications are synchronized with SMS, Email, and WhatsApp.</span>
+          <div className="p-3.5 bg-[#FAF8F5] border-t border-gray-200 text-center text-[10px] text-gray-500 font-mono">
+            <span>Park Avenue Atelier Dispatches &bull; Synchronized via Concierge Gateway</span>
           </div>
         </div>
       </div>

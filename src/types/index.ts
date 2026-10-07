@@ -355,10 +355,15 @@ export interface CustomerNotification {
   id: string;
   title: string;
   message: string;
-  type: 'order_update' | 'shipment' | 'delivery' | 'alteration_update' | 'ready_for_pickup' | 'service';
+  type: 'product' | 'news' | 'announcement' | 'promotion' | 'order_update' | 'shipment' | 'delivery' | 'alteration_update' | 'ready_for_pickup' | 'service' | 'general';
+  category?: 'product' | 'news' | 'announcement' | 'promotion' | 'order' | 'alteration' | 'general';
   timestamp: string;
   read: boolean;
   link?: string;
+  productId?: string;
+  productName?: string;
+  priority?: 'standard' | 'high' | 'urgent';
+  channel?: string;
   orderId?: string;
   alterationId?: string;
 }

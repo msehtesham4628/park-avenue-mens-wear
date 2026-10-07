@@ -4,12 +4,19 @@ import { requireAdminOrStaff } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-router.get('/', ...requireAdminOrStaff, notificationController.getHistory);
+// Public patron endpoints (accessible by website visitors and logged in customers)
+router.get('/', notificationController.getPublic);
+router.get('/public', notificationController.getPublic);
+
+// Admin-only management endpoints
 router.get('/history', ...requireAdminOrStaff, notificationController.getHistory);
 router.get('/admin/history', ...requireAdminOrStaff, notificationController.getHistory);
 router.post('/send', ...requireAdminOrStaff, notificationController.sendCustom);
 router.post('/admin/send', ...requireAdminOrStaff, notificationController.sendCustom);
-// Public proxy dispatch endpoint for frontend communication gateway integration
+router.delete('/:id', ...requireAdminOrStaff, notificationController.deleteNotification);
+router.delete('/admin/:id', ...requireAdminOrStaff, notificationController.deleteNotification);
+
+// Public proxy dispatch endpoint for concierge gateway
 router.post('/dispatch', notificationController.sendCustom);
 
 export default router;

@@ -113,6 +113,7 @@ interface ShopContextType {
   unreadNotificationCount: number;
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
+  refreshNotifications: () => Promise<void>;
 
   // User & Admin & Auth
   currentCustomer: Customer | null;
@@ -266,8 +267,21 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
-  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(() => {
+    try {
+      return AuthService.getCurrentUser();
+    } catch {
+      return null;
+    }
+  });
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
+    try {
+      const stored = AuthService.getCurrentUser();
+      return !!(stored && (stored.role === 'admin' || stored.role === 'staff'));
+    } catch {
+      return false;
+    }
+  });
 
   // Active tracking models
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
@@ -374,12 +388,18 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const refreshNotifications = async () => {
     try {
-      const notifs = await NotificationService.getAll();
+      const email = currentCustomer?.email;
+      const customerId = currentCustomer?.id || (currentCustomer as any)?.customerId;
+      const notifs = await NotificationService.getAll({ email, customerId });
       setNotifications(notifs);
     } catch (err) {
       console.error('Failed to load notifications', err);
     }
   };
+
+  useEffect(() => {
+    refreshNotifications();
+  }, [currentCustomer]);
 
   useEffect(() => {
     refreshProducts();
@@ -709,6 +729,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         unreadNotificationCount,
         markNotificationRead,
         markAllNotificationsRead,
+        refreshNotifications,
         currentCustomer,
         isAdminLoggedIn,
         setIsAdminLoggedIn,

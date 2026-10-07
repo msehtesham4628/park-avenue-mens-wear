@@ -1769,19 +1769,91 @@ export const CustomerService = {
    ========================================================================= */
 
 export const NotificationService = {
-  async getAll(): Promise<CustomerNotification[]> {
-    await delay(100);
+  async getAll(params?: { email?: string; customerId?: string; category?: string }): Promise<CustomerNotification[]> {
+    try {
+      const q = new URLSearchParams();
+      if (params?.email) q.append('email', params.email);
+      if (params?.customerId) q.append('customerId', params.customerId);
+      if (params?.category && params.category !== 'all') q.append('category', params.category);
+
+      const qs = q.toString() ? `?${q.toString()}` : '';
+      const remote = await fetchRemote<any[]>(`/notifications${qs}`);
+
+      if (remote && Array.isArray(remote) && remote.length > 0) {
+        const readIds: string[] = (() => {
+          try {
+            const saved = localStorage.getItem('pa_read_notifications');
+            return saved ? JSON.parse(saved) : [];
+          } catch {
+            return [];
+          }
+        })();
+
+        const mapped: CustomerNotification[] = remote.map(item => {
+          const id = item.notificationId || item._id || item.id || `notif-${Date.now()}`;
+          const isRead = readIds.includes(id) || Boolean(item.read);
+          const rawDate = item.createdAt ? new Date(item.createdAt) : null;
+          const timeStr = rawDate 
+            ? rawDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : (item.timestamp || 'Recent');
+
+          return {
+            id,
+            title: item.title || item.subject || 'Atelier Dispatch',
+            message: item.message || '',
+            type: (item.category || item.notificationType?.toLowerCase() || 'general') as any,
+            category: item.category || 'general',
+            timestamp: timeStr,
+            read: isRead,
+            link: item.link,
+            productId: item.productId,
+            productName: item.productName,
+            priority: item.priority || 'standard',
+            orderId: item.orderId,
+            alterationId: item.alterationId,
+            channel: item.channel
+          };
+        });
+
+        // Merge with locally created client notifications
+        const merged = [...mapped];
+        notificationsCache.forEach(cached => {
+          if (!merged.some(m => m.id === cached.id)) {
+            merged.push(cached);
+          }
+        });
+
+        notificationsCache = merged;
+        saveStorage(STORAGE_KEYS.NOTIFICATIONS, notificationsCache);
+        return merged;
+      }
+    } catch (e) {
+      console.warn('[NotificationService] Remote fetch failed, using cached notifications:', e);
+    }
+
     return [...notificationsCache];
   },
 
   async markAsRead(id: string): Promise<void> {
     notificationsCache = notificationsCache.map(n => n.id === id ? { ...n, read: true } : n);
     saveStorage(STORAGE_KEYS.NOTIFICATIONS, notificationsCache);
+    try {
+      const saved = localStorage.getItem('pa_read_notifications');
+      const list: string[] = saved ? JSON.parse(saved) : [];
+      if (!list.includes(id)) {
+        list.push(id);
+        localStorage.setItem('pa_read_notifications', JSON.stringify(list));
+      }
+    } catch {}
   },
 
   async markAllAsRead(): Promise<void> {
     notificationsCache = notificationsCache.map(n => ({ ...n, read: true }));
     saveStorage(STORAGE_KEYS.NOTIFICATIONS, notificationsCache);
+    try {
+      const allIds = notificationsCache.map(n => n.id);
+      localStorage.setItem('pa_read_notifications', JSON.stringify(allIds));
+    } catch {}
   },
 
   async createNotification(data: Omit<CustomerNotification, 'id' | 'timestamp' | 'read'>): Promise<CustomerNotification> {
@@ -1794,6 +1866,49 @@ export const NotificationService = {
     notificationsCache = [newNotif, ...notificationsCache];
     saveStorage(STORAGE_KEYS.NOTIFICATIONS, notificationsCache);
     return newNotif;
+  },
+
+  async getAdminHistory(query?: { channel?: string; category?: string; search?: string; page?: number; limit?: number }) {
+    const q = new URLSearchParams();
+    if (query?.channel && query.channel !== 'all') q.append('channel', query.channel);
+    if (query?.category && query.category !== 'all') q.append('category', query.category);
+    if (query?.search) q.append('search', query.search);
+    if (query?.page) q.append('page', String(query.page));
+    if (query?.limit) q.append('limit', String(query.limit));
+
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    const res = await fetchRemote<{ success: boolean; data: any[]; stats: any }>(`/admin/notifications/history${qs}`);
+    return res || { success: true, data: [], stats: { total: 0 } };
+  },
+
+  async sendAdminNotification(payload: {
+    title?: string;
+    subject?: string;
+    message: string;
+    category?: string;
+    channel?: string;
+    target?: string;
+    recipient?: string;
+    recipientName?: string;
+    link?: string;
+    productId?: string;
+    productName?: string;
+    priority?: string;
+    orderId?: string;
+    alterationId?: string;
+  }) {
+    const res = await fetchRemote<any>('/admin/notifications/send', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return res;
+  },
+
+  async deleteNotification(id: string) {
+    const res = await fetchRemote<any>(`/admin/notifications/${id}`, {
+      method: 'DELETE'
+    });
+    return res;
   },
 
   /**

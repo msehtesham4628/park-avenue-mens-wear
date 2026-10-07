@@ -104,6 +104,7 @@ import {
 import { AnalyticsVisualizer } from './AnalyticsVisualizer';
 import { StaffLoginPage } from './StaffLoginPage';
 import { StaffManagementView } from './StaffManagementView';
+import { NotificationCenter } from './NotificationCenter';
 
 type AdminTab = 
   | 'dashboard' 
@@ -1475,10 +1476,6 @@ export const AdminDashboard: React.FC = () => {
     ? alterationsList.filter(a => a.status !== 'completed').length.toString() 
     : '--';
 
-  if (!isAdminLoggedIn) {
-    return <StaffLoginPage />;
-  }
-
   const adminNavGroups = useMemo(() => [
     {
       title: 'OVERVIEW',
@@ -1520,6 +1517,10 @@ export const AdminDashboard: React.FC = () => {
       ]
     }
   ], [productsList.length, ordersList, returnsList, alterationsList, customersList.length, auditLogsList.length]);
+
+  if (!isAdminLoggedIn) {
+    return <StaffLoginPage />;
+  }
 
   return (
     <div className="min-h-screen bg-[#FBFBFA] text-[#111827] flex flex-col lg:flex-row">
@@ -3556,46 +3557,7 @@ export const AdminDashboard: React.FC = () => {
 
         {/* TAB: NOTIFICATIONS */}
         {activeTab === 'notifications' && (
-          <div className="mt-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-serif text-xl sm:text-2xl text-[#111827] uppercase tracking-wide font-light">
-                  COMMUNICATION &amp; DISPATCH
-                </h2>
-                <p className="text-xs text-gray-500 font-mono">
-                  Client alerts via Email, SMS and WhatsApp
-                </p>
-              </div>
-
-              <button
-                onClick={() => setIsSendNotificationOpen(true)}
-                className="px-4 py-2.5 bg-[#111827] text-white font-semibold text-xs uppercase tracking-wider hover:bg-[#936B34] transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
-              >
-                <Send className="w-4 h-4" />
-                <span>SEND NOTIFICATION</span>
-              </button>
-            </div>
-
-            <div className="border border-gray-200 bg-[#F9F9F8] p-6 space-y-4 shadow-xs">
-              <h3 className="font-mono text-xs uppercase text-[#936B34] tracking-widest font-medium">
-                AUTOMATED DISPATCH CHANNELS
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-4 border border-gray-100 bg-[#F9F9F8] space-y-1 shadow-xs">
-                  <div className="text-xs font-serif text-[#111827] uppercase font-medium">EMAIL NOTIFICATIONS</div>
-                  <p className="text-[11px] font-mono text-gray-500">Templates for order confirmation, tailoring milestones &amp; tracking.</p>
-                </div>
-                <div className="p-4 border border-gray-100 bg-[#F9F9F8] space-y-1 shadow-xs">
-                  <div className="text-xs font-serif text-[#111827] uppercase font-medium">SMS ALERTS</div>
-                  <p className="text-[11px] font-mono text-gray-500">Urgent courier dispatch and ready-for-fitting alerts.</p>
-                </div>
-                <div className="p-4 border border-gray-100 bg-[#F9F9F8] space-y-1 shadow-xs">
-                  <div className="text-xs font-serif text-[#111827] uppercase font-medium">WHATSAPP CONCIERGE</div>
-                  <p className="text-[11px] font-mono text-gray-500">Direct master tailor photo updates and signature confirmations.</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <NotificationCenter />
         )}
 
         {/* TAB: ADMIN & STAFF LOGS */}

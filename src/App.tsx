@@ -77,7 +77,9 @@ const MainContent: React.FC = () => {
         {activeView === 'staff-login' && (
           isAdminLoggedIn ? <AdminDashboard /> : <StaffLoginPage />
         )}
-        {(activeView === 'admin' || activeView === 'dashboard') && <AdminDashboard />}
+        {(activeView === 'admin' || activeView === 'dashboard') && (
+          isAdminLoggedIn ? <AdminDashboard /> : <StaffLoginPage />
+        )}
       </main>
 
       {/* Persistent global layout overlays */}

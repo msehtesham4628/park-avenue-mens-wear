@@ -14,7 +14,8 @@ import {
   ShoppingBag,
   MapPin,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Heart
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { AuthService, ReturnService, OrderService, AlterationService } from '../../services/api';
@@ -22,6 +23,7 @@ import { Order, AlterationRecord, ReturnRequest } from '../../types';
 import { ImageWithFallback } from '../common/ImageWithFallback';
 import { LoginPage } from '../account/LoginPage';
 import { OrderHistorySection } from './OrderHistorySection';
+import { WishlistSection } from './WishlistSection';
 
 export const CustomerDashboard: React.FC = () => {
   const { 
@@ -29,7 +31,8 @@ export const CustomerDashboard: React.FC = () => {
     logout, 
     setActiveView, 
     showToast,
-    setCurrentOrder
+    setCurrentOrder,
+    wishlist
   } = useShop();
 
   // If no customer is authenticated, display the Sign In / Registration page
@@ -166,6 +169,18 @@ export const CustomerDashboard: React.FC = () => {
       icon: Scissors,
       actionText: 'Track Tailoring',
       badge: 'Fitting Updates'
+    },
+    {
+      view: 'wishlist' as any,
+      title: 'Wishlist & Saved Garments',
+      desc: 'Browse and acquire saved bespoke suits, Italian blazers, and luxury knitwear reserved for your wardrobe.',
+      icon: Heart,
+      actionText: 'View Saved Wishlist',
+      badge: `${wishlist.length} Saved`,
+      onClick: () => {
+        const el = document.getElementById('wishlist-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   ];
 
@@ -190,6 +205,17 @@ export const CustomerDashboard: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => {
+                  const el = document.getElementById('wishlist-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-4 py-2 bg-white border border-[#936B34]/40 hover:border-[#936B34] text-[#936B34] text-xs font-mono uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer font-medium shadow-2xs"
+              >
+                <Heart className={`w-3.5 h-3.5 ${wishlist.length > 0 ? 'fill-[#936B34]' : ''}`} />
+                <span>WISHLIST ({wishlist.length})</span>
+              </button>
+
               {currentCustomer ? (
                 <button
                   onClick={() => logout()}
@@ -391,8 +417,12 @@ export const CustomerDashboard: React.FC = () => {
                   <div className="pt-6 mt-4 border-t border-gray-100">
                     <button
                       onClick={() => {
-                        setActiveView(page.view);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        if ((page as any).onClick) {
+                          (page as any).onClick();
+                        } else {
+                          setActiveView(page.view);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                       }}
                       className="w-full py-2.5 px-3.5 bg-[#FAF8F5] hover:bg-[#111827] text-gray-800 hover:text-white text-xs font-mono uppercase tracking-wider transition-colors flex items-center justify-between cursor-pointer font-medium"
                     >
@@ -405,6 +435,9 @@ export const CustomerDashboard: React.FC = () => {
             })}
           </div>
         </div>
+
+        {/* Curated Customer Wishlist Section */}
+        <WishlistSection />
 
         {/* Comprehensive Order History Section with Line Items, Individual Statuses, and Re-Order Buttons */}
         <div id="order-history-section">

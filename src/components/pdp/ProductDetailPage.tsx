@@ -524,13 +524,14 @@ export const ProductDetailPage: React.FC = () => {
             </button>
             <button
               onClick={() => toggleWishlist(product.id)}
-              className={`p-1.5 transition-colors cursor-pointer flex items-center gap-1 text-xs font-mono ${
-                isWishlisted ? 'text-[#936B34]' : 'text-gray-500 hover:text-[#111827]'
+              className={`p-1.5 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-mono ${
+                isWishlisted ? 'text-[#936B34] font-semibold' : 'text-gray-500 hover:text-[#111827]'
               }`}
-              title="Add to Wishlist"
+              title={isWishlisted ? "Saved in your Wishlist" : "Add to Wishlist"}
+              aria-label={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
             >
-              <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-[#936B34]' : ''}`} />
-              <span className="hidden sm:inline">{isWishlisted ? 'SAVED' : 'WISHLIST'}</span>
+              <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-[#936B34] text-[#936B34]' : ''}`} />
+              <span className="hidden sm:inline">{isWishlisted ? 'SAVED TO WISHLIST' : 'ADD TO WISHLIST'}</span>
             </button>
           </div>
         </div>
@@ -848,16 +849,18 @@ export const ProductDetailPage: React.FC = () => {
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => toggleWishlist(product.id)}
-                  className={`px-5 py-4 border transition-all cursor-pointer flex items-center justify-center gap-1.5 text-xs font-mono tracking-wider uppercase ${
+                  className={`px-5 py-4 border transition-all cursor-pointer flex items-center justify-center gap-2 text-xs font-mono tracking-wider uppercase active:scale-[0.98] ${
                     isWishlisted
-                      ? 'border-[#936B34] bg-[#936B34]/15 text-[#936B34]'
-                      : 'border-gray-300 text-gray-700 hover:border-[#111827] bg-[#F9F9F8]'
+                      ? 'border-[#936B34] bg-[#936B34]/15 text-[#936B34] font-semibold shadow-2xs'
+                      : 'border-gray-300 text-gray-700 hover:border-[#111827] hover:text-[#111827] bg-[#F9F9F8]'
                   }`}
-                  aria-label="Wishlist"
+                  aria-label={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                  title={isWishlisted ? "Saved in your Wishlist (Click to remove)" : "Add this garment to your Wishlist"}
                 >
-                  <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-[#936B34]' : ''}`} />
-                  <span className="hidden sm:inline">WISHLIST</span>
+                  <Heart className={`w-4 h-4 transition-transform duration-200 ${isWishlisted ? 'fill-[#936B34] text-[#936B34] scale-110' : 'text-gray-500'}`} />
+                  <span>{isWishlisted ? 'SAVED TO WISHLIST' : 'ADD TO WISHLIST'}</span>
                 </button>
               </div>
             </div>
