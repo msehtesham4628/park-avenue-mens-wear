@@ -1770,28 +1770,35 @@ export const CustomerService = {
 
 export const NotificationService = {
   async getAll(params?: { email?: string; customerId?: string; category?: string }): Promise<CustomerNotification[]> {
+    const cleanEmail = (params?.email || '').trim().toLowerCase();
+    const cleanId = (params?.customerId || '').trim();
+    const customerKey = cleanEmail || cleanId || 'guest';
+    const storageKey = `pa_notifications_${customerKey}`;
+    const readStorageKey = `pa_read_${customerKey}`;
+
+    // Read stored user-specific read list
+    const readIds: string[] = (() => {
+      try {
+        const saved = localStorage.getItem(readStorageKey);
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    })();
+
     try {
       const q = new URLSearchParams();
-      if (params?.email) q.append('email', params.email);
-      if (params?.customerId) q.append('customerId', params.customerId);
+      if (cleanEmail) q.append('email', cleanEmail);
+      if (cleanId) q.append('customerId', cleanId);
       if (params?.category && params.category !== 'all') q.append('category', params.category);
 
       const qs = q.toString() ? `?${q.toString()}` : '';
       const remote = await fetchRemote<any[]>(`/notifications${qs}`);
 
-      if (remote && Array.isArray(remote) && remote.length > 0) {
-        const readIds: string[] = (() => {
-          try {
-            const saved = localStorage.getItem('pa_read_notifications');
-            return saved ? JSON.parse(saved) : [];
-          } catch {
-            return [];
-          }
-        })();
-
+      if (remote && Array.isArray(remote)) {
         const mapped: CustomerNotification[] = remote.map(item => {
           const id = item.notificationId || item._id || item.id || `notif-${Date.now()}`;
-          const isRead = readIds.includes(id) || Boolean(item.read);
+          const isRead = Boolean(item.read) || readIds.includes(id);
           const rawDate = item.createdAt ? new Date(item.createdAt) : null;
           const timeStr = rawDate 
             ? rawDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -1815,45 +1822,102 @@ export const NotificationService = {
           };
         });
 
-        // Merge with locally created client notifications
-        const merged = [...mapped];
-        notificationsCache.forEach(cached => {
-          if (!merged.some(m => m.id === cached.id)) {
-            merged.push(cached);
-          }
-        });
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(mapped));
+        } catch {}
 
-        notificationsCache = merged;
-        saveStorage(STORAGE_KEYS.NOTIFICATIONS, notificationsCache);
-        return merged;
+        notificationsCache = mapped;
+        return mapped;
       }
     } catch (e) {
-      console.warn('[NotificationService] Remote fetch failed, using cached notifications:', e);
+      console.warn('[NotificationService] Remote fetch failed, using patron cache:', e);
     }
 
-    return [...notificationsCache];
+    // Fallback to customer-isolated cached notifications
+    try {
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        const parsed: CustomerNotification[] = JSON.parse(cached);
+        notificationsCache = parsed.map(n => ({
+          ...n,
+          read: n.read || readIds.includes(n.id)
+        }));
+        return notificationsCache;
+      }
+    } catch {}
+
+    return [];
   },
 
-  async markAsRead(id: string): Promise<void> {
-    notificationsCache = notificationsCache.map(n => n.id === id ? { ...n, read: true } : n);
-    saveStorage(STORAGE_KEYS.NOTIFICATIONS, notificationsCache);
+  async markAsRead(id: string, customerInfo?: { email?: string; customerId?: string }): Promise<void> {
+    const cleanEmail = (customerInfo?.email || '').trim().toLowerCase();
+    const cleanId = (customerInfo?.customerId || '').trim();
+    const customerKey = cleanEmail || cleanId || 'guest';
+    const storageKey = `pa_notifications_${customerKey}`;
+    const readStorageKey = `pa_read_${customerKey}`;
+
+    // Update local read IDs list
     try {
-      const saved = localStorage.getItem('pa_read_notifications');
+      const saved = localStorage.getItem(readStorageKey);
       const list: string[] = saved ? JSON.parse(saved) : [];
       if (!list.includes(id)) {
         list.push(id);
-        localStorage.setItem('pa_read_notifications', JSON.stringify(list));
+        localStorage.setItem(readStorageKey, JSON.stringify(list));
       }
     } catch {}
+
+    // Update customer cached notifications list
+    try {
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        const list: CustomerNotification[] = JSON.parse(cached);
+        const updated = list.map(n => n.id === id ? { ...n, read: true } : n);
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+      }
+    } catch {}
+
+    notificationsCache = notificationsCache.map(n => n.id === id ? { ...n, read: true } : n);
+
+    // Sync to backend API
+    try {
+      await fetchRemote(`/notifications/${encodeURIComponent(id)}/read`, {
+        method: 'POST',
+        body: JSON.stringify({ email: cleanEmail, customerId: cleanId })
+      });
+    } catch (e) {
+      console.warn('[NotificationService] Failed to sync mark-read to server:', e);
+    }
   },
 
-  async markAllAsRead(): Promise<void> {
+  async markAllAsRead(customerInfo?: { email?: string; customerId?: string }): Promise<void> {
+    const cleanEmail = (customerInfo?.email || '').trim().toLowerCase();
+    const cleanId = (customerInfo?.customerId || '').trim();
+    const customerKey = cleanEmail || cleanId || 'guest';
+    const storageKey = `pa_notifications_${customerKey}`;
+    const readStorageKey = `pa_read_${customerKey}`;
+
     notificationsCache = notificationsCache.map(n => ({ ...n, read: true }));
-    saveStorage(STORAGE_KEYS.NOTIFICATIONS, notificationsCache);
+    const allIds = notificationsCache.map(n => n.id);
+
     try {
-      const allIds = notificationsCache.map(n => n.id);
-      localStorage.setItem('pa_read_notifications', JSON.stringify(allIds));
+      localStorage.setItem(readStorageKey, JSON.stringify(allIds));
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        const list: CustomerNotification[] = JSON.parse(cached);
+        const updated = list.map(n => ({ ...n, read: true }));
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+      }
     } catch {}
+
+    // Sync to backend API
+    try {
+      await fetchRemote('/notifications/read-all', {
+        method: 'POST',
+        body: JSON.stringify({ email: cleanEmail, customerId: cleanId })
+      });
+    } catch (e) {
+      console.warn('[NotificationService] Failed to sync mark-all-read to server:', e);
+    }
   },
 
   async createNotification(data: Omit<CustomerNotification, 'id' | 'timestamp' | 'read'>): Promise<CustomerNotification> {

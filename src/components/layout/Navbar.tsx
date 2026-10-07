@@ -11,7 +11,8 @@ import {
   Sparkles,
   LogIn,
   LogOut,
-  RotateCcw
+  RotateCcw,
+  Bell
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MobileMenu } from './MobileMenu';
@@ -30,6 +31,8 @@ export const Navbar: React.FC = () => {
     setIsCartOpen,
     cartCount,
     wishlist,
+    unreadNotificationCount,
+    setIsNotificationsOpen,
     currentCustomer,
     logout
   } = useShop();
@@ -387,44 +390,86 @@ export const Navbar: React.FC = () => {
                 </button>
               )}
 
+              {/* Alerts & Dispatches Button */}
+              <button
+                onClick={() => setIsNotificationsOpen(true)}
+                className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] relative cursor-pointer ${
+                  isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
+                }`}
+                aria-label="Atelier Alerts & Dispatches"
+                title={`Alerts & Dispatches (${unreadNotificationCount} unread)`}
+              >
+                <div className="relative">
+                  <Bell className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
+                  {unreadNotificationCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-mono font-bold flex items-center justify-center rounded-full leading-none shadow-xs animate-pulse">
+                      {unreadNotificationCount}
+                    </span>
+                  )}
+                </div>
+                <span className="hidden xl:inline">ALERTS</span>
+              </button>
+
+              {/* Wishlist Button with Persistent Count Badge */}
               <button
                 onClick={() => {
-                  setActiveView('account');
+                  if (currentCustomer) {
+                    setActiveView('customer-dashboard');
+                    setTimeout(() => {
+                      const el = document.getElementById('wishlist-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  } else {
+                    setActiveView('login');
+                  }
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] relative cursor-pointer ${
                   isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
                 }`}
                 aria-label="Wishlist"
+                title={`Curated Wishlist (${wishlist.length} saved)`}
               >
-                <Heart className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
+                <div className="relative">
+                  <Heart className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'} ${wishlist.length > 0 ? (isTransparent ? 'fill-[#E5C384]/40' : 'fill-[#936B34]/30') : ''}`} />
+                  {wishlist.length > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-mono font-bold flex items-center justify-center rounded-full leading-none shadow-xs">
+                      {wishlist.length}
+                    </span>
+                  )}
+                </div>
                 <span>WISHLIST</span>
                 {wishlist.length > 0 && (
-                  <span className={`ml-1 text-[9px] font-mono font-semibold ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
+                  <span className={`ml-0.5 text-[9px] font-mono font-semibold ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
                     ({wishlist.length})
                   </span>
                 )}
               </button>
 
+              {/* Shopping Bag Button with Persistent Count Badge */}
               <button
                 onClick={() => setIsCartOpen(true)}
-                className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] cursor-pointer ${
+                className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] relative cursor-pointer ${
                   isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
                 }`}
                 aria-label="Shopping Cart"
+                title={`Shopping Bag (${cartCount} items)`}
               >
-                <ShoppingBag className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
+                <div className="relative">
+                  <ShoppingBag className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-mono font-bold flex items-center justify-center rounded-full leading-none shadow-xs">
+                      {cartCount}
+                    </span>
+                  )}
+                </div>
                 <span>CART</span>
-                <span className={`ml-1 text-[9px] font-mono font-semibold ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
-                  ({cartCount})
-                </span>
               </button>
-
 
             </div>
 
-            {/* Mobile Right Controls: SEARCH, ACCOUNT, CART, MENU */}
-            <div className="flex lg:hidden items-center gap-3">
+            {/* Mobile Right Controls: SEARCH, ALERTS, WISHLIST, ACCOUNT, CART, MENU */}
+            <div className="flex lg:hidden items-center gap-2.5">
               <button
                 onClick={() => setIsSearchOpen(true)}
                 className={`p-1.5 cursor-pointer transition-colors ${
@@ -433,6 +478,49 @@ export const Navbar: React.FC = () => {
                 aria-label="SEARCH"
               >
                 <Search className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => setIsNotificationsOpen(true)}
+                className={`p-1.5 relative cursor-pointer transition-colors ${
+                  isTransparent ? 'text-white hover:text-[#E5C384]' : 'text-gray-700 hover:text-[#936B34]'
+                }`}
+                aria-label="Alerts"
+                title={`Alerts (${unreadNotificationCount})`}
+              >
+                <Bell className="w-4 h-4" />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-xs leading-none animate-pulse">
+                    {unreadNotificationCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  if (currentCustomer) {
+                    setActiveView('customer-dashboard');
+                    setTimeout(() => {
+                      const el = document.getElementById('wishlist-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  } else {
+                    setActiveView('login');
+                  }
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-1.5 relative cursor-pointer transition-colors ${
+                  isTransparent ? 'text-white hover:text-[#E5C384]' : 'text-gray-700 hover:text-[#936B34]'
+                }`}
+                aria-label="Wishlist"
+                title={`Wishlist (${wishlist.length})`}
+              >
+                <Heart className={`w-4 h-4 ${wishlist.length > 0 ? (isTransparent ? 'fill-[#E5C384]/40' : 'fill-[#936B34]/30') : ''}`} />
+                {wishlist.length > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-xs leading-none">
+                    {wishlist.length}
+                  </span>
+                )}
               </button>
 
               <button
@@ -462,7 +550,7 @@ export const Navbar: React.FC = () => {
               >
                 <ShoppingBag className="w-4 h-4" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#936B34] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-xs">
+                  <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-xs leading-none">
                     {cartCount}
                   </span>
                 )}

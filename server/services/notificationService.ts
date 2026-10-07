@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { 
   NotificationLogModel, 
   INotificationLog, 
@@ -443,7 +444,8 @@ export class NotificationService {
 
   /**
    * Public Customer Notifications query:
-   * Returns global announcements (target=all) plus targeted customer messages if email/customerId given.
+   * Returns global announcements (target=all) plus targeted customer messages ONLY if email/customerId given.
+   * Strictly isolates private alerts so different customers receive their own alerts.
    */
   async getPublicNotifications(options: {
     email?: string;
@@ -454,19 +456,23 @@ export class NotificationService {
     const limit = options.limit || 30;
     const cleanEmail = (options.email || '').trim().toLowerCase();
     const cleanId = (options.customerId || '').trim();
+    const userIdentifier = cleanEmail || cleanId || '';
 
     try {
       const orConditions: any[] = [
         { target: 'all' },
-        { recipient: 'all' },
-        { channel: 'in_app', target: { $in: ['all', 'registered'] } }
+        { recipient: 'all' }
       ];
 
-      if (cleanEmail) {
-        orConditions.push({ recipient: cleanEmail });
-      }
-      if (cleanId) {
-        orConditions.push({ customerId: cleanId });
+      // If user is authenticated, include member announcements and their specific private messages
+      if (cleanEmail || cleanId) {
+        orConditions.push({ target: 'registered' });
+        if (cleanEmail) {
+          orConditions.push({ recipient: { $regex: `^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
+        }
+        if (cleanId) {
+          orConditions.push({ customerId: cleanId });
+        }
       }
 
       const query: any = { $or: orConditions };
@@ -476,21 +482,115 @@ export class NotificationService {
 
       const dbLogs = await NotificationLogModel.find(query).sort({ createdAt: -1 }).limit(limit).lean();
       if (dbLogs && dbLogs.length > 0) {
-        return dbLogs;
+        return dbLogs.map(item => {
+          const readByList = (item.readBy || []).map((r: string) => String(r).toLowerCase());
+          const isRead = Boolean(
+            (cleanEmail && readByList.includes(cleanEmail)) ||
+            (cleanId && (item.readBy || []).includes(cleanId))
+          );
+          return {
+            ...item,
+            read: isRead
+          };
+        });
       }
     } catch {
       // Fall through to memory buffer
     }
 
-    // Fallback to runtime memory buffer
+    // Fallback to runtime memory buffer with strict customer isolation
     return runtimeNotificationsLedger.filter(item => {
-      const isPublic = item.target === 'all' || item.recipient === 'all' || item.channel === 'in_app';
-      const matchesEmail = cleanEmail && String(item.recipient || '').toLowerCase() === cleanEmail;
-      const matchesId = cleanId && String(item.customerId || '') === cleanId;
-      const matchesCategory = !options.category || options.category === 'all' || item.category === options.category;
+      const target = item.target || 'all';
+      const itemRecipient = (item.recipient || '').trim().toLowerCase();
+      const itemCustId = (item.customerId || '').trim();
 
-      return (isPublic || matchesEmail || matchesId) && matchesCategory;
-    }).slice(0, limit);
+      const isPublic = target === 'all' || itemRecipient === 'all';
+      const isRegisteredAnnouncement = Boolean((cleanEmail || cleanId) && target === 'registered');
+      const isDirectToThisCustomer = Boolean(
+        (cleanEmail && itemRecipient === cleanEmail) ||
+        (cleanId && itemCustId === cleanId)
+      );
+
+      const isVisibleToUser = isPublic || isRegisteredAnnouncement || isDirectToThisCustomer;
+      if (!isVisibleToUser) return false;
+
+      const matchesCategory = !options.category || options.category === 'all' || item.category === options.category;
+      return matchesCategory;
+    }).slice(0, limit).map(item => {
+      const readByList = (item.readBy || []).map((r: string) => String(r).toLowerCase());
+      const isRead = Boolean(
+        (cleanEmail && readByList.includes(cleanEmail)) ||
+        (cleanId && (item.readBy || []).includes(cleanId))
+      );
+      return {
+        ...item,
+        read: isRead
+      };
+    });
+  }
+
+  /**
+   * Mark a single notification as read by a specific customer
+   */
+  async markAsRead(id: string, userIdentifier: string): Promise<boolean> {
+    const cleanId = (userIdentifier || '').trim().toLowerCase();
+    if (!cleanId || !id) return false;
+
+    const idQuery: any[] = [{ notificationId: id }];
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      idQuery.push({ _id: id });
+    }
+
+    try {
+      await NotificationLogModel.updateOne(
+        { $or: idQuery },
+        { $addToSet: { readBy: cleanId } }
+      );
+    } catch (e: any) {
+      console.warn('Failed to update NotificationLogModel readBy:', e?.message);
+    }
+
+    const memoryItem = runtimeNotificationsLedger.find(n => n.notificationId === id || String(n._id) === id);
+    if (memoryItem) {
+      if (!memoryItem.readBy) memoryItem.readBy = [];
+      if (!memoryItem.readBy.includes(cleanId)) {
+        memoryItem.readBy.push(cleanId);
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Mark all notifications visible to a customer as read
+   */
+  async markAllAsRead(userIdentifier: string): Promise<boolean> {
+    const cleanId = (userIdentifier || '').trim().toLowerCase();
+    if (!cleanId) return false;
+
+    try {
+      await NotificationLogModel.updateMany(
+        {
+          $or: [
+            { target: 'all' },
+            { recipient: 'all' },
+            { target: 'registered' },
+            { recipient: cleanId },
+            { customerId: cleanId }
+          ]
+        },
+        { $addToSet: { readBy: cleanId } }
+      );
+    } catch {}
+
+    runtimeNotificationsLedger.forEach(item => {
+      if (!item.readBy) item.readBy = [];
+      if (!item.readBy.includes(cleanId)) {
+        item.readBy.push(cleanId);
+      }
+    });
+
+    return true;
   }
 
   /**
@@ -536,10 +636,14 @@ export class NotificationService {
    * Delete a notification entry
    */
   async deleteNotification(id: string): Promise<boolean> {
+    const idQuery: any[] = [{ notificationId: id }];
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      idQuery.push({ _id: id });
+    }
     try {
-      await NotificationLogModel.deleteOne({ $or: [{ notificationId: id }, { _id: id }] });
+      await NotificationLogModel.deleteOne({ $or: idQuery });
     } catch {}
-    const idx = runtimeNotificationsLedger.findIndex(n => n.notificationId === id || n._id === id);
+    const idx = runtimeNotificationsLedger.findIndex(n => n.notificationId === id || String(n._id) === id);
     if (idx !== -1) {
       runtimeNotificationsLedger.splice(idx, 1);
     }

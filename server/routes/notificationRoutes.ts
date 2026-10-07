@@ -7,6 +7,8 @@ const router = Router();
 // Public patron endpoints (accessible by website visitors and logged in customers)
 router.get('/', notificationController.getPublic);
 router.get('/public', notificationController.getPublic);
+router.post('/read-all', notificationController.markAllRead);
+router.post('/:id/read', notificationController.markRead);
 
 // Admin-only management endpoints
 router.get('/history', ...requireAdminOrStaff, notificationController.getHistory);

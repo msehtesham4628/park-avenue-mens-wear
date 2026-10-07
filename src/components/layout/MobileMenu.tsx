@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Search, Heart, User, Compass, Scissors, Layers, LogIn, LogOut, ChevronDown, RotateCcw } from 'lucide-react';
+import { X, Search, Heart, User, Compass, Scissors, Layers, LogIn, LogOut, ChevronDown, RotateCcw, Bell } from 'lucide-react';
 import { useShop, AppView } from '../../context/ShopContext';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { OFFICIAL_CATEGORIES } from '../../types';
@@ -253,12 +253,29 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer shortcuts */}
-        <div className="p-6 border-t border-gray-200 bg-[#F9F9F8] flex items-center justify-between text-xs text-gray-600">
+        <div className="p-5 border-t border-gray-200 bg-[#F9F9F8] flex items-center justify-between text-xs text-gray-700">
           <button
-            onClick={() => handleNav('account')}
-            className="flex items-center gap-1.5 hover:text-black transition-colors cursor-pointer"
+            onClick={() => {
+              if (currentCustomer) {
+                handleNav('customer-dashboard');
+                setTimeout(() => {
+                  const el = document.getElementById('wishlist-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              } else {
+                handleNav('login');
+              }
+            }}
+            className="flex items-center gap-2 hover:text-black transition-colors cursor-pointer"
           >
-            <Heart className="w-4 h-4 text-[#936B34]" />
+            <div className="relative">
+              <Heart className={`w-4 h-4 text-[#936B34] ${wishlist.length > 0 ? 'fill-[#936B34]/30' : ''}`} />
+              {wishlist.length > 0 && (
+                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-xs leading-none">
+                  {wishlist.length}
+                </span>
+              )}
+            </div>
             <span>Wishlist ({wishlist.length})</span>
           </button>
           <button
@@ -266,12 +283,17 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
               onClose();
               setIsNotificationsOpen(true);
             }}
-            className="hover:text-black transition-colors flex items-center gap-1 cursor-pointer"
+            className="hover:text-black transition-colors flex items-center gap-2 cursor-pointer"
           >
-            <span>Alerts</span>
-            {unreadNotificationCount > 0 && (
-              <span className="w-2 h-2 rounded-full bg-[#936B34]" />
-            )}
+            <div className="relative">
+              <Bell className="w-4 h-4 text-[#936B34]" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 bg-[#936B34] text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-xs leading-none animate-pulse">
+                  {unreadNotificationCount}
+                </span>
+              )}
+            </div>
+            <span>Alerts {unreadNotificationCount > 0 && `(${unreadNotificationCount})`}</span>
           </button>
         </div>
       </div>

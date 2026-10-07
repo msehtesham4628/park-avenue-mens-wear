@@ -148,6 +148,43 @@ export const notificationController = {
   },
 
   /**
+   * POST /api/notifications/:id/read
+   * Mark a notification as read for a customer
+   */
+  async markRead(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { email, customerId } = req.body || {};
+      const userIdentifier = (email || customerId || (req as any).user?.email || (req as any).user?.id || '').trim();
+
+      if (!id) {
+        return res.status(400).json({ success: false, message: 'Notification ID required' });
+      }
+
+      await notificationService.markAsRead(id, userIdentifier);
+      return res.status(200).json({ success: true, message: 'Notification marked as read' });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/notifications/read-all
+   * Mark all notifications as read for a customer
+   */
+  async markAllRead(req: Request, res: Response) {
+    try {
+      const { email, customerId } = req.body || {};
+      const userIdentifier = (email || customerId || (req as any).user?.email || (req as any).user?.id || '').trim();
+
+      await notificationService.markAllAsRead(userIdentifier);
+      return res.status(200).json({ success: true, message: 'All notifications marked as read' });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  /**
    * DELETE /api/admin/notifications/:id
    */
   async deleteNotification(req: Request, res: Response) {

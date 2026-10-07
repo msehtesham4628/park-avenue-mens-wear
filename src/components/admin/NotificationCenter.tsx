@@ -26,8 +26,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
-import { NotificationService } from '../../services/api';
-import { Product } from '../../types';
+import { NotificationService, CustomerService } from '../../services/api';
+import { Product, Customer } from '../../types';
 
 export const NotificationCenter: React.FC = () => {
   const { showToast, products, currentCustomer } = useShop();
@@ -44,6 +44,7 @@ export const NotificationCenter: React.FC = () => {
   const [recipientName, setRecipientName] = useState('');
   const [priority, setPriority] = useState<'standard' | 'high' | 'urgent'>('standard');
   const [selectedProductId, setSelectedProductId] = useState('');
+  const [registeredCustomers, setRegisteredCustomers] = useState<Customer[]>([]);
 
   // History & Metrics State
   const [historyLogs, setHistoryLogs] = useState<any[]>([]);
@@ -53,6 +54,10 @@ export const NotificationCenter: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterChannel, setFilterChannel] = useState('all');
+
+  useEffect(() => {
+    CustomerService.getAll().then(setRegisteredCustomers).catch(() => {});
+  }, []);
 
   useEffect(() => {
     loadHistory();
@@ -378,32 +383,74 @@ export const NotificationCenter: React.FC = () => {
 
             {/* Direct Recipient Inputs (if target === 'direct') */}
             {target === 'direct' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 bg-amber-50/40 border border-amber-200/60">
-                <div>
-                  <label className="text-[10px] font-mono uppercase text-amber-900 font-medium block mb-1">
-                    Recipient Email / Phone *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={recipient}
-                    onChange={(e) => setRecipient(e.target.value)}
-                    placeholder="e.g. patron@example.com or +1 (555) 000-0000"
-                    className="w-full bg-white border border-amber-200 px-3 py-2 text-xs font-mono text-gray-900 focus:outline-none focus:border-[#936B34]"
-                  />
+              <div className="space-y-3 p-3.5 bg-amber-50/40 border border-amber-200/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase text-amber-900 font-semibold flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-[#936B34]" />
+                    <span>Target Specific Patron (Private Alert)</span>
+                  </span>
+                  <span className="text-[9px] font-mono uppercase px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-200 font-medium">
+                    Strict Patron Isolation
+                  </span>
                 </div>
-                <div>
-                  <label className="text-[10px] font-mono uppercase text-amber-900 font-medium block mb-1">
-                    Patron Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={recipientName}
-                    onChange={(e) => setRecipientName(e.target.value)}
-                    placeholder="e.g. Lord Harrington"
-                    className="w-full bg-white border border-amber-200 px-3 py-2 text-xs font-mono text-gray-900 focus:outline-none focus:border-[#936B34]"
-                  />
+
+                {registeredCustomers.length > 0 && (
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-amber-900 font-medium block mb-1">
+                      Quick Pick From Registered Clientele:
+                    </label>
+                    <select
+                      onChange={(e) => {
+                        const cust = registeredCustomers.find(c => c.email === e.target.value);
+                        if (cust) {
+                          setRecipient(cust.email);
+                          setRecipientName(cust.name || '');
+                        }
+                      }}
+                      className="w-full bg-white border border-amber-200 px-3 py-1.5 text-xs font-mono text-gray-900 focus:outline-none focus:border-[#936B34]"
+                    >
+                      <option value="">-- Or choose from registered clientele --</option>
+                      {registeredCustomers.map(c => (
+                        <option key={c.id || c.email} value={c.email}>
+                          {c.name} ({c.email}) {c.tier ? `[${c.tier.toUpperCase()}]` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-amber-900 font-medium block mb-1">
+                      Recipient Email / Phone *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={recipient}
+                      onChange={(e) => setRecipient(e.target.value)}
+                      placeholder="e.g. patron@example.com or +1 (555) 000-0000"
+                      className="w-full bg-white border border-amber-200 px-3 py-2 text-xs font-mono text-gray-900 focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-amber-900 font-medium block mb-1">
+                      Patron Full Name
+                    </label>
+                    <input
+                      type="text"
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                      placeholder="e.g. Lord Harrington"
+                      className="w-full bg-white border border-amber-200 px-3 py-2 text-xs font-mono text-gray-900 focus:outline-none focus:border-[#936B34]"
+                    />
+                  </div>
                 </div>
+
+                <p className="text-[10px] text-amber-800 font-sans flex items-center gap-1.5 pt-1">
+                  <Shield className="w-3 h-3 text-[#936B34] shrink-0" />
+                  <span>Privacy guarantee: Different patrons receive different alerts. This dispatch is strictly delivered to <strong>{recipient || 'this patron'}</strong> only.</span>
+                </p>
               </div>
             )}
 

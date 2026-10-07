@@ -39,8 +39,25 @@ export async function connectDB(): Promise<boolean> {
   const rawUri = ENV.MONGODB_URI?.trim() || '';
   const isLocalOrEmpty = !rawUri || /mongodb(?:\+srv)?:\/\/(?:127\.0\.0\.1|localhost)/i.test(rawUri);
 
+  const formatDbUri = (uri: string, databaseName: string): string => {
+    if (!uri) return uri;
+    let formatted = uri.trim();
+    // Replace explicit /test? or /test (end of line) with the intended database name
+    formatted = formatted.replace(/\/test(\?|$)/i, `/${databaseName}$1`);
+    // If the URI has no database name before query params (e.g. .mongodb.net/? or :27017/?)
+    formatted = formatted.replace(/(\.mongodb\.net|\.net|\.com|\.org|\.io|:\d+)\/(\?|$)/i, `$1/${databaseName}$2`);
+    // If URI ends with trailing slash only
+    if (/(\.mongodb\.net|\.net|\.com|\.org|\.io|:\d+)\/$/i.test(formatted)) {
+      formatted = `${formatted}${databaseName}`;
+    }
+    return formatted;
+  };
+
   const connectWithUri = async (targetUri: string, isMemory: boolean): Promise<boolean> => {
-    cache.promise = mongoose.connect(targetUri, {
+    const dbName = ENV.MONGODB_DB_NAME || 'park_avenue_menswear';
+    const finalUri = formatDbUri(targetUri, dbName);
+    cache.promise = mongoose.connect(finalUri, {
+      dbName,
       serverSelectionTimeoutMS: 5000,
       connectTimeoutMS: 5000,
       socketTimeoutMS: 30000,
@@ -49,7 +66,7 @@ export async function connectDB(): Promise<boolean> {
     });
 
     cache.conn = await cache.promise;
-    console.info(`[Park Avenue DB] MongoDB connected successfully (${isMemory ? 'In-Memory Engine' : 'External Database'}).`);
+    console.info(`[Park Avenue DB] MongoDB connected successfully to database "${dbName}" (${isMemory ? 'In-Memory Engine' : 'External Database'}).`);
     return true;
   };
 
@@ -73,7 +90,11 @@ export async function connectDB(): Promise<boolean> {
     // Use In-Memory MongoDB Server for development, tests, or offline resilience
     if (!cache.memoryServer) {
       const { MongoMemoryServer } = await import('mongodb-memory-server');
-      cache.memoryServer = await MongoMemoryServer.create();
+      cache.memoryServer = await MongoMemoryServer.create({
+        instance: {
+          dbName: ENV.MONGODB_DB_NAME || 'park_avenue_menswear'
+        }
+      });
     }
 
     const memoryUri = cache.memoryServer.getUri();

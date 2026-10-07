@@ -256,17 +256,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
-  // Wishlist with localStorage sync
-  const [wishlist, setWishlist] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('pa_wishlist');
-      return saved ? JSON.parse(saved) : ['prod-suit-01', 'prod-tie-01'];
-    } catch {
-      return ['prod-suit-01', 'prod-tie-01'];
-    }
-  });
-
-  const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(() => {
     try {
       return AuthService.getCurrentUser();
@@ -274,12 +263,46 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return null;
     }
   });
+
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     try {
       const stored = AuthService.getCurrentUser();
       return !!(stored && (stored.role === 'admin' || stored.role === 'staff'));
     } catch {
       return false;
+    }
+  });
+
+  // Wishlist with customer-isolated localStorage persistence
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    try {
+      const stored = AuthService.getCurrentUser();
+      const userKey = (stored?.email || stored?.id || 'guest').toLowerCase().trim();
+      const saved = localStorage.getItem(`pa_wishlist_${userKey}`) || localStorage.getItem('pa_wishlist');
+      return saved ? JSON.parse(saved) : ['prod-suit-01', 'prod-tie-01'];
+    } catch {
+      return ['prod-suit-01', 'prod-tie-01'];
+    }
+  });
+
+  // Client notifications with customer-isolated persistent cache
+  const [notifications, setNotifications] = useState<CustomerNotification[]>(() => {
+    try {
+      const stored = AuthService.getCurrentUser();
+      const customerKey = (stored?.email || stored?.id || 'guest').toLowerCase().trim();
+      const cached = localStorage.getItem(`pa_notifications_${customerKey}`) || localStorage.getItem('park_avenue_notifications');
+      const readSaved = localStorage.getItem(`pa_read_${customerKey}`);
+      const readIds: string[] = readSaved ? JSON.parse(readSaved) : [];
+      if (cached) {
+        const parsed: CustomerNotification[] = JSON.parse(cached);
+        return parsed.map(n => ({
+          ...n,
+          read: Boolean(n.read || readIds.includes(n.id))
+        }));
+      }
+      return [];
+    } catch {
+      return [];
     }
   });
 
@@ -363,14 +386,27 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [cart]);
 
-  // Sync wishlist to localStorage
+  // Load customer's isolated wishlist whenever currentCustomer changes
   useEffect(() => {
+    const userKey = (currentCustomer?.email || currentCustomer?.id || 'guest').toLowerCase().trim();
     try {
+      const saved = localStorage.getItem(`pa_wishlist_${userKey}`) || localStorage.getItem('pa_wishlist');
+      if (saved) {
+        setWishlist(JSON.parse(saved));
+      }
+    } catch {}
+  }, [currentCustomer]);
+
+  // Sync wishlist to localStorage per customer
+  useEffect(() => {
+    const userKey = (currentCustomer?.email || currentCustomer?.id || 'guest').toLowerCase().trim();
+    try {
+      localStorage.setItem(`pa_wishlist_${userKey}`, JSON.stringify(wishlist));
       localStorage.setItem('pa_wishlist', JSON.stringify(wishlist));
     } catch (e) {
       console.error(e);
     }
-  }, [wishlist]);
+  }, [wishlist, currentCustomer]);
 
   // Load products, notifications & default customer on mount
   const refreshProducts = async () => {
@@ -655,12 +691,18 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Notifications
   const markNotificationRead = async (id: string) => {
-    await NotificationService.markAsRead(id);
+    const email = currentCustomer?.email;
+    const customerId = currentCustomer?.id || (currentCustomer as any)?.customerId;
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    await NotificationService.markAsRead(id, { email, customerId });
     await refreshNotifications();
   };
 
   const markAllNotificationsRead = async () => {
-    await NotificationService.markAllAsRead();
+    const email = currentCustomer?.email;
+    const customerId = currentCustomer?.id || (currentCustomer as any)?.customerId;
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    await NotificationService.markAllAsRead({ email, customerId });
     await refreshNotifications();
     showToast('All notifications marked as read', 'info');
   };
