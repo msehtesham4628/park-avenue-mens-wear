@@ -8,11 +8,12 @@ export const notificationController = {
    */
   async getPublic(req: Request, res: Response) {
     try {
-      const { email, customerId, category, limit } = req.query;
+      const { email, username, customerId, category, limit } = req.query;
       const limitNum = limit ? parseInt(limit as string, 10) : 30;
 
       const notifications = await notificationService.getPublicNotifications({
         email: email as string,
+        username: username as string,
         customerId: customerId as string,
         category: category as string,
         limit: limitNum
@@ -195,6 +196,27 @@ export const notificationController = {
       }
       await notificationService.deleteNotification(id);
       return res.status(200).json({ success: true, message: 'Notification deleted successfully' });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/notifications/:id/dismiss
+   * Dismiss/close a notification for a specific patron (clicking the 'X' button)
+   */
+  async dismissNotification(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { email, username, customerId } = req.body || {};
+      const userIdentifier = (email || username || customerId || (req as any).user?.email || (req as any).user?.username || (req as any).user?.id || '').trim();
+
+      if (!id) {
+        return res.status(400).json({ success: false, message: 'Notification ID is required' });
+      }
+
+      await notificationService.dismissNotification(id, userIdentifier);
+      return res.status(200).json({ success: true, message: 'Notification dismissed successfully' });
     } catch (err: any) {
       return res.status(500).json({ success: false, message: err.message });
     }

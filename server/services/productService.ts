@@ -119,10 +119,7 @@ export const productService = {
    */
   syncMemoryStore(items: any[]) {
     if (Array.isArray(items)) {
-      const map = new Map<string, any>();
-      inMemoryStore.forEach(i => map.set(i.productId || i.sku, i));
-      items.forEach(i => map.set(i.productId || i.sku, i));
-      inMemoryStore = Array.from(map.values());
+      inMemoryStore = items;
       saveStoreToDisk(inMemoryStore);
     }
   },

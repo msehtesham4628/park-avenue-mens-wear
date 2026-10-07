@@ -246,9 +246,7 @@ export class NotificationService {
     this.emailProvider = emailProvider || new EmailProviderAdapter();
     this.smsProvider = smsProvider || new SmsProviderAdapter();
     this.whatsAppProvider = whatsAppProvider || new WhatsAppProviderAdapter();
-
-    // Seed luxury baseline notifications so customers immediately have rich dispatches
-    this.seedDefaultNotificationsIfEmpty().catch(() => {});
+    // No fake alerts: dispatches are strictly sent by administrators or system events
   }
 
   setEmailProvider(provider: IEmailProvider) {
@@ -444,19 +442,20 @@ export class NotificationService {
 
   /**
    * Public Customer Notifications query:
-   * Returns global announcements (target=all) plus targeted customer messages ONLY if email/customerId given.
+   * Returns global announcements (target=all) plus targeted customer messages ONLY if email/username/customerId given.
    * Strictly isolates private alerts so different customers receive their own alerts.
    */
   async getPublicNotifications(options: {
     email?: string;
+    username?: string;
     customerId?: string;
     category?: string;
     limit?: number;
   } = {}) {
     const limit = options.limit || 30;
     const cleanEmail = (options.email || '').trim().toLowerCase();
+    const cleanUsername = (options.username || '').trim().toLowerCase();
     const cleanId = (options.customerId || '').trim();
-    const userIdentifier = cleanEmail || cleanId || '';
 
     try {
       const orConditions: any[] = [
@@ -465,27 +464,39 @@ export class NotificationService {
       ];
 
       // If user is authenticated, include member announcements and their specific private messages
-      if (cleanEmail || cleanId) {
+      if (cleanEmail || cleanUsername || cleanId) {
         orConditions.push({ target: 'registered' });
         if (cleanEmail) {
           orConditions.push({ recipient: { $regex: `^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
         }
+        if (cleanUsername) {
+          orConditions.push({ recipient: { $regex: `^${cleanUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
+        }
         if (cleanId) {
           orConditions.push({ customerId: cleanId });
+          orConditions.push({ recipient: cleanId });
         }
       }
 
       const query: any = { $or: orConditions };
+
+      // Exclude notifications that this user has dismissed (clicked the "X" cross)
+      const userIdentifiers = [cleanEmail, cleanUsername, cleanId].filter(Boolean);
+      if (userIdentifiers.length > 0) {
+        query.dismissedBy = { $nin: userIdentifiers };
+      }
+
       if (options.category && options.category !== 'all') {
         query.category = options.category;
       }
 
       const dbLogs = await NotificationLogModel.find(query).sort({ createdAt: -1 }).limit(limit).lean();
-      if (dbLogs && dbLogs.length > 0) {
+      if (dbLogs) {
         return dbLogs.map(item => {
           const readByList = (item.readBy || []).map((r: string) => String(r).toLowerCase());
           const isRead = Boolean(
             (cleanEmail && readByList.includes(cleanEmail)) ||
+            (cleanUsername && readByList.includes(cleanUsername)) ||
             (cleanId && (item.readBy || []).includes(cleanId))
           );
           return {
@@ -503,11 +514,18 @@ export class NotificationService {
       const target = item.target || 'all';
       const itemRecipient = (item.recipient || '').trim().toLowerCase();
       const itemCustId = (item.customerId || '').trim();
+      const dismissedBy = (item.dismissedBy || []).map((d: string) => String(d).toLowerCase());
+
+      // Check if user dismissed this alert
+      if (cleanEmail && dismissedBy.includes(cleanEmail)) return false;
+      if (cleanUsername && dismissedBy.includes(cleanUsername)) return false;
+      if (cleanId && dismissedBy.includes(cleanId.toLowerCase())) return false;
 
       const isPublic = target === 'all' || itemRecipient === 'all';
-      const isRegisteredAnnouncement = Boolean((cleanEmail || cleanId) && target === 'registered');
+      const isRegisteredAnnouncement = Boolean((cleanEmail || cleanUsername || cleanId) && target === 'registered');
       const isDirectToThisCustomer = Boolean(
         (cleanEmail && itemRecipient === cleanEmail) ||
+        (cleanUsername && itemRecipient === cleanUsername) ||
         (cleanId && itemCustId === cleanId)
       );
 
@@ -520,6 +538,7 @@ export class NotificationService {
       const readByList = (item.readBy || []).map((r: string) => String(r).toLowerCase());
       const isRead = Boolean(
         (cleanEmail && readByList.includes(cleanEmail)) ||
+        (cleanUsername && readByList.includes(cleanUsername)) ||
         (cleanId && (item.readBy || []).includes(cleanId))
       );
       return {
@@ -633,7 +652,7 @@ export class NotificationService {
   }
 
   /**
-   * Delete a notification entry
+   * Delete a notification entry completely
    */
   async deleteNotification(id: string): Promise<boolean> {
     const idQuery: any[] = [{ notificationId: id }];
@@ -651,66 +670,40 @@ export class NotificationService {
   }
 
   /**
-   * Seed curated editorial, news, and product drop dispatches on startup
+   * Dismiss notification for a specific user (adds to dismissedBy array)
    */
-  async seedDefaultNotificationsIfEmpty() {
+  async dismissNotification(id: string, userIdentifier?: string): Promise<boolean> {
+    const cleanId = (userIdentifier || '').trim().toLowerCase();
+    const idQuery: any[] = [{ notificationId: id }];
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      idQuery.push({ _id: id });
+    }
+
     try {
-      const count = await NotificationLogModel.countDocuments();
-      if (count > 0 || runtimeNotificationsLedger.length > 0) return;
-    } catch {
-      if (runtimeNotificationsLedger.length > 0) return;
-    }
-
-    const initialSeeds = [
-      {
-        notificationType: 'PRODUCT_ALERT',
-        category: 'product' as const,
-        channel: 'in_app' as const,
-        target: 'all' as const,
-        recipient: 'all',
-        title: 'Spring Atelier Suiting: Italian Super 150s Virgin Wool',
-        subject: 'New Arrival: Italian Super 150s Virgin Wool Collection',
-        message: 'Master tailors have unveiled the Park Avenue Midnight Navy Super 150s Two-Piece Suit. Hand-finished Milanese lapels with pure Bemberg cupro interior lining.',
-        link: '/category/suits',
-        productId: 'prod-suit-01',
-        productName: 'The Park Avenue Midnight Navy Super 150s Suit',
-        priority: 'high' as const,
-        status: 'sent' as const,
-        provider: 'atelier_editorial'
-      },
-      {
-        notificationType: 'NEWS_DISPATCH',
-        category: 'news' as const,
-        channel: 'in_app' as const,
-        target: 'all' as const,
-        recipient: 'all',
-        title: 'Milan Tailoring Journal: The Full-Canvas Architecture',
-        subject: 'Milan Sartorial Chronicles: The Full-Canvas Difference',
-        message: 'Read our creative director report detailing how natural horsehair canvas molds to your silhouette over time, creating a bespoke fit unmatched by fused garments.',
-        link: '/category/suits',
-        priority: 'standard' as const,
-        status: 'sent' as const,
-        provider: 'atelier_journal'
-      },
-      {
-        notificationType: 'PROMOTION',
-        category: 'promotion' as const,
-        channel: 'in_app' as const,
-        target: 'all' as const,
-        recipient: 'all',
-        title: 'Complimentary Master Inseam Break & Sleeve Tailoring',
-        subject: 'Valued Patron Privilege: Complimentary Bespoke Alterations',
-        message: 'All suiting and trouser acquisitions this season include complimentary master hand alteration break adjustments and personalized fitting concierge.',
-        link: '/track-alteration',
-        priority: 'high' as const,
-        status: 'sent' as const,
-        provider: 'atelier_concierge'
+      if (cleanId) {
+        await NotificationLogModel.updateMany(
+          { $or: idQuery },
+          { $addToSet: { dismissedBy: cleanId } }
+        );
+      } else {
+        await NotificationLogModel.deleteOne({ $or: idQuery });
       }
-    ];
+    } catch {}
 
-    for (const seed of initialSeeds) {
-      await this.recordNotificationLog(seed);
+    const idx = runtimeNotificationsLedger.findIndex(n => n.notificationId === id || String(n._id) === id);
+    if (idx !== -1) {
+      if (cleanId) {
+        if (!runtimeNotificationsLedger[idx].dismissedBy) {
+          runtimeNotificationsLedger[idx].dismissedBy = [];
+        }
+        if (!runtimeNotificationsLedger[idx].dismissedBy.includes(cleanId)) {
+          runtimeNotificationsLedger[idx].dismissedBy.push(cleanId);
+        }
+      } else {
+        runtimeNotificationsLedger.splice(idx, 1);
+      }
     }
+    return true;
   }
 }
 

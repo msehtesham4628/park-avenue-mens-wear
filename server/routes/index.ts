@@ -14,6 +14,7 @@ import checkoutRoutes from './checkoutRoutes.js';
 import returnRoutes from './returnRoutes.js';
 import seoRoutes from './seoRoutes.js';
 import staffRoutes from './staffRoutes.js';
+import couponRoutes from './couponRoutes.js';
 import { API_DOCUMENTATION } from '../docs/apiDocs.js';
 import { isDbConnected } from '../config/db.js';
 
@@ -51,6 +52,7 @@ apiRouter.use('/returns', returnRoutes);
 apiRouter.use('/payments', paymentRoutes);
 apiRouter.use('/checkout', checkoutRoutes);
 apiRouter.use('/notifications', notificationRoutes);
+apiRouter.use('/coupons', couponRoutes);
 apiRouter.use('/seo', seoRoutes);
 
 // Admin Specific Modules
@@ -61,6 +63,7 @@ apiRouter.use('/customers', customerRoutes);
 apiRouter.use('/admin/dashboard', dashboardRoutes);
 apiRouter.use('/admin/logs', dashboardRoutes);
 apiRouter.use('/admin/notifications', notificationRoutes);
+apiRouter.use('/admin/coupons', couponRoutes);
 
 // Admin aliases to match prompt specification (e.g. POST /api/admin/products, PUT /api/admin/products/:id)
 apiRouter.use('/admin/products', productRoutes);

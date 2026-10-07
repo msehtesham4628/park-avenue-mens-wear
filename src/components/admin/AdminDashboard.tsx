@@ -52,6 +52,7 @@ import {
   ChevronLeft,
   Award,
   UploadCloud,
+  Tag,
   Image as ImageIcon
 } from 'lucide-react';
 import { 
@@ -105,6 +106,7 @@ import { AnalyticsVisualizer } from './AnalyticsVisualizer';
 import { StaffLoginPage } from './StaffLoginPage';
 import { StaffManagementView } from './StaffManagementView';
 import { NotificationCenter } from './NotificationCenter';
+import { CouponManagementView } from './CouponManagementView';
 
 type AdminTab = 
   | 'dashboard' 
@@ -114,6 +116,7 @@ type AdminTab =
   | 'orders' 
   | 'returns'
   | 'customers' 
+  | 'coupons'
   | 'alterations' 
   | 'logs'
   | 'erp-reports'
@@ -146,6 +149,7 @@ export const AdminDashboard: React.FC = () => {
     if (lower === 'orders') return 'orders';
     if (lower === 'returns') return 'returns';
     if (lower === 'customers') return 'customers';
+    if (lower === 'coupons' || lower === 'coupon' || lower === 'vouchers') return 'coupons';
     if (lower === 'alterations') return 'alterations';
     if (lower === 'analytics') return 'analytics';
     if (lower === 'logs') return 'logs';
@@ -1497,7 +1501,8 @@ export const AdminDashboard: React.FC = () => {
         { id: 'orders', label: 'Orders', icon: ShoppingBag, badge: ordersList.filter(o => o.status === 'processing').length },
         { id: 'returns', label: 'Returns & Exchanges', icon: RotateCcw, badge: returnsList.filter(r => r.status === 'Pending Review' || r.status === 'Approved - Return Label Sent').length },
         { id: 'alterations', label: 'Alterations', icon: Scissors, badge: alterationsList.filter(a => a.status !== 'completed').length },
-        { id: 'customers', label: 'Clientele / Patrons', icon: Users, badge: customersList.length }
+        { id: 'customers', label: 'Clientele / Patrons', icon: Users, badge: customersList.length },
+        { id: 'coupons', label: 'Coupons & Vouchers', icon: Tag }
       ]
     },
     {
@@ -3558,6 +3563,11 @@ export const AdminDashboard: React.FC = () => {
         {/* TAB: NOTIFICATIONS */}
         {activeTab === 'notifications' && (
           <NotificationCenter />
+        )}
+
+        {/* TAB: COUPONS & PROMOTIONAL VOUCHERS */}
+        {activeTab === 'coupons' && (
+          <CouponManagementView />
         )}
 
         {/* TAB: ADMIN & STAFF LOGS */}

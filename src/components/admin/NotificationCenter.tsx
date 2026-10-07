@@ -121,7 +121,7 @@ export const NotificationCenter: React.FC = () => {
     }
 
     if (target === 'direct' && !recipient.trim()) {
-      showToast('Please provide a recipient email or phone number for direct dispatches.', 'error');
+      showToast('Please provide a recipient email or username for direct dispatches.', 'error');
       return;
     }
 
@@ -397,22 +397,23 @@ export const NotificationCenter: React.FC = () => {
                 {registeredCustomers.length > 0 && (
                   <div>
                     <label className="text-[10px] font-mono uppercase text-amber-900 font-medium block mb-1">
-                      Quick Pick From Registered Clientele:
+                      Quick Pick From Registered Clientele (Mail or Username):
                     </label>
                     <select
                       onChange={(e) => {
-                        const cust = registeredCustomers.find(c => c.email === e.target.value);
+                        const val = e.target.value;
+                        const cust = registeredCustomers.find(c => c.email === val || (c as any).username === val);
                         if (cust) {
-                          setRecipient(cust.email);
-                          setRecipientName(cust.name || '');
+                          setRecipient(cust.email || (cust as any).username || val);
+                          setRecipientName(cust.name || (cust as any).username || '');
                         }
                       }}
                       className="w-full bg-white border border-amber-200 px-3 py-1.5 text-xs font-mono text-gray-900 focus:outline-none focus:border-[#936B34]"
                     >
-                      <option value="">-- Or choose from registered clientele --</option>
+                      <option value="">-- Choose customer mail or username --</option>
                       {registeredCustomers.map(c => (
                         <option key={c.id || c.email} value={c.email}>
-                          {c.name} ({c.email}) {c.tier ? `[${c.tier.toUpperCase()}]` : ''}
+                          {c.name || 'Patron'} {(c as any).username ? `(@${(c as any).username})` : ''} — {c.email} {c.tier ? `[${c.tier.toUpperCase()}]` : ''}
                         </option>
                       ))}
                     </select>
@@ -422,14 +423,14 @@ export const NotificationCenter: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-mono uppercase text-amber-900 font-medium block mb-1">
-                      Recipient Email / Phone *
+                      Recipient Mail or Username *
                     </label>
                     <input
                       type="text"
                       required
                       value={recipient}
                       onChange={(e) => setRecipient(e.target.value)}
-                      placeholder="e.g. patron@example.com or +1 (555) 000-0000"
+                      placeholder="e.g. customer@example.com or username"
                       className="w-full bg-white border border-amber-200 px-3 py-2 text-xs font-mono text-gray-900 focus:outline-none focus:border-[#936B34]"
                     />
                   </div>

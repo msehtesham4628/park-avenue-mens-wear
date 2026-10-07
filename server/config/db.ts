@@ -42,8 +42,8 @@ export async function connectDB(): Promise<boolean> {
   const formatDbUri = (uri: string, databaseName: string): string => {
     if (!uri) return uri;
     let formatted = uri.trim();
-    // Replace explicit /test? or /test (end of line) with the intended database name
-    formatted = formatted.replace(/\/test(\?|$)/i, `/${databaseName}$1`);
+    // Replace explicit /test or /park_avanue_mens_wear with the intended database name
+    formatted = formatted.replace(/\/(test|park_avanue_mens_wear)(\?|$)/i, `/${databaseName}$2`);
     // If the URI has no database name before query params (e.g. .mongodb.net/? or :27017/?)
     formatted = formatted.replace(/(\.mongodb\.net|\.net|\.com|\.org|\.io|:\d+)\/(\?|$)/i, `$1/${databaseName}$2`);
     // If URI ends with trailing slash only

@@ -436,3 +436,22 @@ export interface AuditLogEntry {
   userAgent?: string;
   createdAt: string;
 }
+
+export interface Coupon {
+  id?: string;
+  couponId?: string;
+  _id?: string;
+  code: string;
+  description?: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  expiresAt?: string | null;
+  usageLimit?: number | null;
+  usedCount?: number;
+  isActive: boolean;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}

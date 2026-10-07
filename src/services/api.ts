@@ -14,6 +14,7 @@ import {
   AlterationRecord,
   Customer,
   CustomerNotification,
+  Coupon,
   OrderStatus,
   AlterationStatus,
   NotificationChannel,
@@ -1769,14 +1770,16 @@ export const CustomerService = {
    ========================================================================= */
 
 export const NotificationService = {
-  async getAll(params?: { email?: string; customerId?: string; category?: string }): Promise<CustomerNotification[]> {
+  async getAll(params?: { email?: string; username?: string; customerId?: string; category?: string }): Promise<CustomerNotification[]> {
     const cleanEmail = (params?.email || '').trim().toLowerCase();
+    const cleanUsername = (params?.username || '').trim().toLowerCase();
     const cleanId = (params?.customerId || '').trim();
-    const customerKey = cleanEmail || cleanId || 'guest';
+    const customerKey = cleanEmail || cleanUsername || cleanId || 'guest';
     const storageKey = `pa_notifications_${customerKey}`;
     const readStorageKey = `pa_read_${customerKey}`;
+    const dismissedStorageKey = `pa_dismissed_${customerKey}`;
 
-    // Read stored user-specific read list
+    // Read stored user-specific read and dismissed lists
     const readIds: string[] = (() => {
       try {
         const saved = localStorage.getItem(readStorageKey);
@@ -1786,9 +1789,19 @@ export const NotificationService = {
       }
     })();
 
+    const dismissedIds: string[] = (() => {
+      try {
+        const saved = localStorage.getItem(dismissedStorageKey);
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    })();
+
     try {
       const q = new URLSearchParams();
       if (cleanEmail) q.append('email', cleanEmail);
+      if (cleanUsername) q.append('username', cleanUsername);
       if (cleanId) q.append('customerId', cleanId);
       if (params?.category && params.category !== 'all') q.append('category', params.category);
 
@@ -1796,31 +1809,36 @@ export const NotificationService = {
       const remote = await fetchRemote<any[]>(`/notifications${qs}`);
 
       if (remote && Array.isArray(remote)) {
-        const mapped: CustomerNotification[] = remote.map(item => {
-          const id = item.notificationId || item._id || item.id || `notif-${Date.now()}`;
-          const isRead = Boolean(item.read) || readIds.includes(id);
-          const rawDate = item.createdAt ? new Date(item.createdAt) : null;
-          const timeStr = rawDate 
-            ? rawDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-            : (item.timestamp || 'Recent');
+        const mapped: CustomerNotification[] = remote
+          .filter(item => {
+            const id = item.notificationId || item._id || item.id;
+            return !dismissedIds.includes(id);
+          })
+          .map(item => {
+            const id = item.notificationId || item._id || item.id || `notif-${Date.now()}`;
+            const isRead = Boolean(item.read) || readIds.includes(id);
+            const rawDate = item.createdAt ? new Date(item.createdAt) : null;
+            const timeStr = rawDate 
+              ? rawDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+              : (item.timestamp || 'Recent');
 
-          return {
-            id,
-            title: item.title || item.subject || 'Atelier Dispatch',
-            message: item.message || '',
-            type: (item.category || item.notificationType?.toLowerCase() || 'general') as any,
-            category: item.category || 'general',
-            timestamp: timeStr,
-            read: isRead,
-            link: item.link,
-            productId: item.productId,
-            productName: item.productName,
-            priority: item.priority || 'standard',
-            orderId: item.orderId,
-            alterationId: item.alterationId,
-            channel: item.channel
-          };
-        });
+            return {
+              id,
+              title: item.title || item.subject || 'Atelier Dispatch',
+              message: item.message || '',
+              type: (item.category || item.notificationType?.toLowerCase() || 'general') as any,
+              category: item.category || 'general',
+              timestamp: timeStr,
+              read: isRead,
+              link: item.link,
+              productId: item.productId,
+              productName: item.productName,
+              priority: item.priority || 'standard',
+              orderId: item.orderId,
+              alterationId: item.alterationId,
+              channel: item.channel
+            };
+          });
 
         try {
           localStorage.setItem(storageKey, JSON.stringify(mapped));
@@ -1838,15 +1856,58 @@ export const NotificationService = {
       const cached = localStorage.getItem(storageKey);
       if (cached) {
         const parsed: CustomerNotification[] = JSON.parse(cached);
-        notificationsCache = parsed.map(n => ({
-          ...n,
-          read: n.read || readIds.includes(n.id)
-        }));
+        notificationsCache = parsed
+          .filter(n => !dismissedIds.includes(n.id))
+          .map(n => ({
+            ...n,
+            read: n.read || readIds.includes(n.id)
+          }));
         return notificationsCache;
       }
     } catch {}
 
     return [];
+  },
+
+  async dismissNotification(id: string, customerInfo?: { email?: string; username?: string; customerId?: string }): Promise<void> {
+    const cleanEmail = (customerInfo?.email || '').trim().toLowerCase();
+    const cleanUsername = (customerInfo?.username || '').trim().toLowerCase();
+    const cleanId = (customerInfo?.customerId || '').trim();
+    const customerKey = cleanEmail || cleanUsername || cleanId || 'guest';
+    const storageKey = `pa_notifications_${customerKey}`;
+    const dismissedStorageKey = `pa_dismissed_${customerKey}`;
+
+    // Update dismissed IDs list in localStorage
+    try {
+      const saved = localStorage.getItem(dismissedStorageKey);
+      const list: string[] = saved ? JSON.parse(saved) : [];
+      if (!list.includes(id)) {
+        list.push(id);
+        localStorage.setItem(dismissedStorageKey, JSON.stringify(list));
+      }
+    } catch {}
+
+    // Remove from cached notifications
+    try {
+      const cached = localStorage.getItem(storageKey);
+      if (cached) {
+        const list: CustomerNotification[] = JSON.parse(cached);
+        const updated = list.filter(n => n.id !== id);
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+      }
+    } catch {}
+
+    notificationsCache = notificationsCache.filter(n => n.id !== id);
+
+    // Sync dismiss to server API
+    try {
+      await fetchRemote(`/notifications/${encodeURIComponent(id)}/dismiss`, {
+        method: 'POST',
+        body: JSON.stringify({ email: cleanEmail, username: cleanUsername, customerId: cleanId })
+      });
+    } catch (e) {
+      console.warn('[NotificationService] Failed to sync dismiss to server:', e);
+    }
   },
 
   async markAsRead(id: string, customerInfo?: { email?: string; customerId?: string }): Promise<void> {
@@ -2077,6 +2138,138 @@ export const NotificationService = {
       type: data.type || 'order'
     });
     return { success: true };
+  }
+};
+
+/* =========================================================================
+   COUPONS & PROMOTIONAL VOUCHERS SERVICE
+   ========================================================================= */
+
+export const CouponService = {
+  async getAll(): Promise<Coupon[]> {
+    try {
+      const res = await fetchRemote<{ success: boolean; data: Coupon[] }>('/coupons');
+      if (res && res.data && Array.isArray(res.data)) {
+        return res.data;
+      }
+      if (Array.isArray(res)) {
+        return res;
+      }
+    } catch (e) {
+      console.warn('[CouponService] Remote fetch failed:', e);
+    }
+    return [
+      {
+        code: 'BESPOKE10',
+        discountType: 'percentage',
+        discountValue: 10,
+        description: '10% Welcome Atelier Privilege',
+        isActive: true
+      },
+      {
+        code: 'WELCOME10',
+        discountType: 'percentage',
+        discountValue: 10,
+        description: '10% First Commission Privilege',
+        isActive: true
+      },
+      {
+        code: 'PARKAVENUE',
+        discountType: 'percentage',
+        discountValue: 15,
+        description: '15% VIP Patron Privilege',
+        isActive: true
+      }
+    ];
+  },
+
+  async validate(code: string, subtotal: number = 0): Promise<{ valid: boolean; coupon?: Coupon; discountAmount: number; message: string }> {
+    const cleanCode = (code || '').trim().toUpperCase();
+    try {
+      const res = await fetchRemote<{
+        success: boolean;
+        valid: boolean;
+        data?: Coupon;
+        discountAmount: number;
+        message: string;
+      }>(`/coupons/validate?code=${encodeURIComponent(cleanCode)}&subtotal=${subtotal}`);
+
+      if (res && res.valid) {
+        return {
+          valid: true,
+          coupon: res.data,
+          discountAmount: res.discountAmount,
+          message: res.message
+        };
+      }
+      return {
+        valid: false,
+        discountAmount: 0,
+        message: res?.message || 'Invalid or expired promotional code.'
+      };
+    } catch (e: any) {
+      // Local fallback for offline mode
+      const hardcodedCoupons: Record<string, { type: 'percentage' | 'fixed'; val: number; min: number }> = {
+        'BESPOKE10': { type: 'percentage', val: 10, min: 0 },
+        'WELCOME10': { type: 'percentage', val: 10, min: 0 },
+        'PARKAVENUE': { type: 'percentage', val: 15, min: 100 },
+        'PATRON': { type: 'percentage', val: 15, min: 100 }
+      };
+
+      if (hardcodedCoupons[cleanCode]) {
+        const item = hardcodedCoupons[cleanCode];
+        if (subtotal > 0 && subtotal < item.min) {
+          return {
+            valid: false,
+            discountAmount: 0,
+            message: `Coupon requires minimum order of $${item.min.toFixed(2)}.`
+          };
+        }
+        const amt = item.type === 'percentage' ? (subtotal * item.val) / 100 : Math.min(subtotal, item.val);
+        return {
+          valid: true,
+          coupon: {
+            code: cleanCode,
+            discountType: item.type,
+            discountValue: item.val,
+            isActive: true
+          },
+          discountAmount: Number(amt.toFixed(2)),
+          message: `${item.val}% Atelier discount applied!`
+        };
+      }
+
+      return {
+        valid: false,
+        discountAmount: 0,
+        message: e?.message || 'Invalid promotional code.'
+      };
+    }
+  },
+
+  async create(data: {
+    code: string;
+    discountType?: 'percentage' | 'fixed';
+    discountValue: number;
+    minOrderAmount?: number;
+    maxDiscountAmount?: number;
+    expiresAt?: string | null;
+    usageLimit?: number | null;
+    description?: string;
+    isActive?: boolean;
+  }): Promise<Coupon> {
+    const res = await fetchRemote<any>('/admin/coupons', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return res.data || res;
+  },
+
+  async delete(idOrCode: string): Promise<boolean> {
+    await fetchRemote<any>(`/admin/coupons/${encodeURIComponent(idOrCode)}`, {
+      method: 'DELETE'
+    });
+    return true;
   }
 };
 

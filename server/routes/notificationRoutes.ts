@@ -9,6 +9,8 @@ router.get('/', notificationController.getPublic);
 router.get('/public', notificationController.getPublic);
 router.post('/read-all', notificationController.markAllRead);
 router.post('/:id/read', notificationController.markRead);
+router.post('/:id/dismiss', notificationController.dismissNotification);
+router.delete('/:id/dismiss', notificationController.dismissNotification);
 
 // Admin-only management endpoints
 router.get('/history', ...requireAdminOrStaff, notificationController.getHistory);

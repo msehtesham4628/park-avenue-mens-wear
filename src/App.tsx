@@ -32,6 +32,9 @@ import { LoginPage } from './components/account/LoginPage';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { StaffLoginPage } from './components/admin/StaffLoginPage';
 import { WelcomePage } from './components/welcome/WelcomePage';
+import { TermsPage } from './components/legal/TermsPage';
+import { ReturnPolicyPage } from './components/legal/ReturnPolicyPage';
+import { LoginPolicyPage } from './components/legal/LoginPolicyPage';
 
 const MainContent: React.FC = () => {
   const { activeView, currentCustomer, isAdminLoggedIn } = useShop();
@@ -66,6 +69,9 @@ const MainContent: React.FC = () => {
         {activeView === 'track-order' && <OrderTrackingPage />}
         {activeView === 'track-alteration' && <AlterationTrackingPage />}
         {activeView === 'track-return' && <ReturnTrackingPage />}
+        {activeView === 'terms' && <TermsPage />}
+        {activeView === 'return-policy' && <ReturnPolicyPage />}
+        {activeView === 'login-policy' && <LoginPolicyPage />}
         {activeView === 'account-info' && (currentCustomer ? <AccountInfoPage /> : <LoginPage />)}
         {activeView === 'reset-password' && (currentCustomer ? <ResetPasswordPage /> : <LoginPage />)}
         {(activeView === 'account' || activeView === 'customer-dashboard') && (

@@ -27,6 +27,7 @@ export interface INotificationLog extends Document {
   priority?: 'standard' | 'high' | 'urgent';
   target?: 'all' | 'registered' | 'direct';
   readBy?: string[]; // Array of customerIds/emails who marked as read
+  dismissedBy?: string[]; // Array of customerIds/emails/usernames who closed/dismissed
   createdAt: Date;
 }
 
@@ -68,7 +69,8 @@ const NotificationLogSchema = new Schema<INotificationLog>({
   link: { type: String },
   priority: { type: String, enum: ['standard', 'high', 'urgent'], default: 'standard' },
   target: { type: String, enum: ['all', 'registered', 'direct'], default: 'all', index: true },
-  readBy: [{ type: String }]
+  readBy: [{ type: String }],
+  dismissedBy: [{ type: String }]
 }, {
   timestamps: { createdAt: true, updatedAt: false }
 });

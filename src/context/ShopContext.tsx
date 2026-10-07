@@ -41,6 +41,9 @@ export type AppView =
   | 'account-info'
   | 'reset-password'
   | 'track-return'
+  | 'terms'
+  | 'return-policy'
+  | 'login-policy'
   | 'login'
   | 'staff-login'
   | 'admin'
@@ -113,6 +116,7 @@ interface ShopContextType {
   unreadNotificationCount: number;
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
+  dismissNotification: (id: string) => Promise<void>;
   refreshNotifications: () => Promise<void>;
 
   // User & Admin & Auth
@@ -425,8 +429,9 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refreshNotifications = async () => {
     try {
       const email = currentCustomer?.email;
+      const username = (currentCustomer as any)?.username;
       const customerId = currentCustomer?.id || (currentCustomer as any)?.customerId;
-      const notifs = await NotificationService.getAll({ email, customerId });
+      const notifs = await NotificationService.getAll({ email, username, customerId });
       setNotifications(notifs);
     } catch (err) {
       console.error('Failed to load notifications', err);
@@ -707,6 +712,14 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     showToast('All notifications marked as read', 'info');
   };
 
+  const dismissNotification = async (id: string) => {
+    const email = currentCustomer?.email;
+    const username = (currentCustomer as any)?.username;
+    const customerId = currentCustomer?.id || (currentCustomer as any)?.customerId;
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    await NotificationService.dismissNotification(id, { email, username, customerId });
+  };
+
   const unreadNotificationCount = useMemo(() => {
     return notifications.filter(n => !n.read).length;
   }, [notifications]);
@@ -771,6 +784,7 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         unreadNotificationCount,
         markNotificationRead,
         markAllNotificationsRead,
+        dismissNotification,
         refreshNotifications,
         currentCustomer,
         isAdminLoggedIn,

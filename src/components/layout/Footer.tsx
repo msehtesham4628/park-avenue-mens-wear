@@ -94,7 +94,11 @@ export const Footer: React.FC = () => {
                 </li>
                 <li>
                   <button 
-                    onClick={() => setLegalModalType('return-policy')}
+                    onClick={() => {
+                      setActiveView('return-policy');
+                      navigateTo('/returns');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     className="hover:text-[#936B34] transition-colors cursor-pointer text-[#111827] font-medium flex items-center gap-1.5"
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-[#936B34]" />
@@ -103,11 +107,28 @@ export const Footer: React.FC = () => {
                 </li>
                 <li>
                   <button 
-                    onClick={() => setLegalModalType('terms')}
+                    onClick={() => {
+                      setActiveView('terms');
+                      navigateTo('/terms');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     className="hover:text-[#936B34] transition-colors cursor-pointer text-[#111827] font-medium flex items-center gap-1.5"
                   >
                     <FileText className="w-3.5 h-3.5 text-[#936B34]" />
                     <span>TERMS &amp; CONDITIONS</span>
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => {
+                      setActiveView('login-policy');
+                      navigateTo('/login-policy');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="hover:text-[#936B34] transition-colors cursor-pointer text-[#111827] font-medium flex items-center gap-1.5"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>LOGIN SECURITY &amp; ACCESS POLICY</span>
                   </button>
                 </li>
               </ul>
@@ -241,22 +262,34 @@ export const Footer: React.FC = () => {
             </div>
             <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-[11px]">
               <button 
-                onClick={() => setLegalModalType('terms')}
+                onClick={() => {
+                  setActiveView('terms');
+                  navigateTo('/terms');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className="hover:text-[#936B34] transition-colors cursor-pointer"
               >
                 TERMS &amp; CONDITIONS
               </button>
               <button 
-                onClick={() => setLegalModalType('return-policy')}
+                onClick={() => {
+                  setActiveView('return-policy');
+                  navigateTo('/returns');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className="hover:text-[#936B34] transition-colors cursor-pointer"
               >
                 RETURN POLICY
               </button>
               <button 
-                onClick={() => setLegalModalType('login-encryption')}
+                onClick={() => {
+                  setActiveView('login-policy');
+                  navigateTo('/login-policy');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className="hover:text-emerald-700 transition-colors cursor-pointer"
               >
-                LOGIN SECURITY
+                LOGIN POLICY
               </button>
               <button 
                 onClick={() => setLegalModalType('payment-encryption')}

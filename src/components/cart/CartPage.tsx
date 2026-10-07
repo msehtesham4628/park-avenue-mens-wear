@@ -17,6 +17,8 @@ import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 import { navigateTo } from '../../utils/router';
 import { getColorHex, isLightColor } from '../../utils/colorUtils';
+import { CouponService } from '../../services/api';
+import { Coupon } from '../../types';
 
 export const CartPage: React.FC = () => {
   const { 
@@ -33,30 +35,39 @@ export const CartPage: React.FC = () => {
   } = useShop();
 
   const [promoCode, setPromoCode] = useState('');
-  const [discountPercent, setDiscountPercent] = useState<number>(0);
-  const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [isValidatingPromo, setIsValidatingPromo] = useState<boolean>(false);
 
-  const handleApplyPromo = (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = promoCode.trim().toUpperCase();
     if (!clean) return;
 
-    if (clean === 'BESPOKE10' || clean === 'WELCOME10') {
-      setDiscountPercent(10);
-      setAppliedPromo(clean);
-      showToast('10% Atelier Privileges discount applied!', 'success');
-      setPromoCode('');
-    } else if (clean === 'PARKAVENUE' || clean === 'PATRON') {
-      setDiscountPercent(15);
-      setAppliedPromo(clean);
-      showToast('15% VIP Patron discount applied!', 'success');
-      setPromoCode('');
-    } else {
-      showToast('Invalid or expired promotional invitation code.', 'error');
+    setIsValidatingPromo(true);
+    try {
+      const res = await CouponService.validate(clean, cartSubtotal);
+      if (res.valid && res.coupon) {
+        setAppliedCoupon(res.coupon);
+        setDiscountAmount(res.discountAmount);
+        showToast(res.message || `Coupon "${clean}" applied!`, 'success');
+        setPromoCode('');
+      } else {
+        showToast(res.message || 'Invalid or expired promotional invitation code.', 'error');
+      }
+    } catch (err: any) {
+      showToast('Error applying coupon: ' + (err.message || 'Error'), 'error');
+    } finally {
+      setIsValidatingPromo(false);
     }
   };
 
-  const discountAmount = (cartSubtotal * discountPercent) / 100;
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setDiscountAmount(0);
+    showToast('Promotional voucher removed.', 'info');
+  };
+
   const subtotalAfterDiscount = Math.max(0, cartSubtotal - discountAmount);
 
   const handleContinueShopping = () => {
@@ -354,12 +365,27 @@ export const CartPage: React.FC = () => {
                     </span>
                   </div>
 
-                  {discountPercent > 0 && (
-                    <div className="flex justify-between text-emerald-700">
-                      <span>PROMO ({appliedPromo} -{discountPercent}%)</span>
-                      <span className="font-semibold">
-                        -${discountAmount.toFixed(2)}
-                      </span>
+                  {appliedCoupon && discountAmount > 0 && (
+                    <div className="flex justify-between items-center text-emerald-700 bg-emerald-50/60 p-2 border border-emerald-200">
+                      <div className="flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5" />
+                        <span className="font-mono text-[11px] font-semibold">
+                          PROMO: {appliedCoupon.code} ({appliedCoupon.discountType === 'percentage' ? `-${appliedCoupon.discountValue}%` : `-$${appliedCoupon.discountValue}`})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold font-mono text-xs">
+                          -${discountAmount.toFixed(2)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-gray-400 hover:text-red-600 transition-colors cursor-pointer text-sm font-bold leading-none"
+                          title="Remove coupon"
+                        >
+                          &times;
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -409,9 +435,10 @@ export const CartPage: React.FC = () => {
                     </div>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-gray-100 hover:bg-[#111827] hover:text-white text-gray-700 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer font-medium"
+                      disabled={isValidatingPromo}
+                      className="px-4 py-2 bg-gray-100 hover:bg-[#111827] hover:text-white text-gray-700 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer font-medium disabled:opacity-50"
                     >
-                      APPLY
+                      {isValidatingPromo ? 'CHECKING...' : 'APPLY'}
                     </button>
                   </div>
                   <p className="mt-1 text-[10px] font-mono text-gray-400">

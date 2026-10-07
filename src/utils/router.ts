@@ -158,12 +158,29 @@ export function parseRoute(pathname?: string): RouteMatch {
         if (sub === 'product' || sub === 'products') adminTab = 'products';
         else if (sub === 'erp' || sub === 'erp-reports' || sub === 'tally') adminTab = 'erp-reports';
         else if (sub === 'staff' || sub === 'staff-management') adminTab = 'staff-management';
+        else if (sub === 'coupons' || sub === 'coupon' || sub === 'vouchers') adminTab = 'coupons';
         return { view: 'admin', adminTab };
       }
       return { view: 'admin', adminTab: 'dashboard' };
 
     case 'dashboard':
       return { view: 'admin', adminTab: 'dashboard' };
+
+    case 'terms':
+    case 'terms-of-service':
+    case 'terms-and-conditions':
+      return { view: 'terms' };
+
+    case 'return-policy':
+    case 'returns-policy':
+    case 'returns':
+      return { view: 'return-policy' };
+
+    case 'login-policy':
+    case 'security-policy':
+    case 'login-security':
+    case 'login-encryption':
+      return { view: 'login-policy' };
 
     case 'customer-dashboard':
     case 'client-dashboard':
@@ -368,6 +385,15 @@ export function buildUrl(params: {
 
     case 'track-return':
       return '/track-return';
+
+    case 'terms':
+      return '/terms';
+
+    case 'return-policy':
+      return '/returns';
+
+    case 'login-policy':
+      return '/login-policy';
 
     case 'account':
       return '/customer-dashboard';

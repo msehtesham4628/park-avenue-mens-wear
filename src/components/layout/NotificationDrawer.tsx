@@ -24,6 +24,7 @@ export const NotificationDrawer: React.FC = () => {
     notifications,
     markNotificationRead,
     markAllNotificationsRead,
+    dismissNotification,
     lookupOrder,
     lookupAlteration,
     setActiveView,
@@ -218,9 +219,23 @@ export const NotificationDrawer: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] font-mono text-gray-400 whitespace-nowrap shrink-0">
-                        {notif.timestamp}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] font-mono text-gray-400 whitespace-nowrap">
+                          {notif.timestamp}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dismissNotification(notif.id);
+                          }}
+                          className="p-1 -mr-1 text-gray-400 hover:text-red-600 hover:bg-gray-100 rounded-xs transition-colors cursor-pointer"
+                          title="Close / Dismiss notification"
+                          aria-label="Dismiss notification"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <h4 className="text-xs font-semibold text-[#111827] group-hover:text-[#936B34] transition-colors font-sans mb-1">
