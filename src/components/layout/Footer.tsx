@@ -7,7 +7,7 @@ import { Lock, ShieldCheck, RotateCcw, FileText, CheckCircle2 } from 'lucide-rea
 import { navigateTo } from '../../utils/router';
 
 export const Footer: React.FC = () => {
-  const { setActiveView, setSelectedCategory, isAdminLoggedIn } = useShop();
+  const { setActiveView, setSelectedCategory } = useShop();
   const [legalModalType, setLegalModalType] = useState<'terms' | 'return-policy' | 'login-encryption' | 'payment-encryption' | null>(null);
 
   const handleNavCategory = (cat: string) => {
@@ -170,37 +170,6 @@ export const Footer: React.FC = () => {
                     CLIENT CARE &amp; CONCIERGE
                   </span>
                 </li>
-
-                {/* Admin Console ONLY visible when admin is logged in */}
-                {isAdminLoggedIn ? (
-                  <li className="pt-2 border-t border-gray-200">
-                    <button 
-                      onClick={() => {
-                        setActiveView('admin');
-                        navigateTo('/admin');
-                        window.scrollTo({ top: 0, behavior: 'instant' });
-                      }} 
-                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#111827] text-[#D4AF37] hover:bg-[#936B34] hover:text-white transition-colors cursor-pointer font-medium text-[11px] rounded-sm"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>ADMIN ACCESS ACTIVE</span>
-                    </button>
-                  </li>
-                ) : (
-                  <li className="pt-2 border-t border-gray-200">
-                    <button 
-                      onClick={() => {
-                        setActiveView('staff-login');
-                        navigateTo('/staff-login');
-                        window.scrollTo({ top: 0, behavior: 'instant' });
-                      }} 
-                      className="text-gray-500 hover:text-[#936B34] transition-colors cursor-pointer text-xs font-mono uppercase tracking-wider flex items-center gap-1.5"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#936B34]" />
-                      <span>STAFF &amp; ADMIN LOGIN</span>
-                    </button>
-                  </li>
-                )}
               </ul>
             </div>
 
@@ -296,23 +265,6 @@ export const Footer: React.FC = () => {
                 className="hover:text-indigo-700 transition-colors cursor-pointer"
               >
                 PAYMENT SECURITY
-              </button>
-
-              {/* Admin / Staff Console in bottom row */}
-              <button
-                onClick={() => {
-                  if (isAdminLoggedIn) {
-                    setActiveView('admin');
-                    navigateTo('/admin');
-                  } else {
-                    setActiveView('staff-login');
-                    navigateTo('/staff-login');
-                  }
-                  window.scrollTo({ top: 0, behavior: 'instant' });
-                }}
-                className="text-gray-400 hover:text-[#936B34] transition-colors cursor-pointer font-mono"
-              >
-                {isAdminLoggedIn ? 'ADMIN CONSOLE' : 'ADMIN & STAFF LOGIN'}
               </button>
             </div>
           </div>

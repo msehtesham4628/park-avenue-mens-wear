@@ -351,7 +351,7 @@ export const AccountPage: React.FC = () => {
               <span>ALTERATION TRACKING</span>
             </button>
 
-            {(currentCustomer?.role === 'admin' || currentCustomer?.role === 'staff') ? (
+            {(currentCustomer?.role === 'admin' || currentCustomer?.role === 'staff') && (
               <button
                 onClick={() => {
                   setActiveView('admin');
@@ -361,18 +361,6 @@ export const AccountPage: React.FC = () => {
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-[#936B34]" />
                 <span>ATELIER ADMIN CONSOLE</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setActiveView('admin');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="px-3.5 py-2 bg-[#F9F9F8] border border-[#936B34]/40 text-xs font-mono text-[#936B34] hover:bg-[#936B34] hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors font-medium"
-                title="Atelier Admin Portal"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>ADMIN PORTAL</span>
               </button>
             )}
 
