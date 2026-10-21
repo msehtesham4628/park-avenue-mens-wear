@@ -13,10 +13,11 @@ export const FeaturedProducts: React.FC = () => {
   const tabs = [
     { label: 'ALL COLLECTIONS', value: 'All' },
     { label: 'SUITS', value: 'Suits' },
-    { label: 'DRESS SHIRTS', value: 'Dress Shirts' },
-    { label: 'SHOES & LOAFERS', value: 'Shoe' },
+    { label: 'SHIRTS', value: 'Shirts' },
+    { label: 'SWEATERS & KNITWEAR', value: 'Sweaters' },
+    { label: 'FOOTWEAR & BOOTS', value: 'Footwear' },
     { label: 'COATS & JACKETS', value: 'Coats' },
-    { label: 'TIES', value: 'Ties' },
+    { label: 'TIES & ACCESSORIES', value: 'Accessories' },
     { label: 'NEW ARRIVALS', value: 'New Arrivals' }
   ];
 
@@ -25,11 +26,26 @@ export const FeaturedProducts: React.FC = () => {
     if (activeTab === 'New Arrivals') return p.isNewArrival;
     const tabNorm = activeTab.toLowerCase();
     const catNorm = (p.category || '').toLowerCase();
-    if (tabNorm === 'shoe') {
-      return catNorm.includes('shoe') || catNorm.includes('loof') || catNorm.includes('loaf') || catNorm.includes('boot');
+    if (tabNorm === 'footwear' || tabNorm === 'shoe' || tabNorm.includes('boot')) {
+      return catNorm.includes('footwear') || catNorm.includes('shoe') || catNorm.includes('loof') || catNorm.includes('loaf') || catNorm.includes('boot');
     }
-    if (tabNorm === 'coats') {
-      return catNorm.includes('coat') || catNorm.includes('jacket');
+    if (tabNorm === 'coats' || tabNorm.includes('coat') || tabNorm.includes('jacket') || tabNorm.includes('outerwear')) {
+      return catNorm.includes('coat') || catNorm.includes('jacket') || catNorm.includes('outerwear');
+    }
+    if (tabNorm.includes('shirt')) {
+      return catNorm.includes('shirt');
+    }
+    if (tabNorm.includes('sweater') || tabNorm.includes('knit')) {
+      return catNorm.includes('sweater') || catNorm.includes('knit');
+    }
+    if (tabNorm.includes('accessor') || tabNorm.includes('tie')) {
+      return catNorm.includes('tie') || catNorm.includes('accessor');
+    }
+    if (tabNorm.includes('pant') || tabNorm.includes('trouser') || tabNorm.includes('jean')) {
+      return catNorm.includes('pant') || catNorm.includes('trouser') || catNorm.includes('jean');
+    }
+    if (tabNorm.includes('suit')) {
+      return catNorm.includes('suit');
     }
     return catNorm === tabNorm || catNorm.replace(/\s+/g, '') === tabNorm.replace(/\s+/g, '');
   }).slice(0, 8);

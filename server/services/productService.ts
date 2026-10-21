@@ -5,17 +5,96 @@ import { ProductModel, IProduct, IProductVariant } from '../models/Product.js';
 import { auditService } from './auditService.js';
 import { connectDB } from '../config/db.js';
 
-const CATEGORY_ALIASES: Record<string, string[]> = {
+export const CATEGORY_ALIASES: Record<string, string[]> = {
   'Suits': ['Suits'],
-  'Blazers & Jackets': ['Blazers & Jackets', 'Leather Jackets', 'Leather jackets'],
-  'Shirts': ['Shirts', 'Dress Shirts', 'Dress shirts', 'Polo Shirts', 'Polo shirts'],
-  'Pants': ['Pants', 'Dress Pants', 'Jeans'],
-  'Outerwear': ['Outerwear', 'Coats'],
-  'Sweaters & Knitwear': ['Sweaters & Knitwear', 'Sweaters'],
-  'Footwear': ['Footwear', 'Shoes', 'Shoe', 'Boots', 'Loafers', 'Loofers'],
+  'Blazers & Jackets': ['Blazers & Jackets', 'Leather Jackets', 'Leather jackets', 'Blazers', 'Jackets'],
+  'Shirts': ['Shirts', 'Dress Shirts', 'Dress shirts', 'Polo Shirts', 'Polo shirts', 'Shirt', 'Dress shirt', 'Polo shirt'],
+  'Pants': ['Pants', 'Dress Pants', 'Jeans', 'Trousers'],
+  'Outerwear': ['Outerwear', 'Coats', 'Overcoats'],
+  'Sweaters & Knitwear': ['Sweaters & Knitwear', 'Sweaters', 'Knitwear', 'Sweater'],
+  'Footwear': ['Footwear', 'Shoes', 'Shoe', 'Boots', 'Loafers', 'Loofers', 'Boot'],
   'Accessories': ['Accessories', 'Ties'],
   'Shorts': ['Shorts']
 };
+
+export function getCategoryAliases(categoryName: string): string[] {
+  if (!categoryName || categoryName === 'All') return [];
+  const norm = categoryName.trim().toLowerCase();
+
+  if (norm.includes('suit')) return ['Suits'];
+  if (norm.includes('shirt') || norm.includes('polo')) {
+    if (norm.includes('polo')) return ['Polo shirts', 'Polo Shirts', 'Shirts'];
+    if (norm.includes('dress')) return ['Dress shirts', 'Dress Shirts', 'Shirts'];
+    return ['Shirts', 'Dress Shirts', 'Dress shirts', 'Polo Shirts', 'Polo shirts', 'Shirt'];
+  }
+  if (norm.includes('sweater') || norm.includes('knit')) {
+    return ['Sweaters & Knitwear', 'Sweaters', 'Knitwear', 'Sweater'];
+  }
+  if (norm.includes('boot') || norm.includes('shoe') || norm.includes('loaf') || norm.includes('foot')) {
+    if (norm.includes('boot')) return ['Boots', 'Boot', 'Footwear'];
+    if (norm.includes('shoe')) return ['Shoes', 'Shoe', 'Footwear'];
+    if (norm.includes('loaf')) return ['Loafers', 'Loofers', 'Footwear'];
+    return ['Footwear', 'Shoes', 'Shoe', 'Boots', 'Loafers', 'Loofers', 'Boot'];
+  }
+  if (norm.includes('pant') || norm.includes('jean') || norm.includes('trouser')) {
+    if (norm.includes('jean')) return ['Jeans', 'Pants'];
+    if (norm.includes('dress')) return ['Dress Pants', 'Pants'];
+    return ['Pants', 'Dress Pants', 'Jeans', 'Trousers'];
+  }
+  if (norm.includes('blazer') || norm.includes('leather')) {
+    if (norm.includes('leather')) return ['Leather jackets', 'Leather Jackets', 'Blazers & Jackets'];
+    return ['Blazers & Jackets', 'Leather Jackets', 'Leather jackets', 'Blazers'];
+  }
+  if (norm.includes('outerwear') || norm.includes('coat')) return ['Outerwear', 'Coats', 'Overcoats'];
+  if (norm.includes('tie') || norm.includes('accessor')) return ['Accessories', 'Ties'];
+  if (norm.includes('short')) return ['Shorts'];
+
+  const foundKey = Object.keys(CATEGORY_ALIASES).find(k => k.toLowerCase() === norm);
+  if (foundKey && CATEGORY_ALIASES[foundKey]) {
+    return CATEGORY_ALIASES[foundKey];
+  }
+
+  return [categoryName];
+}
+
+export function normalizeCategory(rawCat: string, rawSubcat?: string): { category: string; subcategory?: string } {
+  const norm = (rawCat || 'Suits').trim().toLowerCase();
+  if (norm.includes('suit')) return { category: 'Suits', subcategory: rawSubcat || 'Suits' };
+  if (norm.includes('shirt') || norm.includes('polo')) {
+    if (norm.includes('polo')) return { category: 'Shirts', subcategory: rawSubcat || 'Polo Shirts' };
+    return { category: 'Shirts', subcategory: rawSubcat || 'Formal Dress Shirts' };
+  }
+  if (norm.includes('sweater') || norm.includes('knit')) {
+    return { category: 'Sweaters & Knitwear', subcategory: rawSubcat || 'Cashmere Crewnecks' };
+  }
+  if (norm.includes('boot') || norm.includes('shoe') || norm.includes('loaf') || norm.includes('foot')) {
+    let sub = rawSubcat;
+    if (!sub) {
+      if (norm.includes('boot')) sub = 'Balmoral Dress Boots';
+      else if (norm.includes('loaf')) sub = 'Penny Loafers';
+      else sub = 'Oxford Shoes';
+    }
+    return { category: 'Footwear', subcategory: sub };
+  }
+  if (norm.includes('pant') || norm.includes('jean') || norm.includes('trouser')) {
+    if (norm.includes('jean')) return { category: 'Pants', subcategory: rawSubcat || 'Luxury Denim / Jeans' };
+    return { category: 'Pants', subcategory: rawSubcat || 'Tailored Dress Pants' };
+  }
+  if (norm.includes('blazer') || norm.includes('leather')) {
+    if (norm.includes('leather')) return { category: 'Blazers & Jackets', subcategory: rawSubcat || 'Leather Jackets' };
+    return { category: 'Blazers & Jackets', subcategory: rawSubcat || 'Tailored Blazers' };
+  }
+  if (norm.includes('outerwear') || norm.includes('coat')) {
+    return { category: 'Outerwear', subcategory: rawSubcat || 'Wool Overcoats' };
+  }
+  if (norm.includes('tie') || norm.includes('accessor')) {
+    return { category: 'Accessories', subcategory: rawSubcat || 'Silk Grenadine Ties' };
+  }
+  if (norm.includes('short')) {
+    return { category: 'Shorts', subcategory: rawSubcat || 'Tailored Trouser Shorts' };
+  }
+  return { category: rawCat.trim(), subcategory: rawSubcat };
+}
 
 export interface ProductQueryFilters {
   category?: string;
@@ -83,9 +162,10 @@ export function sanitizeProductPayload(prod: any, isList = false): any {
 }
 
 // Resilient persistent file path across serverless cold starts & local reboots
+const DEFAULT_LEDGER_FILE = path.resolve(process.cwd(), 'server/data/products_ledger.json');
 const DISK_LEDGER_PATH = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
   ? '/tmp/park_avenue_products_ledger.json'
-  : path.resolve(process.cwd(), 'server/data/products_ledger.json');
+  : DEFAULT_LEDGER_FILE;
 
 function saveStoreToDisk(items: any[]) {
   try {
@@ -94,7 +174,14 @@ function saveStoreToDisk(items: any[]) {
       fs.mkdirSync(dir, { recursive: true });
     }
     const sanitized = items.map(item => sanitizeProductPayload(item, false));
-    fs.writeFileSync(DISK_LEDGER_PATH, JSON.stringify(sanitized), 'utf-8');
+    fs.writeFileSync(DISK_LEDGER_PATH, JSON.stringify(sanitized, null, 2), 'utf-8');
+
+    // Also persist to repository ledger file if writable and different path
+    if (DISK_LEDGER_PATH !== DEFAULT_LEDGER_FILE) {
+      try {
+        fs.writeFileSync(DEFAULT_LEDGER_FILE, JSON.stringify(sanitized, null, 2), 'utf-8');
+      } catch (_) {}
+    }
   } catch (_) {}
 }
 
@@ -102,6 +189,14 @@ function loadStoreFromDisk(): any[] {
   try {
     if (fs.existsSync(DISK_LEDGER_PATH)) {
       const raw = fs.readFileSync(DISK_LEDGER_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+    // Fallback to repository data ledger
+    if (fs.existsSync(DEFAULT_LEDGER_FILE)) {
+      const raw = fs.readFileSync(DEFAULT_LEDGER_FILE, 'utf-8');
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
@@ -143,19 +238,13 @@ export const productService = {
         query.isNewArrival = true;
       } else {
         const catNorm = filters.category.trim();
-        const aliases = CATEGORY_ALIASES[catNorm];
-        if (aliases) {
-          query.category = { $in: aliases };
-        } else if (catNorm.toLowerCase() === 'shoe' || catNorm.toLowerCase() === 'shoes') {
-          query.category = { $regex: /^shoe/i };
-        } else if (catNorm.toLowerCase() === 'loofers' || catNorm.toLowerCase() === 'loafers') {
-          query.category = { $regex: /^lo[oa]fer/i };
-        } else if (catNorm.toLowerCase() === 'pants') {
-          query.category = { $regex: /pants/i };
-        } else {
-          const escapedCategory = catNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          query.category = { $regex: new RegExp('^' + escapedCategory, 'i') };
-        }
+        const aliases = getCategoryAliases(catNorm);
+        const escaped = catNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        query.$or = [
+          { category: { $in: aliases } },
+          { category: { $regex: new RegExp(escaped, 'i') } },
+          { subcategory: { $regex: new RegExp(escaped, 'i') } }
+        ];
       }
     }
     if (filters.subcategory) {
@@ -228,10 +317,51 @@ export const productService = {
       console.warn('[ProductService] Database query fallback:', queryErr);
     }
 
+    const filterProductItem = (p: any): boolean => {
+      if (!filters.includeInactive && p.isActive === false) return false;
+      if (filters.category && filters.category !== 'All') {
+        const catNorm = filters.category.trim().toLowerCase();
+        if (catNorm === 'new arrivals' || catNorm === 'new-arrivals') {
+          if (!p.isNewArrival) return false;
+        } else {
+          const aliases = getCategoryAliases(catNorm).map(a => a.toLowerCase());
+          const pCat = (p.category || '').toLowerCase();
+          const pSub = (p.subcategory || '').toLowerCase();
+          const matches = aliases.some(a => pCat === a || pCat.includes(a) || a.includes(pCat)) ||
+                          pCat.includes(catNorm) || catNorm.includes(pCat) || pSub.includes(catNorm);
+          if (!matches) return false;
+        }
+      }
+      if (filters.subcategory && (p.subcategory || '').toLowerCase() !== filters.subcategory.toLowerCase()) {
+        return false;
+      }
+      if (filters.isFeatured !== undefined && Boolean(p.isFeatured) !== filters.isFeatured) {
+        return false;
+      }
+      if (filters.isNewArrival !== undefined && Boolean(p.isNewArrival) !== filters.isNewArrival) {
+        return false;
+      }
+      if (filters.minPrice !== undefined && p.price < filters.minPrice) return false;
+      if (filters.maxPrice !== undefined && p.price > filters.maxPrice) return false;
+      if (filters.size && !((p.variants || []).some((v: any) => v.size === filters.size))) return false;
+      if (filters.color && !((p.variants || []).some((v: any) => v.color?.toLowerCase() === filters.color?.toLowerCase()))) return false;
+      if (filters.availability === 'in_stock' && (p.stockQuantity <= 0)) return false;
+      if (filters.availability === 'out_of_stock' && (p.stockQuantity > 0)) return false;
+
+      if (filters.search && filters.search.trim()) {
+        const s = filters.search.trim().toLowerCase();
+        const match = (p.name || '').toLowerCase().includes(s) ||
+                      (p.sku || '').toLowerCase().includes(s) ||
+                      (p.description || '').toLowerCase().includes(s) ||
+                      (p.fabric || '').toLowerCase().includes(s) ||
+                      (p.category || '').toLowerCase().includes(s);
+        if (!match) return false;
+      }
+      return true;
+    };
+
     if (products.length === 0 && inMemoryStore.length > 0) {
-      const filtered = filters.includeInactive 
-        ? inMemoryStore 
-        : inMemoryStore.filter(p => p.isActive !== false);
+      const filtered = inMemoryStore.filter(filterProductItem);
       products = filtered.slice(skip, skip + limit);
       total = filtered.length;
     } else if (inMemoryStore.length > 0) {
@@ -240,21 +370,7 @@ export const productService = {
       const remoteSkus = new Set(products.map(p => p.sku));
       const extraMem = inMemoryStore.filter(p => {
         if (remoteIds.has(p.productId) || remoteSkus.has(p.sku)) return false;
-        if (!filters.includeInactive && p.isActive === false) return false;
-        if (filters.category && filters.category !== 'All') {
-          const catNorm = filters.category.trim().toLowerCase();
-          const pCat = (p.category || '').toLowerCase();
-          if (pCat !== catNorm && !pCat.includes(catNorm)) return false;
-        }
-        if (filters.search && filters.search.trim()) {
-          const s = filters.search.trim().toLowerCase();
-          const match = (p.name || '').toLowerCase().includes(s) ||
-                        (p.sku || '').toLowerCase().includes(s) ||
-                        (p.description || '').toLowerCase().includes(s) ||
-                        (p.fabric || '').toLowerCase().includes(s);
-          if (!match) return false;
-        }
-        return true;
+        return filterProductItem(p);
       });
       if (extraMem.length > 0) {
         products = [...extraMem, ...products].slice(0, limit);
@@ -406,7 +522,7 @@ export const productService = {
       ...processedVariants.map(v => v.color)
     ].filter(Boolean)));
 
-    const cleanCategory = String(data.category || 'Suits').trim();
+    const { category: resolvedCat, subcategory: resolvedSubcat } = normalizeCategory(data.category, data.subcategory);
     const cleanPrice = typeof data.price === 'number' ? data.price : parseFloat(String(data.price).replace(/[^0-9.]/g, '')) || 0;
 
     const product = new ProductModel({
@@ -415,8 +531,8 @@ export const productService = {
       name: data.name.trim(),
       slug,
       description: data.description || 'Master crafted bespoke menswear.',
-      category: cleanCategory,
-      subcategory: data.subcategory,
+      category: resolvedCat,
+      subcategory: resolvedSubcat,
       price: cleanPrice,
       salePrice: data.salePrice !== undefined ? Number(data.salePrice) : undefined,
       images: data.images || [],
@@ -550,7 +666,14 @@ export const productService = {
       'productViews'
     ];
 
+    if (updates.category) {
+      const { category: resolvedCat, subcategory: resolvedSubcat } = normalizeCategory(updates.category, updates.subcategory || product.subcategory);
+      product.category = resolvedCat;
+      if (resolvedSubcat) product.subcategory = resolvedSubcat;
+    }
+
     fieldsToUpdate.forEach(field => {
+      if (field === 'category' || (field === 'subcategory' && updates.category)) return;
       if ((updates as any)[field] !== undefined) {
         (product as any)[field] = (updates as any)[field];
       }

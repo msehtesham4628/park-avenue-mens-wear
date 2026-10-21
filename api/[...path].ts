@@ -98,10 +98,8 @@ async function initialize() {
   if (!initialization) {
     initialization = (async () => {
       try {
-        const ok = await connectDB();
-        if (ok) {
-          await seedInitialData();
-        }
+        await connectDB();
+        await seedInitialData();
       } catch (error) {
         console.warn('[Park Avenue API] DB initialization warning, continuing with service fallback:', error);
       }

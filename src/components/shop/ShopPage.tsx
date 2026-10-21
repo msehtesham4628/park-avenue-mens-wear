@@ -120,12 +120,14 @@ export const ShopPage: React.FC = () => {
             let isCategoryMatch = prodCatNorm === selNorm;
             if (!isCategoryMatch) {
               if (selNorm.includes('suit') && prodCatNorm.includes('suit')) isCategoryMatch = true;
-              else if ((selNorm.includes('shirt') || selNorm.includes('dress shirt')) && prodCatNorm.includes('shirt')) isCategoryMatch = true;
+              else if ((selNorm.includes('shirt') || selNorm.includes('polo')) && prodCatNorm.includes('shirt')) isCategoryMatch = true;
               else if ((selNorm.includes('blazer') || selNorm.includes('jacket')) && (prodCatNorm.includes('blazer') || prodCatNorm.includes('jacket'))) isCategoryMatch = true;
-              else if ((selNorm.includes('pant') || selNorm.includes('trouser')) && (prodCatNorm.includes('pant') || prodCatNorm.includes('trouser') || prodCatNorm.includes('jean'))) isCategoryMatch = true;
-              else if ((selNorm.includes('footwear') || selNorm.includes('shoe') || selNorm.includes('boot') || selNorm.includes('loaf')) && (prodCatNorm.includes('shoe') || prodCatNorm.includes('boot') || prodCatNorm.includes('loaf') || prodCatNorm.includes('loof') || prodCatNorm.includes('footwear'))) isCategoryMatch = true;
+              else if ((selNorm.includes('pant') || selNorm.includes('trouser') || selNorm.includes('jean')) && (prodCatNorm.includes('pant') || prodCatNorm.includes('trouser') || prodCatNorm.includes('jean'))) isCategoryMatch = true;
+              else if ((selNorm.includes('footwear') || selNorm.includes('shoe') || selNorm.includes('boot') || selNorm.includes('loaf') || selNorm.includes('loof')) && (prodCatNorm.includes('shoe') || prodCatNorm.includes('boot') || prodCatNorm.includes('loaf') || prodCatNorm.includes('loof') || prodCatNorm.includes('footwear'))) isCategoryMatch = true;
+              else if ((selNorm.includes('sweater') || selNorm.includes('knit')) && (prodCatNorm.includes('sweater') || prodCatNorm.includes('knit'))) isCategoryMatch = true;
               else if ((selNorm.includes('accessor') || selNorm.includes('tie')) && (prodCatNorm.includes('tie') || prodCatNorm.includes('accessor') || prodCatNorm.includes('cuff') || prodCatNorm.includes('belt'))) isCategoryMatch = true;
               else if ((selNorm.includes('outerwear') || selNorm.includes('coat')) && (prodCatNorm.includes('coat') || prodCatNorm.includes('outerwear') || prodCatNorm.includes('jacket'))) isCategoryMatch = true;
+              else if (selNorm.includes('short') && prodCatNorm.includes('short')) isCategoryMatch = true;
               else if (selNorm.replace(/[^a-z0-9]/g, '') === prodCatNorm.replace(/[^a-z0-9]/g, '')) isCategoryMatch = true;
             }
             if (!isCategoryMatch) return false;

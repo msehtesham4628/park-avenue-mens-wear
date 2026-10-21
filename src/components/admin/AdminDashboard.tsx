@@ -4933,21 +4933,29 @@ export const AdminDashboard: React.FC = () => {
                     }}
                     className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34] cursor-pointer"
                   >
-                    <option value="Suits">Suits</option>
-                    <option value="Dress shirts">Dress shirts</option>
-                    <option value="Ties">Ties</option>
-                    <option value="Shoe">Shoe</option>
-                    <option value="Boots">Boots</option>
-                    <option value="Loofers">Loofers</option>
-                    <option value="Pants">Pants</option>
-                    <option value="Jeans">Jeans</option>
-                    <option value="Leather jackets">Leather jackets</option>
-                    <option value="Sweaters">Sweaters</option>
-                    <option value="Coats">Coats</option>
-                    <option value="Polo shirts">Polo shirts</option>
-                    <option value="Shorts">Shorts</option>
-                    <option value="Dress Shirts">Dress Shirts (Alternative)</option>
-                    <option value="Dress Pants">Dress Pants (Alternative)</option>
+                    <optgroup label="Official Atelier Departments">
+                      <option value="Suits">Suits</option>
+                      <option value="Blazers & Jackets">Blazers & Jackets</option>
+                      <option value="Shirts">Shirts</option>
+                      <option value="Sweaters & Knitwear">Sweaters & Knitwear</option>
+                      <option value="Footwear">Footwear</option>
+                      <option value="Pants">Pants</option>
+                      <option value="Outerwear">Outerwear</option>
+                      <option value="Accessories">Accessories</option>
+                      <option value="Shorts">Shorts</option>
+                    </optgroup>
+                    <optgroup label="Specific Garment Lines">
+                      <option value="Dress shirts">Dress Shirts (Formal Shirting)</option>
+                      <option value="Polo shirts">Polo Shirts (Silk-Cotton Knits)</option>
+                      <option value="Sweaters">Sweaters (Cashmere & Knitwear)</option>
+                      <option value="Boots">Boots (Balmoral / Chelsea)</option>
+                      <option value="Shoe">Shoes (Wholecut Oxfords & Derbies)</option>
+                      <option value="Loofers">Loafers (Belgian & Tasseled)</option>
+                      <option value="Ties">Ties & Bow Ties</option>
+                      <option value="Jeans">Jeans (Selvedge Denim)</option>
+                      <option value="Leather jackets">Leather Jackets & Sport Coats</option>
+                      <option value="Coats">Coats & Overcoats</option>
+                    </optgroup>
                   </select>
                 </div>
 

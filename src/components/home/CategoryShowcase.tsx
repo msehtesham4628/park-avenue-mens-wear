@@ -28,11 +28,22 @@ export const CategoryShowcase: React.FC = () => {
   const categoryCards = OFFICIAL_CATEGORIES
     .filter(c => c.id !== 'all' && c.id !== 'new-arrivals')
     .map(category => {
-      const categoryProducts = products.filter(product =>
-        product.category === category.queryValue ||
-        product.category === category.name ||
-        category.subcategories.some(sub => product.category === sub)
-      );
+      const categoryProducts = products.filter(product => {
+        const pCat = (product.category || '').toLowerCase();
+        const cName = category.name.toLowerCase();
+        const cQuery = category.queryValue.toLowerCase();
+        if (pCat === cName || pCat === cQuery) return true;
+        if (cName.includes('suit') && pCat.includes('suit')) return true;
+        if (cName.includes('shirt') && pCat.includes('shirt')) return true;
+        if (cName.includes('sweater') && (pCat.includes('sweater') || pCat.includes('knit'))) return true;
+        if (cName.includes('footwear') && (pCat.includes('footwear') || pCat.includes('shoe') || pCat.includes('boot') || pCat.includes('loaf') || pCat.includes('loof'))) return true;
+        if (cName.includes('pant') && (pCat.includes('pant') || pCat.includes('jean') || pCat.includes('trouser'))) return true;
+        if (cName.includes('blazer') && (pCat.includes('blazer') || pCat.includes('jacket'))) return true;
+        if (cName.includes('outerwear') && (pCat.includes('outerwear') || pCat.includes('coat'))) return true;
+        if (cName.includes('accessor') && (pCat.includes('accessor') || pCat.includes('tie'))) return true;
+        if (cName.includes('short') && pCat.includes('short')) return true;
+        return category.subcategories?.some(sub => pCat.includes(sub.toLowerCase()));
+      });
       const categoryImageMap: Record<string, string> = {
         'Suits': '/Suits_image.png',
         'Blazers & Jackets': '/Blazers_jackets_image.png',

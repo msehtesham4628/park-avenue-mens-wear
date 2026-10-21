@@ -118,18 +118,43 @@ export async function parseProductsExcel(file: File): Promise<{
     }
 
     let category: ProductCategory = 'Suits';
+    const rawLower = (rawCategory || '').trim().toLowerCase();
+    
+    // Direct or subcategory lookup
     const foundCat = OFFICIAL_CATEGORIES.find(c =>
-      c.name.toLowerCase() === rawCategory.toLowerCase() ||
-      c.queryValue.toLowerCase() === rawCategory.toLowerCase()
+      c.name.toLowerCase() === rawLower ||
+      c.queryValue.toLowerCase() === rawLower
     );
-    if (foundCat) {
+    if (foundCat && foundCat.queryValue !== 'All' && foundCat.queryValue !== 'New Arrivals') {
       category = foundCat.queryValue;
     } else {
       const parent = OFFICIAL_CATEGORIES.find(c =>
-        c.subcategories.some(s => s.toLowerCase() === rawCategory.toLowerCase())
+        c.subcategories.some(s => s.toLowerCase() === rawLower || rawLower.includes(s.toLowerCase()) || s.toLowerCase().includes(rawLower))
       );
-      if (parent) category = parent.queryValue;
-      else errors.push(`Row ${rowNum}: Category "${rawCategory}" normalized to "Suits".`);
+      if (parent && parent.queryValue !== 'All' && parent.queryValue !== 'New Arrivals') {
+        category = parent.queryValue;
+      } else if (rawLower.includes('suit') || rawLower.includes('tuxedo')) {
+        category = 'Suits';
+      } else if (rawLower.includes('shirt') || rawLower.includes('polo')) {
+        category = 'Shirts';
+      } else if (rawLower.includes('sweater') || rawLower.includes('knit') || rawLower.includes('cardigan') || rawLower.includes('crewneck') || rawLower.includes('rollneck')) {
+        category = 'Sweaters & Knitwear';
+      } else if (rawLower.includes('boot') || rawLower.includes('shoe') || rawLower.includes('loaf') || rawLower.includes('loof') || rawLower.includes('footwear') || rawLower.includes('oxford') || rawLower.includes('derby') || rawLower.includes('chelsea')) {
+        category = 'Footwear';
+      } else if (rawLower.includes('pant') || rawLower.includes('trouser') || rawLower.includes('jean') || rawLower.includes('denim') || rawLower.includes('chino')) {
+        category = 'Pants';
+      } else if (rawLower.includes('blazer') || rawLower.includes('jacket') || rawLower.includes('sport coat')) {
+        category = 'Blazers & Jackets';
+      } else if (rawLower.includes('coat') || rawLower.includes('outerwear') || rawLower.includes('overcoat') || rawLower.includes('parka')) {
+        category = 'Outerwear';
+      } else if (rawLower.includes('tie') || rawLower.includes('accessor') || rawLower.includes('cufflink') || rawLower.includes('pocket square') || rawLower.includes('belt')) {
+        category = 'Accessories';
+      } else if (rawLower.includes('short') || rawLower.includes('bermuda')) {
+        category = 'Shorts';
+      } else {
+        category = 'Suits';
+        errors.push(`Row ${rowNum}: Category "${rawCategory}" normalized to "Suits".`);
+      }
     }
 
     // A row is one color. Example: 38R:3, 40R:5 creates size variants

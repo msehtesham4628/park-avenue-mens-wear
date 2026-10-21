@@ -190,7 +190,7 @@ export const Navbar: React.FC = () => {
                 NEW ARRIVALS
               </button>
 
-              {['suits', 'blazers-jackets', 'shirts', 'pants'].map(categoryId => {
+              {['suits', 'shirts', 'sweaters-knitwear', 'footwear', 'blazers-jackets', 'pants'].map(categoryId => {
                 const category = OFFICIAL_CATEGORIES.find(c => c.id === categoryId);
                 if (!category) return null;
                 const isOpen = openCategoryDropdown === category.id;
