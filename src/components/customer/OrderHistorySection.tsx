@@ -476,7 +476,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search Order ID, garment, SKU..."
+            placeholder="Search Order ID, garment name..."
             className="w-full bg-[#FAF8F5] border border-gray-200 pl-8 pr-3 py-1.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
           />
           {searchQuery && (
@@ -734,11 +734,6 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                                 {item.color && (
                                   <span className="bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
                                     COLOR: {item.color}
-                                  </span>
-                                )}
-                                {item.sku && (
-                                  <span className="text-[10px] text-gray-400">
-                                    SKU: {item.sku}
                                   </span>
                                 )}
                               </div>

@@ -202,8 +202,7 @@ export const WishlistSection: React.FC<WishlistSectionProps> = ({ onBrowseShop }
                   {/* Body Content */}
                   <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                     <div>
-                      <div className="flex items-center justify-between text-[10px] font-mono text-gray-400 mb-1">
-                        <span>SKU: {product.sku || 'PA-STD'}</span>
+                      <div className="flex items-center justify-end text-[10px] font-mono text-gray-400 mb-1">
                         <span className={hasStock ? 'text-emerald-700 font-semibold' : 'text-amber-700'}>
                           {hasStock ? '● In Stock' : '○ Made-to-Order'}
                         </span>

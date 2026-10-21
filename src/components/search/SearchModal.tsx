@@ -77,7 +77,7 @@ export const SearchModal: React.FC = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by garment name, category, SKU, or fabric..."
+              placeholder="Search by garment name, category, or fabric..."
               className="w-full bg-transparent text-base md:text-lg text-[#111827] placeholder-slate-500 focus:outline-none font-sans"
             />
             {searchTerm && (
@@ -140,7 +140,7 @@ export const SearchModal: React.FC = () => {
                     <div
                       key={product.id}
                       onClick={() => {
-                        navigateToProduct(product.sku || product.id, product.category);
+                        navigateToProduct(product.id, product.category);
                         setIsSearchOpen(false);
                       }}
                       className="group flex gap-4 p-3 bg-[#F9F9F8] border border-gray-200 hover:border-[#936B34] hover:bg-[#F3F4F6] transition-all cursor-pointer shadow-lg"
@@ -162,9 +162,6 @@ export const SearchModal: React.FC = () => {
                           <h4 className="text-sm font-serif text-[#111827] group-hover:text-[#936B34] transition-colors truncate">
                             {product.name}
                           </h4>
-                          <span className="text-[11px] text-gray-500 block truncate mt-0.5 font-mono">
-                            SKU: {product.sku}
-                          </span>
                         </div>
                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
                           <span className="text-xs font-semibold tabular-nums text-[#111827]">

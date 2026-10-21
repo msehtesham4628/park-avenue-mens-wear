@@ -328,11 +328,6 @@ export const OrderTrackingPage: React.FC = () => {
                         <p className="text-xs font-mono text-gray-500 mt-0.5">
                           Size: <strong>{item.size || 'Standard'}</strong> · Color: <strong>{item.color || 'Classic'}</strong> · Qty: <strong>{item.quantity}</strong>
                         </p>
-                        {item.sku && (
-                          <p className="text-[10px] font-mono text-gray-400 mt-0.5">
-                            SKU: {item.sku}
-                          </p>
-                        )}
                       </div>
                     </div>
                     <div className="text-right font-mono text-sm text-[#111827] font-semibold shrink-0">

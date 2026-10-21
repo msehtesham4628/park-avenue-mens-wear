@@ -273,16 +273,26 @@ export const ProductService = {
       const remoteIds = new Set(mapped.map(p => p.id));
       const remoteSkus = new Set(mapped.map(p => p.sku));
       
-      // Retain all locally created or modified products so they never vanish on production refresh
+      const FAKE_SKU_PREFIXES = [
+        'PA-SHIRT-', 'PA-POLO-', 'PA-SWEAT-', 'PA-BOOT-', 'PA-SHOE-', 
+        'PA-LOOF-', 'PA-PANTS-', 'PA-JEAN-', 'PA-LJ-', 'PA-COAT-', 'PA-TIE-', 'PA-SHRT-'
+      ];
+      const isFakeProduct = (p: Product) => {
+        const sku = (p.sku || '').toUpperCase();
+        const id = (p.id || '').toUpperCase();
+        return FAKE_SKU_PREFIXES.some(prefix => sku.startsWith(prefix) || id.startsWith('PROD-' + prefix.replace('PA-', '')));
+      };
+
+      // Retain all genuinely locally created or modified products so they never vanish on production refresh
       const userCreatedIds = storageVault.getUserProductIds();
       const localOnly = productsCache.filter(p => 
-        userCreatedIds.has(p.id) || (!remoteIds.has(p.id) && !remoteSkus.has(p.sku))
+        !isFakeProduct(p) && userCreatedIds.has(p.id)
       );
 
       const mergedMap = new Map<string, Product>();
       // User created / edited products take priority
       localOnly.forEach(p => mergedMap.set(p.id, p));
-      mapped.forEach(p => {
+      mapped.filter(p => !isFakeProduct(p)).forEach(p => {
         if (!mergedMap.has(p.id)) {
           mergedMap.set(p.id, p);
         }

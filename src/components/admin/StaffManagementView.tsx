@@ -72,7 +72,7 @@ const DEFAULT_SYSTEM_ROLES: StaffRoleItem[] = [
     id: 'inventory-lead',
     roleKey: 'inventory-lead',
     name: 'Inventory & Operations Lead',
-    description: 'Warehouse stock counts, SKU adjustments, order shipment verification, and dispatch log management.',
+    description: 'Warehouse stock counts, inventory adjustments, order shipment verification, and dispatch log management.',
     department: 'Inventory & Dispatch',
     staffTitle: 'Inventory Lead',
     baseRole: 'staff',

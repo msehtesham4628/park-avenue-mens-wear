@@ -872,9 +872,6 @@ export const CheckoutPage: React.FC = () => {
                           <span>·</span>
                           <span>Qty: <strong>{i.quantity}</strong></span>
                         </div>
-                        <div className="text-[10px] font-mono text-gray-400 mt-1">
-                          SKU: {i.product.sku}
-                        </div>
                       </div>
                     </div>
 

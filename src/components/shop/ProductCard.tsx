@@ -84,7 +84,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
   };
 
   const handleCardClick = () => {
-    navigateToProduct(product.sku || product.id, product.category);
+    navigateToProduct(product.id, product.category);
   };
 
   return (
@@ -220,7 +220,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                         ? 'ring-2 ring-[#936B34] ring-offset-1 border-[#936B34] scale-110' 
                         : (isLight ? 'border-gray-400 hover:border-gray-600' : 'border-black/20 hover:border-black/50')
                     }`}
-                    style={{ backgroundColor: color.colorHex || '#1B2A4A' }}
+                    style={{ backgroundColor: color.colorHex || getColorHex(color.color) || '#1B2A4A' }}
                   />
                 );
               })}
@@ -268,7 +268,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
             </div>
           )}
 
-          {/* Price & SKU */}
+          {/* Price */}
           <div className="flex items-baseline justify-between pt-1">
             <div className="flex items-baseline gap-2">
               <span className="text-sm sm:text-base font-medium tabular-nums text-[#111827]">
@@ -280,10 +280,6 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
                 </span>
               )}
             </div>
-
-            <span className="text-[9px] font-mono text-gray-400 uppercase">
-              {product.sku}
-            </span>
           </div>
 
           {/* Shipment Charges */}

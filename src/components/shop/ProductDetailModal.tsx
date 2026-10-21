@@ -70,7 +70,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
 
   const handleGoToPDP = () => {
     onClose();
-    navigateToProduct(product.sku || product.id, product.category);
+    navigateToProduct(product.id, product.category);
   };
 
   // Distinct available sizes and colors
@@ -186,7 +186,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                     </span>
                     <span className="uppercase tracking-widest text-[#936B34] font-medium">{product.category}</span>
                   </div>
-                  <span className="font-mono text-[11px] text-gray-400">SKU: {product.sku}</span>
                 </div>
 
                 <h2 className="font-serif text-2xl text-[#111827] mb-2 font-light">

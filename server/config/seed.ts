@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import mongoose from 'mongoose';
 import { ProductModel } from '../models/Product.js';
 import { productService } from '../services/productService.js';
 
@@ -25,8 +26,22 @@ export async function seedInitialData() {
       }
     }
 
-    if (realGarments.length > 0) {
-      if (Number(mongoose.connection.readyState) === 1) {
+    const fakeSkus = [
+      'PA-SHIRT-001', 'PA-POLO-001', 'PA-SWEAT-001', 'PA-SWEAT-002',
+      'PA-BOOT-001', 'PA-SHOE-001', 'PA-LOOF-001', 'PA-PANTS-001',
+      'PA-JEAN-001', 'PA-LJ-001', 'PA-COAT-001', 'PA-TIE-001', 'PA-SHRT-001'
+    ];
+
+    if (Number(mongoose.connection.readyState) === 1) {
+      // Purge any fake garments from MongoDB
+      await ProductModel.deleteMany({
+        $or: [
+          { sku: { $in: fakeSkus } },
+          { productId: { $in: fakeSkus.map(s => 'PROD-' + s.replace('PA-', '')) } }
+        ]
+      });
+
+      if (realGarments.length > 0) {
         let insertedCount = 0;
         for (const item of realGarments) {
           try {
@@ -51,14 +66,10 @@ export async function seedInitialData() {
         const allDbProducts = await ProductModel.find().lean();
         productService.syncMemoryStore(allDbProducts.length > 0 ? allDbProducts : realGarments);
         console.info(`[Park Avenue DB Seed] Synchronized ${allDbProducts.length || realGarments.length} products with memory store.`);
-      } else {
-        productService.syncMemoryStore(realGarments);
-        console.info(`[Park Avenue DB Seed] Synchronized ${realGarments.length} products with memory store (offline/serverless fallback).`);
       }
-    } else if (Number(mongoose.connection.readyState) === 1) {
-      const existing = await ProductModel.find().lean();
-      productService.syncMemoryStore(existing);
-      console.info(`[Park Avenue DB Seed] Synchronized ${existing.length} products with memory store.`);
+    } else {
+      productService.syncMemoryStore(realGarments);
+      console.info(`[Park Avenue DB Seed] Synchronized ${realGarments.length} products with memory store (offline/serverless fallback).`);
     }
   } catch (err: any) {
     console.warn(`[Park Avenue DB Seed] Seed warning: ${err.message}`);

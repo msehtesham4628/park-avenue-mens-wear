@@ -79,7 +79,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
             className="w-full flex items-center gap-3 px-3.5 py-2 bg-white border border-gray-200 text-xs text-gray-500 hover:border-[#936B34] transition-colors text-left cursor-pointer"
           >
             <Search className="w-3.5 h-3.5 text-[#936B34]" />
-            <span>Search garments, SKU, fabric...</span>
+            <span>Search garments, fabric...</span>
           </button>
         </div>
 

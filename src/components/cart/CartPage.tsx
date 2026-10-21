@@ -183,7 +183,7 @@ export const CartPage: React.FC = () => {
                     <div className="sm:col-span-6 flex items-start gap-4">
                       {/* Product Thumbnail */}
                       <div 
-                        onClick={() => navigateToProduct(item.product.sku || item.product.id, item.product.category)}
+                        onClick={() => navigateToProduct(item.product.id, item.product.category)}
                         className="w-20 h-24 sm:w-24 sm:h-28 shrink-0 bg-[#F5F5F3] border border-gray-200 overflow-hidden cursor-pointer relative group"
                       >
                         {(item.product.images?.[0] || item.product.colorImages?.[item.selectedColor]?.[0] || item.product.productViews?.front) ? (
@@ -208,7 +208,7 @@ export const CartPage: React.FC = () => {
                           {item.product.category}
                         </span>
                         <h3 
-                          onClick={() => navigateToProduct(item.product.sku || item.product.id, item.product.category)}
+                          onClick={() => navigateToProduct(item.product.id, item.product.category)}
                           className="font-serif text-base sm:text-lg text-[#111827] uppercase tracking-wide truncate cursor-pointer hover:text-[#936B34] transition-colors"
                         >
                           {item.product.name}

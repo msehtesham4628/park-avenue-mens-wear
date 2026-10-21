@@ -69,6 +69,16 @@ try {
   }
 } catch (_) {}
 
+const FAKE_SKU_PREFIXES = [
+  'PA-SHIRT-', 'PA-POLO-', 'PA-SWEAT-', 'PA-BOOT-', 'PA-SHOE-', 
+  'PA-LOOF-', 'PA-PANTS-', 'PA-JEAN-', 'PA-LJ-', 'PA-COAT-', 'PA-TIE-', 'PA-SHRT-'
+];
+const isFakeProduct = (p: Product) => {
+  const sku = (p.sku || '').toUpperCase();
+  const id = (p.id || '').toUpperCase();
+  return FAKE_SKU_PREFIXES.some(prefix => sku.startsWith(prefix) || id.startsWith('PROD-' + prefix.replace('PA-', '')));
+};
+
 // Safely seed in-memory cache from localStorage on startup
 try {
   if (typeof localStorage !== 'undefined') {
@@ -76,14 +86,14 @@ try {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        inMemoryProducts = parsed;
+        inMemoryProducts = parsed.filter(p => !isFakeProduct(p));
       }
     }
   }
 } catch (_) {}
 
 if (inMemoryProducts.length === 0 && INITIAL_PRODUCTS.length > 0) {
-  inMemoryProducts = [...INITIAL_PRODUCTS];
+  inMemoryProducts = [...INITIAL_PRODUCTS].filter(p => !isFakeProduct(p));
 }
 
 // Safe LocalStorage setter with quota fallback
@@ -131,10 +141,11 @@ export const storageVault = {
           req.onerror = () => reject(req.error);
         });
 
-        if (idbProducts.length > 0) {
+        const cleanIdbProducts = idbProducts.filter(p => !isFakeProduct(p));
+        if (cleanIdbProducts.length > 0) {
           // Merge IndexedDB products with any newly added products in memory
           const existingMap = new Map<string, Product>();
-          idbProducts.forEach(p => existingMap.set(p.id, p));
+          cleanIdbProducts.forEach(p => existingMap.set(p.id, p));
           inMemoryProducts.forEach(p => {
             if (!existingMap.has(p.id)) {
               existingMap.set(p.id, p);

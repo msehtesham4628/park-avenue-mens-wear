@@ -83,8 +83,7 @@ import { debounceAsync } from '../../utils/requestDebouncer';
 import { Product, ProductVariant, Order, AlterationRecord, Customer, ProductCategory, ReturnRequest, AuditLogEntry } from '../../types';
 import { ParkAvenueLogo } from '../brand/ParkAvenueLogo';
 import { navigateTo, parseRoute } from '../../utils/router';
-import { generateAutoSku } from '../../utils/skuGenerator';
-import { extractProductColors, getColorHex, isLightColor, LUXURY_COLOR_PALETTES } from '../../utils/colorUtils';
+import { extractProductColors, getColorHex, getColorName, isLightColor, LUXURY_COLOR_PALETTES } from '../../utils/colorUtils';
 import { CANONICAL_BASE, generateProductSeo, generateCategorySeo } from '../../utils/seo';
 import { 
   getUsStateTaxRates, 
@@ -367,44 +366,6 @@ export const AdminDashboard: React.FC = () => {
     return { valid: true, duplicate: false, message: 'Garment title is unique and available in your catalog.' };
   }, [productForm.name, isTitleDuplicate]);
 
-  const isSkuDuplicate = useMemo(() => {
-    const cleanSku = productForm.sku.trim().toUpperCase();
-    if (!cleanSku) return false;
-    return productsList.some(p => {
-      if (p.id === editingProduct?.id) return false;
-      if (p.sku && p.sku.trim().toUpperCase() === cleanSku) return true;
-      if (Array.isArray(p.variants)) {
-        return p.variants.some(v => v.sku && v.sku.trim().toUpperCase() === cleanSku);
-      }
-      return false;
-    });
-  }, [productForm.sku, productsList, editingProduct]);
-
-  const skuValidation = useMemo(() => {
-    const cleanSku = productForm.sku.trim().toUpperCase();
-    if (!cleanSku) {
-      return { valid: false, duplicate: false, warning: false, message: 'SKU is required (e.g. PA-SUIT-NVY-002).' };
-    }
-    if (isSkuDuplicate) {
-      return {
-        valid: false,
-        duplicate: true,
-        warning: false,
-        message: `Duplicate SKU: "${cleanSku}" is already assigned to another product in the catalog. Click "+1 Next" to increment.`
-      };
-    }
-    const hasStructuredFormat = /^PA-[A-Z0-9]+-[A-Z0-9]+-\d+$/i.test(cleanSku) || /^PA-[A-Z0-9]+-\d+$/i.test(cleanSku);
-    if (!hasStructuredFormat) {
-      return {
-        valid: true,
-        duplicate: false,
-        warning: true,
-        message: 'Format tip: Recommended luxury format is PA-[CATEGORY]-[COLOR]-[SEQ] (e.g. PA-SUIT-NVY-002).'
-      };
-    }
-    return { valid: true, duplicate: false, warning: false, message: 'SKU is unique and correctly structured.' };
-  }, [productForm.sku, isSkuDuplicate]);
-
   // Custom Color Builder state for Product Modal
   const [customColorName, setCustomColorName] = useState('');
   const [customColorHex, setCustomColorHex] = useState('#1B2A4A');
@@ -455,64 +416,7 @@ export const AdminDashboard: React.FC = () => {
     message: 'Your bespoke garment has completed master hand inspection and is scheduled for priority dispatch.'
   });
 
-  // Auto SKU & Auto Description states
-  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
-  const [descriptionTone, setDescriptionTone] = useState<'editorial' | 'ecommerce_seo' | 'bespoke_tailor'>('editorial');
-  const [generatedAiResult, setGeneratedAiResult] = useState<{
-    shortDescription?: string;
-    bulletPoints?: string[];
-    stylingAdvice?: string;
-    fabricDetails?: string;
-    careInstructions?: string[];
-    seoMetaTitle?: string;
-    seoMetaDescription?: string;
-    keywords?: string[];
-    source?: string;
-  } | null>(null);
-  const [isBatchingSku, setIsBatchingSku] = useState(false);
 
-  // Auto Title from Text states
-  const [isAutoTitleOpen, setIsAutoTitleOpen] = useState(false);
-  const [rawTitleSourceText, setRawTitleSourceText] = useState('');
-  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
-  const [generatedTitleResult, setGeneratedTitleResult] = useState<{
-    title: string;
-    variations: { label: string; title: string; style: string }[];
-    detectedCategory?: string;
-    detectedFabric?: string;
-    detectedFit?: string;
-    detectedColor?: string;
-    source?: string;
-  } | null>(null);
-
-  const handleGenerateTitleFromText = async (textToUse?: string) => {
-    const raw = (textToUse !== undefined ? textToUse : (rawTitleSourceText || productForm.description || productForm.fabric || productForm.name)).trim();
-    const text = raw || `Luxury ${productForm.category || 'Suits'} tailored garment`;
-    setIsGeneratingTitle(true);
-    try {
-      const res = await ProductService.generateTitle({
-        text,
-        category: productForm.category,
-        fabric: productForm.fabric,
-        fit: productForm.fit,
-        color: (productForm.colors && productForm.colors[0]) || ''
-      });
-      setGeneratedTitleResult(res);
-      setIsAutoTitleOpen(true);
-      setProductForm(prev => ({
-        ...prev,
-        name: res.title || prev.name,
-        category: (res.detectedCategory as any) || prev.category,
-        fabric: prev.fabric || res.detectedFabric || prev.fabric,
-        fit: prev.fit || res.detectedFit || prev.fit
-      }));
-      showToast(`Generated Title: "${res.title}"`, 'success');
-    } catch (err: any) {
-      showToast('Title generation error: ' + (err?.message || 'Error'), 'error');
-    } finally {
-      setIsGeneratingTitle(false);
-    }
-  };
 
   // SEO & Sitemap Tab state
   const [seoOverview, setSeoOverview] = useState<any>(null);
@@ -527,68 +431,15 @@ export const AdminDashboard: React.FC = () => {
   const [selectedSeoCategory, setSelectedSeoCategory] = useState<string>('Suits');
   const [seoPreviewDevice, setSeoPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
 
-  const handleAutoGenerateSingleSku = async () => {
-    const categoryCount = productsList.filter(p => (p.category || '').toLowerCase() === (productForm.category || '').toLowerCase()).length;
-    try {
-      const res = await ProductService.generateSku({
-        name: productForm.name || 'Garment',
-        category: productForm.category,
-        fabric: productForm.fabric,
-        color: (productForm.colors && productForm.colors.split(',')[0]?.trim()) || '',
-        currentSku: productForm.sku,
-        categoryCount,
-        totalCatalogCount: productsList.length,
-        existingSkus: productsList.map(p => p.sku)
-      });
-      setProductForm(prev => ({ ...prev, sku: res.sku }));
-      showToast(`Generated SKU: ${res.sku} (Seq #${res.sequence})`, 'success');
-    } catch {
-      const local = generateAutoSku({
-        name: productForm.name || 'Garment',
-        category: productForm.category,
-        fabric: productForm.fabric,
-        color: (productForm.colors && productForm.colors.split(',')[0]?.trim()) || '',
-        currentSku: productForm.sku,
-        categoryCount,
-        totalCatalogCount: productsList.length,
-        existingSkus: productsList.map(p => p.sku)
-      });
-      setProductForm(prev => ({ ...prev, sku: local.sku }));
-      showToast(`Generated SKU: ${local.sku} (Seq #${local.sequence})`, 'success');
-    }
-  };
 
-  const handleNextSequenceSku = () => {
-    const currentSku = (productForm.sku || '').trim();
-    const match = currentSku.match(/^(.*[-_])(\d+)(.*)$/);
-    if (match) {
-      const prefix = match[1];
-      const num = parseInt(match[2], 10) + 1;
-      const suffix = match[3];
-      const newSku = `${prefix}${String(num).padStart(Math.max(3, match[2].length), '0')}${suffix}`;
-      setProductForm(prev => ({ ...prev, sku: newSku }));
-      showToast(`Advanced SKU: ${newSku} (Seq #${String(num).padStart(3, '0')})`, 'info');
-    } else {
-      handleAutoGenerateSingleSku();
-    }
-  };
 
   const handleOpenAddProductModal = () => {
     setEditingProduct(null);
-    const suitsCount = productsList.filter(p => (p.category || '').toLowerCase() === 'suits').length;
-    const initSku = generateAutoSku({
-      name: 'Garment',
-      category: 'Suits',
-      color: 'Midnight Navy',
-      categoryCount: suitsCount,
-      totalCatalogCount: productsList.length,
-      existingSkus: productsList.map(p => p.sku)
-    });
     setProductForm({
       name: '',
       category: 'Suits',
       price: '',
-      sku: initSku.sku,
+      sku: '',
       description: '',
       fabric: '',
       fit: '',
@@ -598,51 +449,11 @@ export const AdminDashboard: React.FC = () => {
       views: { front: '', back: '', left: '', right: '', detail: '' },
       pdfDocuments: []
     });
+    setCustomColorHex('#1B2A4A');
+    setCustomColorName('');
     setIsAddProductOpen(true);
   };
 
-  const handleGenerateAiDescription = async (tone: 'editorial' | 'ecommerce_seo' | 'bespoke_tailor' = descriptionTone) => {
-    if (!productForm.name) {
-      showToast('Please enter a garment name first to generate tailored description.', 'error');
-      return;
-    }
-    setIsGeneratingDescription(true);
-    try {
-      const res = await ProductService.generateDescription({
-        name: productForm.name,
-        category: productForm.category,
-        fabric: productForm.fabric,
-        fit: productForm.fit,
-        price: parseFloat(productForm.price) || 850,
-        tone
-      });
-
-      setProductForm(prev => ({
-        ...prev,
-        description: res.description || prev.description,
-        fabric: prev.fabric || res.fabricDetails || prev.fabric
-      }));
-      setGeneratedAiResult(res);
-      showToast('Bespoke luxury description & USA SEO tags synthesized successfully!', 'success');
-    } catch (err: any) {
-      showToast('Failed to generate description: ' + (err.message || 'Error'), 'error');
-    } finally {
-      setIsGeneratingDescription(false);
-    }
-  };
-
-  const handleBatchAutoSku = async () => {
-    setIsBatchingSku(true);
-    try {
-      const res = await ProductService.batchAutoSku();
-      await loadAllData();
-      showToast(`Auto-assigned structured SKUs to ${res.updatedCount || 'catalog'} products!`, 'success');
-    } catch (err: any) {
-      showToast('Batch auto-SKU assignment error: ' + (err.message || 'Error'), 'error');
-    } finally {
-      setIsBatchingSku(false);
-    }
-  };
 
   const loadSeoOverview = async () => {
     setIsLoadingSeo(true);
@@ -825,8 +636,8 @@ export const AdminDashboard: React.FC = () => {
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productForm.name || !productForm.price || !productForm.sku) {
-      showToast('Please provide name, price and SKU', 'error');
+    if (!productForm.name || !productForm.price) {
+      showToast('Please provide garment name and price', 'error');
       return;
     }
 
@@ -835,10 +646,7 @@ export const AdminDashboard: React.FC = () => {
       return;
     }
 
-    if (isSkuDuplicate) {
-      showToast(`Cannot save: SKU "${productForm.sku.trim().toUpperCase()}" is already assigned to another product. Click "+1 Next" to auto-increment.`, 'error');
-      return;
-    }
+    const internalSku = (productForm.sku || '').trim() || `PA-${Date.now().toString(36).toUpperCase()}`;
 
     try {
       const parsedColors = (productForm.colors || 'Midnight Navy')
@@ -855,17 +663,7 @@ export const AdminDashboard: React.FC = () => {
 
       const parsedVariants: ProductVariant[] = [];
       effectiveColors.forEach((colorName, cIdx) => {
-        const lower = colorName.toLowerCase();
-        const hex = lower.includes('navy') ? '#1B2A4A' :
-                    lower.includes('black') ? '#111827' :
-                    lower.includes('charcoal') ? '#374151' :
-                    lower.includes('white') || lower.includes('ivory') ? '#F9F9F8' :
-                    lower.includes('burgundy') || lower.includes('wine') ? '#722F37' :
-                    lower.includes('blue') ? '#2B4C7E' :
-                    lower.includes('green') ? '#1E3F20' :
-                    lower.includes('camel') ? '#936B34' :
-                    lower.includes('brown') ? '#4A2E18' :
-                    lower.includes('grey') || lower.includes('gray') ? '#6B7280' : '#1B263B';
+        const hex = getColorHex(colorName);
 
         sizeItems.forEach((sItem, sIdx) => {
           parsedVariants.push({
@@ -874,7 +672,7 @@ export const AdminDashboard: React.FC = () => {
             color: colorName,
             colorHex: hex,
             stock: sItem.stock,
-            sku: `${productForm.sku}-${colorName.replace(/\s+/g, '').slice(0, 3).toUpperCase()}-${sItem.size}`
+            sku: `${internalSku}-${colorName.replace(/\s+/g, '').slice(0, 3).toUpperCase()}-${sItem.size}`
           });
         });
       });
@@ -912,7 +710,7 @@ export const AdminDashboard: React.FC = () => {
           name: productForm.name.trim(),
           category: productForm.category,
           price: cleanPrice,
-          sku: productForm.sku,
+          sku: editingProduct.sku || internalSku,
           description: productForm.description,
           fabric: productForm.fabric,
           fit: productForm.fit,
@@ -950,7 +748,7 @@ export const AdminDashboard: React.FC = () => {
           subtitle: `${productForm.fabric || 'Super 150s Wool'} · Bespoke Cut`,
           category: productForm.category,
           price: cleanPrice,
-          sku: productForm.sku,
+          sku: internalSku,
           collection: 'Park Avenue Heritage',
           description: productForm.description || 'Precision crafted bespoke garment cut in our private atelier.',
           details: ['Full floating canvas construction', 'Hand-finished pick stitching', 'Bespoke silk lining'],
@@ -1001,9 +799,6 @@ export const AdminDashboard: React.FC = () => {
         views: { front: '', back: '', left: '', right: '', detail: '' },
         pdfDocuments: []
       });
-      setIsAutoTitleOpen(false);
-      setRawTitleSourceText('');
-      setGeneratedTitleResult(null);
     } catch (err: any) {
       showToast('Failed to save product: ' + (err?.message || 'Error occurred'), 'error');
     }
@@ -2021,16 +1816,6 @@ export const AdminDashboard: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={handleBatchAutoSku}
-                  disabled={isBatchingSku}
-                  className="px-3.5 py-2 bg-white border border-[#936B34] text-[#936B34] hover:bg-[#936B34] hover:text-white font-mono text-xs uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs font-semibold disabled:opacity-50"
-                  title="Auto-generate structured sartorial SKUs for any garments missing one"
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>{isBatchingSku ? 'GENERATING SKUS...' : 'AUTO-GENERATE SKUS'}</span>
-                </button>
-
-                <button
                   onClick={downloadProductExcelTemplate}
                   className="px-3 py-2 bg-[#F9F9F8] border border-gray-200 text-gray-600 font-mono text-xs uppercase tracking-wider hover:border-gray-400 hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                   title="Download sample formatted Excel template for products import"
@@ -2054,7 +1839,6 @@ export const AdminDashboard: React.FC = () => {
                 <table className="w-full text-left text-xs font-mono">
                   <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200">
                     <tr>
-                      <th className="p-4">SKU</th>
                       <th className="p-4">GARMENT NAME</th>
                       <th className="p-4">CATEGORY</th>
                       <th className="p-4">PRICE</th>
@@ -2067,7 +1851,6 @@ export const AdminDashboard: React.FC = () => {
                   <tbody className="divide-y divide-gray-100">
                     {productsList.map((prod, pIdx) => (
                       <tr key={prod.id ? `prod-${prod.id}-${pIdx}` : `prod-${pIdx}`} className="hover:bg-black/[0.02]">
-                        <td className="p-4 text-[#936B34] font-medium">{prod.sku}</td>
                         <td className="p-4 text-[#111827] font-serif text-sm font-light">{prod.name}</td>
                         <td className="p-4 uppercase text-gray-500">{prod.category}</td>
                         <td className="p-4 tabular-nums font-semibold">${prod.price.toLocaleString()}</td>
@@ -2175,7 +1958,6 @@ export const AdminDashboard: React.FC = () => {
                   <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200">
                     <tr>
                       <th className="p-4">GARMENT</th>
-                      <th className="p-4">SKU</th>
                       <th className="p-4">SIZE</th>
                       <th className="p-4">CURRENT STOCK</th>
                       <th className="p-4">STATUS</th>
@@ -2187,7 +1969,6 @@ export const AdminDashboard: React.FC = () => {
                       (p.variants || []).map((v, vIdx) => (
                         <tr key={`inv-${p.id || pIdx}-${v.id || v.size || vIdx}-${vIdx}`} className="hover:bg-black/[0.02]">
                           <td className="p-4 text-[#111827] font-serif">{p.name}</td>
-                          <td className="p-4 text-[#936B34] font-medium">{v.sku}</td>
                           <td className="p-4 text-gray-500">{v.size}</td>
                           <td className="p-4 font-bold text-[#111827]">{v.stock} units</td>
                           <td className="p-4">
@@ -4178,7 +3959,7 @@ export const AdminDashboard: React.FC = () => {
                     >
                       {productsList.map(p => (
                         <option key={p.id} value={p.id}>
-                          {p.name} — ${Number(p.price).toFixed(2)} ({p.category} | SKU: {p.sku})
+                          {p.name} — ${Number(p.price).toFixed(2)} ({p.category})
                         </option>
                       ))}
                     </select>
@@ -4679,201 +4460,9 @@ export const AdminDashboard: React.FC = () => {
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-mono uppercase text-gray-500 font-medium">
-                    GARMENT NAME / TITLE *
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateTitleFromText()}
-                      disabled={isGeneratingTitle}
-                      className="px-2.5 py-1 bg-[#111827] hover:bg-[#936B34] text-white text-[10px] font-mono uppercase tracking-wider flex items-center gap-1 font-semibold cursor-pointer shadow-2xs disabled:opacity-50 transition-colors"
-                      title="Generate luxury title"
-                    >
-                      {isGeneratingTitle ? (
-                        <>
-                          <div className="w-2.5 h-2.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                          <span>Generating...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3 h-3 text-[#936B34]" />
-                          <span>Generate Title</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setIsAutoTitleOpen(prev => !prev)}
-                      className="px-2 py-0.5 bg-[#FAF8F5] border border-[#936B34]/40 text-[#936B34] hover:bg-[#936B34] hover:text-white text-[10px] font-mono uppercase tracking-wider transition-colors flex items-center gap-1 font-semibold cursor-pointer shadow-2xs"
-                      title="Custom client specs, WhatsApp text, or variations"
-                    >
-                      <span>{isAutoTitleOpen ? 'Hide Variations' : 'Notes & Variations'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* EXPANDABLE AUTO-TITLE FROM TEXT WORKBENCH */}
-                {isAutoTitleOpen && (
-                  <div className="mb-3 p-3.5 bg-white border border-[#936B34]/40 shadow-xs space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
-                        <span className="text-[11px] font-mono font-bold text-[#111827] uppercase tracking-wide">
-                          Auto-Generate Title From Any Text
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-mono text-gray-400 hidden sm:inline">
-                        Client specs, WhatsApp notes, PDF text
-                      </span>
-                    </div>
-
-                    <div>
-                      <textarea
-                        rows={2}
-                        value={rawTitleSourceText}
-                        onChange={(e) => setRawTitleSourceText(e.target.value)}
-                        placeholder="Paste client notes or text here (e.g. 'Navy blue 3 piece suit super 160 wool peak lapel bespoke tailored for evening gala')..."
-                        className="w-full bg-[#F9F9F8] border border-gray-300 p-2 text-xs font-mono text-[#111827] focus:outline-none focus:border-[#936B34]"
-                      />
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-100">
-                      <div className="flex items-center gap-2">
-                        {productForm.description && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setRawTitleSourceText(productForm.description);
-                              handleGenerateTitleFromText(productForm.description);
-                            }}
-                            className="text-[10px] font-mono text-gray-600 hover:text-black underline cursor-pointer"
-                          >
-                            Use Description Text
-                          </button>
-                        )}
-                        {rawTitleSourceText && (
-                          <button
-                            type="button"
-                            onClick={() => setRawTitleSourceText('')}
-                            className="text-[10px] font-mono text-gray-400 hover:text-red-500 cursor-pointer"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleGenerateTitleFromText()}
-                          disabled={isGeneratingTitle}
-                          className="px-3.5 py-1.5 bg-[#111827] hover:bg-[#936B34] text-white text-[11px] font-mono uppercase tracking-wider font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 transition-colors"
-                        >
-                          {isGeneratingTitle ? (
-                            <>
-                              <div className="w-2.5 h-2.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                              <span>Generating Title...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
-                              <span>Generate Title</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Result Variations */}
-                    {generatedTitleResult && (
-                      <div className="mt-2.5 pt-2.5 border-t border-gray-200/70 space-y-2">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold">
-                            Choose Title Style:
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono text-gray-600 font-semibold px-2 py-0.5 bg-gray-100 border border-gray-200">
-                              Engine: {generatedTitleResult.source === 'gemini-ai' ? '✨ Gemini AI' : 'Sartorial Engine'}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleGenerateTitleFromText()}
-                              disabled={isGeneratingTitle}
-                              className="text-[10px] font-mono text-[#936B34] hover:underline flex items-center gap-1 font-semibold uppercase cursor-pointer"
-                              title="Generate another set of distinct titles"
-                            >
-                              <RefreshCw className={`w-3 h-3 ${isGeneratingTitle ? 'animate-spin' : ''}`} />
-                              <span>Regenerate New</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {(generatedTitleResult.variations || []).map((v: any, idx: number) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => {
-                                setProductForm(prev => ({ ...prev, name: v.title }));
-                                showToast(`Applied title: "${v.title}"`, 'success');
-                              }}
-                              className={`p-2 text-left border text-xs font-mono transition-all cursor-pointer ${
-                                productForm.name === v.title
-                                  ? 'border-[#936B34] bg-[#FAF8F5] text-[#936B34] font-bold shadow-xs'
-                                  : 'border-gray-200 bg-[#F9F9F8] text-[#111827] hover:border-gray-400'
-                              }`}
-                            >
-                              <div className="text-[9px] text-gray-500 uppercase tracking-widest mb-0.5">
-                                {v.label}
-                              </div>
-                              <div className="truncate font-medium">{v.title}</div>
-                            </button>
-                          ))}
-                        </div>
-
-                        {(generatedTitleResult.detectedCategory || generatedTitleResult.detectedFabric || generatedTitleResult.detectedColor) && (
-                          <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] font-mono text-gray-600">
-                            <span className="font-semibold">Detected specs:</span>
-                            {generatedTitleResult.detectedCategory && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setProductForm(prev => ({ ...prev, category: generatedTitleResult.detectedCategory as any }));
-                                  showToast(`Category set to ${generatedTitleResult.detectedCategory}`, 'info');
-                                }}
-                                className="px-1.5 py-0.5 bg-gray-100 hover:bg-[#936B34] hover:text-white border border-gray-200 text-gray-700 cursor-pointer transition-colors"
-                                title="Click to apply detected category"
-                              >
-                                Category: {generatedTitleResult.detectedCategory} +
-                              </button>
-                            )}
-                            {generatedTitleResult.detectedFabric && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setProductForm(prev => ({ ...prev, fabric: generatedTitleResult.detectedFabric }));
-                                  showToast(`Fabric set to ${generatedTitleResult.detectedFabric}`, 'info');
-                                }}
-                                className="px-1.5 py-0.5 bg-gray-100 hover:bg-[#936B34] hover:text-white border border-gray-200 text-gray-700 cursor-pointer transition-colors"
-                                title="Click to apply detected fabric"
-                              >
-                                Fabric: {generatedTitleResult.detectedFabric} +
-                              </button>
-                            )}
-                            {generatedTitleResult.detectedColor && (
-                              <span className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 text-gray-700">
-                                Color: {generatedTitleResult.detectedColor}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1.5 font-medium">
+                  GARMENT NAME / TITLE *
+                </label>
 
                 <input
                   type="text"
@@ -4920,16 +4509,7 @@ export const AdminDashboard: React.FC = () => {
                     value={productForm.category}
                     onChange={(e) => {
                       const newCat = e.target.value as ProductCategory;
-                      const newCatCount = productsList.filter(p => (p.category || '').toLowerCase() === newCat.toLowerCase()).length;
-                      const autoSku = generateAutoSku({
-                        name: productForm.name || 'Garment',
-                        category: newCat,
-                        color: (productForm.colors && productForm.colors.split(',')[0]?.trim()) || 'Navy',
-                        categoryCount: newCatCount,
-                        totalCatalogCount: productsList.length,
-                        existingSkus: productsList.map(p => p.sku)
-                      });
-                      setProductForm(prev => ({ ...prev, category: newCat, sku: autoSku.sku }));
+                      setProductForm(prev => ({ ...prev, category: newCat }));
                     }}
                     className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34] cursor-pointer"
                   >
@@ -4987,84 +4567,6 @@ export const AdminDashboard: React.FC = () => {
                     placeholder="15 (or 0 for Free Shipping)"
                     className="w-full bg-[#F9F9F8] border border-gray-200 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                   />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] font-mono uppercase text-gray-500 font-medium">
-                      SKU *
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleAutoGenerateSingleSku}
-                        className="text-[10px] font-mono text-[#936B34] hover:underline flex items-center gap-1 font-semibold uppercase cursor-pointer"
-                        title="Auto-detect next sequential SKU based on category, color and existing products"
-                      >
-                        <Zap className="w-3 h-3 text-[#936B34]" />
-                        <span>Auto SKU</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleNextSequenceSku}
-                        className="text-[10px] font-mono text-gray-600 hover:text-black hover:underline flex items-center gap-1 font-semibold uppercase cursor-pointer px-1.5 py-0.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
-                        title="Increment sequence number (+1)"
-                      >
-                        <Plus className="w-2.5 h-2.5" />
-                        <span>+1 Next</span>
-                      </button>
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    value={productForm.sku}
-                    onChange={(e) => setProductForm({ ...productForm, sku: e.target.value.toUpperCase() })}
-                    placeholder="PA-SUIT-NVY-002"
-                    className={`w-full bg-[#F9F9F8] border px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none transition-colors ${
-                      isSkuDuplicate
-                        ? 'border-red-500 bg-red-50/20 text-red-950 focus:border-red-600'
-                        : skuValidation.warning
-                          ? 'border-amber-400 focus:border-amber-500'
-                          : productForm.sku.trim()
-                            ? 'border-emerald-500/70 focus:border-emerald-600'
-                            : 'border-gray-200 focus:border-[#936B34]'
-                    }`}
-                  />
-                  {productForm.sku && (
-                    <div className="mt-1.5 space-y-1">
-                      {isSkuDuplicate ? (
-                        <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-red-600 bg-red-50 p-1.5 border border-red-200">
-                          <div className="flex items-center gap-1.5">
-                            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
-                            <span className="font-semibold">{skuValidation.message}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleNextSequenceSku}
-                            className="px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white text-[9px] font-bold uppercase tracking-wider shrink-0 cursor-pointer shadow-2xs transition-colors"
-                          >
-                            Auto-Fix (+1)
-                          </button>
-                        </div>
-                      ) : skuValidation.warning ? (
-                        <div className="flex items-center gap-1 text-[10px] font-mono text-amber-700">
-                          <AlertCircle className="w-3 h-3 shrink-0 text-amber-600" />
-                          <span>{skuValidation.message}</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between text-[10px] font-mono text-emerald-700">
-                          <div className="flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span>{skuValidation.message}</span>
-                          </div>
-                          <span className="text-[#936B34] font-semibold">
-                            Sequence: #{productForm.sku.split('-').pop() || '001'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 <div>
@@ -5140,24 +4642,68 @@ export const AdminDashboard: React.FC = () => {
                   className="w-full bg-white border border-gray-300 px-3.5 py-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                 />
 
-                {/* Custom Color Creator / Swatch Builder */}
-                <div className="pt-2 border-t border-gray-200">
-                  <span className="text-[9px] font-mono uppercase text-gray-500 tracking-wider block mb-1.5">
-                    Add Custom Atelier Shade:
-                  </span>
+                {/* Custom Color Creator / Swatch Builder with Exact Hex & Bidirectional Sync */}
+                <div className="pt-2 border-t border-gray-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase text-[#111827] font-semibold tracking-wider">
+                      Add Custom Color with Exact Hex &amp; Name:
+                    </span>
+                    <span className="text-[10px] font-mono text-gray-500">
+                      Exact Hex: <strong className="text-[#936B34] font-semibold">{customColorHex.toUpperCase()}</strong>
+                    </span>
+                  </div>
+
                   <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={customColorHex}
-                      onChange={(e) => setCustomColorHex(e.target.value)}
-                      className="w-8 h-8 p-0 border border-gray-300 rounded cursor-pointer shrink-0 bg-white"
-                      title="Select hex color"
-                    />
+                    {/* Visual Color Swatch Picker */}
+                    <div className="relative shrink-0">
+                      <input
+                        type="color"
+                        value={customColorHex}
+                        onChange={(e) => {
+                          const newHex = e.target.value.toUpperCase();
+                          setCustomColorHex(newHex);
+                          if (!customColorName || customColorName.startsWith('#')) {
+                            setCustomColorName(getColorName(newHex));
+                          }
+                        }}
+                        className="w-9 h-9 p-0.5 border border-gray-300 rounded-none cursor-pointer bg-white"
+                        title="Pick exact color"
+                      />
+                    </div>
+
+                    {/* Exact Hex Code Input */}
+                    <div className="w-28 shrink-0">
+                      <input
+                        type="text"
+                        value={customColorHex}
+                        onChange={(e) => {
+                          const val = e.target.value.trim();
+                          setCustomColorHex(val);
+                          if (val.length === 7 && val.startsWith('#')) {
+                            setCustomColorName(getColorName(val));
+                          }
+                        }}
+                        placeholder="#1B2A4A"
+                        className="w-full bg-white border border-gray-300 px-2 py-1.5 text-xs text-[#111827] font-mono uppercase focus:outline-none focus:border-[#936B34]"
+                        title="Exact 6-digit hex code"
+                      />
+                    </div>
+
+                    {/* Color Name Input */}
                     <input
                       type="text"
                       value={customColorName}
-                      onChange={(e) => setCustomColorName(e.target.value)}
-                      placeholder="Custom Shade Name (e.g. Imperial Emerald, Royal Plum)"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCustomColorName(val);
+                        if (val.trim()) {
+                          const derivedHex = getColorHex(val);
+                          if (derivedHex && derivedHex.startsWith('#')) {
+                            setCustomColorHex(derivedHex.toUpperCase());
+                          }
+                        }
+                      }}
+                      placeholder="Color Name (e.g. Powder Blue, Emerald Green, Burgundy)"
                       className="flex-1 bg-white border border-gray-300 px-3 py-1.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -5172,6 +4718,8 @@ export const AdminDashboard: React.FC = () => {
                         }
                       }}
                     />
+
+                    {/* Add Button */}
                     <button
                       type="button"
                       onClick={() => {
@@ -5185,7 +4733,7 @@ export const AdminDashboard: React.FC = () => {
                       }}
                       className="px-3.5 py-1.5 bg-[#111827] hover:bg-[#936B34] text-white text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer shrink-0 font-medium"
                     >
-                      + Add Shade
+                      + Add Color
                     </button>
                   </div>
                 </div>
@@ -5249,44 +4797,9 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">
-                  <label className="text-[10px] font-mono uppercase text-gray-500 font-medium">
-                    GARMENT DESCRIPTION *
-                  </label>
-                  
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={descriptionTone}
-                      onChange={(e) => setDescriptionTone(e.target.value as any)}
-                      className="bg-[#F9F9F8] border border-gray-200 px-2 py-0.5 text-[10px] font-mono text-gray-600 focus:outline-none cursor-pointer"
-                    >
-                      <option value="editorial">Sartorial Luxury Editorial</option>
-                      <option value="ecommerce_seo">E-Commerce USA SEO</option>
-                      <option value="bespoke_tailor">Master Tailor Specs</option>
-                    </select>
-
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateAiDescription()}
-                      disabled={isGeneratingDescription}
-                      className="px-2.5 py-1 bg-[#111827] hover:bg-[#936B34] text-white text-[10px] font-mono uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer font-medium disabled:opacity-50"
-                      title="Synthesize high-converting sartorial copy, USA SEO meta, and craftsmanship specs"
-                    >
-                      {isGeneratingDescription ? (
-                        <>
-                          <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Synthesizing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3 h-3 text-[#936B34]" />
-                          <span>✨ Auto Description</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
+                <label className="block text-[10px] font-mono uppercase text-gray-500 mb-1.5 font-medium">
+                  GARMENT DESCRIPTION *
+                </label>
                 <textarea
                   rows={4}
                   value={productForm.description}
@@ -5294,74 +4807,6 @@ export const AdminDashboard: React.FC = () => {
                   placeholder="Architectural silhouette tailored with peak lapels, full floating canvas..."
                   className="w-full bg-[#F9F9F8] border border-gray-200 p-3 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                 />
-
-                {/* Auto Generated AI Craftsmanship & SEO Preview Card */}
-                {generatedAiResult && (
-                  <div className="mt-3 p-3.5 bg-white border border-[#936B34]/30 space-y-2.5 shadow-2xs">
-                    <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                      <div className="flex items-center gap-1.5 text-xs font-serif text-[#111827]">
-                        <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
-                        <span className="font-semibold uppercase tracking-wider">AI Sartorial &amp; USA SEO Intelligence</span>
-                        <span className="text-[9px] font-mono text-[#936B34] bg-[#936B34]/10 px-1.5 py-0.5 ml-1">
-                          {generatedAiResult.source || 'gemini-ai'}
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-mono text-emerald-700 font-semibold">
-                        ● Optimized for USA #1
-                      </span>
-                    </div>
-
-                    {generatedAiResult.shortDescription && (
-                      <p className="text-[11px] text-gray-700 italic border-l-2 border-[#936B34] pl-2 font-serif">
-                        &ldquo;{generatedAiResult.shortDescription}&rdquo;
-                      </p>
-                    )}
-
-                    {/* Craftsmanship Bullets */}
-                    {generatedAiResult.bulletPoints && generatedAiResult.bulletPoints.length > 0 && (
-                      <div className="space-y-1">
-                        <span className="text-[9px] font-mono uppercase text-gray-500 font-bold block">Craftsmanship Highlights:</span>
-                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10px] font-mono text-gray-600">
-                          {generatedAiResult.bulletPoints.slice(0, 4).map((bp, i) => (
-                            <li key={i} className="flex items-start gap-1">
-                              <span className="text-[#936B34] font-bold">✓</span>
-                              <span className="truncate">{bp}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* USA SEO Meta Tags Preview */}
-                    <div className="bg-[#F9F9F8] p-2 border border-gray-200 text-[10px] font-mono space-y-1">
-                      <div className="flex justify-between items-center text-[#936B34] font-bold">
-                        <span>GOOGLE USA SEARCH PREVIEW</span>
-                        <span>{generatedAiResult.seoMetaTitle?.length || 0}/60 chars</span>
-                      </div>
-                      <p className="text-blue-700 font-semibold truncate hover:underline cursor-pointer">
-                        {generatedAiResult.seoMetaTitle || `${productForm.name} | Luxury Menswear USA | Park Avenue`}
-                      </p>
-                      <p className="text-emerald-800 text-[9px]">
-                        https://www.parkavenuemenswear.com › product › {productForm.sku || 'sku'}
-                      </p>
-                      <p className="text-gray-600 line-clamp-2 text-[10px]">
-                        {generatedAiResult.seoMetaDescription || productForm.description.slice(0, 150)}
-                      </p>
-                    </div>
-
-                    {/* Keywords */}
-                    {generatedAiResult.keywords && generatedAiResult.keywords.length > 0 && (
-                      <div className="flex flex-wrap gap-1 items-center pt-1">
-                        <span className="text-[9px] font-mono text-gray-400">Target US Keywords:</span>
-                        {generatedAiResult.keywords.slice(0, 5).map((kw, i) => (
-                          <span key={i} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[9px] font-mono">
-                            #{kw}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* 3 to 5 VIEW ANGLES & PDF UPLOAD SECTION */}
@@ -5576,9 +5021,6 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[#936B34] font-semibold">
                   PARK AVENUE ATELIER · 3-5 VIEWS MANAGER
-                </span>
-                <span className="text-[10px] font-mono bg-[#936B34] text-white px-2 py-0.5">
-                  SKU: {quickViewsProduct.sku}
                 </span>
               </div>
               <h3 className="font-serif text-2xl text-[#111827] uppercase font-light mt-1">
@@ -6053,7 +5495,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="p-4 bg-amber-50/70 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
               <div className="text-amber-900">
                 <span className="font-semibold uppercase block text-[11px] mb-0.5">Recommended Column Format:</span>
-                <span className="text-[11px] text-amber-800">SKU, Name, Category, Price, Size, Stock, Fabric, Fit, Description</span>
+                <span className="text-[11px] text-amber-800">Name, Category, Price, Size, Stock, Fabric, Fit, Description</span>
               </div>
               <button
                 onClick={downloadProductExcelTemplate}
@@ -6132,7 +5574,6 @@ export const AdminDashboard: React.FC = () => {
                   <table className="w-full text-left text-xs font-mono">
                     <thead className="bg-[#F9F9F8] text-gray-500 border-b border-gray-200 sticky top-0">
                       <tr>
-                        <th className="p-2.5">SKU</th>
                         <th className="p-2.5">NAME</th>
                         <th className="p-2.5">CATEGORY</th>
                         <th className="p-2.5">PRICE</th>
@@ -6141,8 +5582,7 @@ export const AdminDashboard: React.FC = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {parsedExcelProducts.map((p, idx) => (
-                        <tr key={`excel-prod-${p.sku || idx}-${idx}`} className="hover:bg-black/[0.02]">
-                          <td className="p-2.5 text-[#936B34] font-medium">{p.sku}</td>
+                        <tr key={`excel-prod-${idx}`} className="hover:bg-black/[0.02]">
                           <td className="p-2.5 text-[#111827] font-medium">{p.name}</td>
                           <td className="p-2.5 text-gray-500">{p.category}</td>
                           <td className="p-2.5 font-semibold text-[#111827]">${p.price}</td>

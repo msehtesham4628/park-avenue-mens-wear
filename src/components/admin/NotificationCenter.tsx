@@ -92,7 +92,7 @@ export const NotificationCenter: React.FC = () => {
       setTitle(`Atelier Drop: ${prod.name}`);
       setSubject(`Exclusive Release: ${prod.name} (${prod.category})`);
       setMessage(`Now available at Park Avenue Atelier: ${prod.name}${prod.fabric ? ` crafted from ${prod.fabric}` : ''}. Handcrafted tailoring with exquisite hand-stitched Milanese finishing.`);
-      setLink(`/category/${(prod.category || 'suits').toLowerCase().replace(/[^a-z0-9]+/g, '-')}/products/${prod.sku || prod.id}`);
+      setLink(`/product/${prod.id}`);
     }
   };
 
@@ -468,7 +468,7 @@ export const NotificationCenter: React.FC = () => {
                 <option value="">-- No specific garment (Custom announcement) --</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
-                    [{p.category}] {p.name} — ${p.price?.toLocaleString()} (SKU: {p.sku || p.id})
+                    [{p.category}] {p.name} — ${p.price?.toLocaleString()}
                   </option>
                 ))}
               </select>

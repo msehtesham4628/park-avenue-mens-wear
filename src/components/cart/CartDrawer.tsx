@@ -110,7 +110,7 @@ export const CartDrawer: React.FC = () => {
                     {/* Thumbnail Slot */}
                     <div 
                       onClick={() => {
-                        navigateToProduct(item.product.sku || item.productId, item.product.category);
+                        navigateToProduct(item.productId || item.product.id, item.product.category);
                         setIsCartOpen(false);
                       }}
                       className="w-20 h-28 shrink-0 cursor-pointer overflow-hidden group bg-[#F5F5F3] border border-gray-200 relative"
@@ -138,7 +138,7 @@ export const CartDrawer: React.FC = () => {
                         <div className="flex items-start justify-between">
                           <h4 
                             onClick={() => {
-                              navigateToProduct(item.product.sku || item.productId, item.product.category);
+                              navigateToProduct(item.productId || item.product.id, item.product.category);
                               setIsCartOpen(false);
                             }}
                             className="font-serif text-sm text-[#111827] hover:text-[#936B34] transition-colors cursor-pointer line-clamp-1 uppercase"

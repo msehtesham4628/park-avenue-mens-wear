@@ -647,13 +647,12 @@ export const ProductDetailPage: React.FC = () => {
           {/* RIGHT: Product Details & Purchase Module (5 cols on desktop) */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* Brand, Title & SKU */}
+            {/* Brand & Title */}
             <div className="border-b border-gray-200 pb-4">
               <div className="flex items-center justify-between text-xs text-gray-500 mb-2 font-mono">
                 <span className="font-bold tracking-[0.25em] text-[#936B34] uppercase">
                   PARK AVENUE
                 </span>
-                <span className="text-[11px] text-gray-400">SKU: {product.sku}</span>
               </div>
 
               <h1 className="font-serif text-2xl sm:text-3xl text-[#111827] font-normal leading-tight uppercase mb-2">
@@ -1288,10 +1287,6 @@ export const ProductDetailPage: React.FC = () => {
                         <span className="text-gray-400 block text-[10px] uppercase">Country of Origin</span>
                         <strong className="text-[#111827]">Handcrafted in Atelier (USA)</strong>
                       </div>
-                      <div className="border-b border-gray-100 pb-2">
-                        <span className="text-gray-400 block text-[10px] uppercase">Style Code / SKU</span>
-                        <strong className="text-[#936B34]">{product.sku}</strong>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -1393,7 +1388,7 @@ export const ProductDetailPage: React.FC = () => {
                 return (
                   <div
                     key={comp.id}
-                    onClick={() => navigateToProduct(comp.sku || comp.id, comp.category)}
+                    onClick={() => navigateToProduct(comp.id, comp.category)}
                     className="group bg-white border border-gray-200 hover:border-[#111827] transition-all duration-300 cursor-pointer flex flex-col overflow-hidden"
                   >
                     <div className="relative aspect-[3/4] bg-[#F8F9FA] overflow-hidden">

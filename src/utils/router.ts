@@ -418,7 +418,7 @@ export function buildUrl(params: {
 
     case 'pdp':
       if (productId) {
-        return `/category/products/${encodeURIComponent(productId)}`;
+        return `/product/${encodeURIComponent(productId)}`;
       }
       return '/shop';
 
