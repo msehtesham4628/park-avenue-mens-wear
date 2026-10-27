@@ -273,14 +273,16 @@ export const ProductService = {
       const remoteIds = new Set(mapped.map(p => p.id));
       const remoteSkus = new Set(mapped.map(p => p.sku));
       
-      const FAKE_SKU_PREFIXES = [
-        'PA-SHIRT-', 'PA-POLO-', 'PA-SWEAT-', 'PA-BOOT-', 'PA-SHOE-', 
-        'PA-LOOF-', 'PA-PANTS-', 'PA-JEAN-', 'PA-LJ-', 'PA-COAT-', 'PA-TIE-', 'PA-SHRT-'
-      ];
+      const PURGED_DEMO_SKUS = new Set([
+        'PA-SHIRT-001', 'PA-POLO-001', 'PA-SWEAT-001', 'PA-SWEAT-002', 
+        'PA-BOOT-001', 'PA-SHOE-001', 'PA-LOOF-001', 'PA-PANTS-001', 
+        'PA-JEAN-001', 'PA-LJ-001', 'PA-COAT-001', 'PA-TIE-001', 'PA-SHRT-001'
+      ]);
+
       const isFakeProduct = (p: Product) => {
-        const sku = (p.sku || '').toUpperCase();
-        const id = (p.id || '').toUpperCase();
-        return FAKE_SKU_PREFIXES.some(prefix => sku.startsWith(prefix) || id.startsWith('PROD-' + prefix.replace('PA-', '')));
+        const sku = (p.sku || '').toUpperCase().trim();
+        const id = (p.id || '').toUpperCase().trim();
+        return PURGED_DEMO_SKUS.has(sku) || PURGED_DEMO_SKUS.has(id);
       };
 
       // Retain all genuinely locally created or modified products so they never vanish on production refresh
@@ -393,6 +395,10 @@ export const ProductService = {
       const mapped = mapBackendProductToFrontend(remote);
       
       await storageVault.saveProduct(mapped);
+      if ((mapped as any).productId) {
+        storageVault.markUserProduct((mapped as any).productId);
+      }
+      invalidateApiCache('product');
       productsCache = [mapped, ...productsCache.filter(p => p.id !== mapped.id && p.sku !== mapped.sku)];
       return mapped;
     } catch (netErr: any) {
@@ -404,6 +410,7 @@ export const ProductService = {
         totalStock: newProductData.variants?.reduce((s: number, v: any) => s + (v.stock || 0), 0) || 10
       };
       await storageVault.saveProduct(fallbackProd);
+      invalidateApiCache('product');
       productsCache = [fallbackProd, ...productsCache.filter(p => p.id !== fallbackProd.id && p.sku !== fallbackProd.sku)];
       return fallbackProd;
     }

@@ -1,5 +1,205 @@
 [
   {
+    "productId": "PROD-MVR70R8C-718",
+    "sku": "PA-SHRT-WHT-001A",
+    "name": "White Royal Oxford Dress Shirt",
+    "slug": "white-royal-oxford-dress-shirt",
+    "description": "Egyptian cotton dress shirt",
+    "category": "Shirts",
+    "subcategory": "Formal Dress Shirts",
+    "price": 185,
+    "images": [],
+    "colorImages": {},
+    "sizes": [
+      "15.5/34"
+    ],
+    "colors": [
+      "White"
+    ],
+    "variants": [
+      {
+        "id": "var-PROD-MVR70R8C-718-0",
+        "size": "15.5/34",
+        "color": "White",
+        "stock": 8,
+        "sku": "PA-SHRT-WHT-001A-15.5/34",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      }
+    ],
+    "stockQuantity": 8,
+    "lowStockThreshold": 3,
+    "isFeatured": false,
+    "isNewArrival": true,
+    "isActive": false,
+    "shippingCharge": 15,
+    "careInstructions": [],
+    "pdfDocuments": [],
+    "_id": "6ae11671fc3cc2d4e0b99120",
+    "createdAt": "2026-10-27T21:24:01.885Z",
+    "updatedAt": "2026-10-27T21:24:01.885Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ae11661d86183a96530d1fe",
+    "productId": "PROD-MVR70ENG-213",
+    "sku": "PA-BLAZER-1793136224559",
+    "name": "Imperial Worsted Navy Blazer 1793136224559",
+    "slug": "imperial-worsted-navy-blazer-1793136224559",
+    "description": "Hand-tailored from Super 160s English wool with brass crest buttons.",
+    "category": "Suits",
+    "subcategory": "Suits",
+    "price": 1250,
+    "images": [],
+    "colorImages": {},
+    "sizes": [
+      "40R",
+      "42R"
+    ],
+    "colors": [
+      "Navy"
+    ],
+    "variants": [
+      {
+        "id": "var-PROD-MVR70ENG-213-0",
+        "size": "40R",
+        "color": "Navy",
+        "stock": 6,
+        "sku": "PA-BLAZER-1793136224559-40R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      },
+      {
+        "id": "var-PROD-MVR70ENG-213-1",
+        "size": "42R",
+        "color": "Navy",
+        "stock": 4,
+        "sku": "PA-BLAZER-1793136224559-42R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      }
+    ],
+    "stockQuantity": 10,
+    "lowStockThreshold": 3,
+    "isFeatured": false,
+    "isNewArrival": true,
+    "isActive": true,
+    "fabric": "100% Super 160s English Wool",
+    "fit": "Sartorial Tailored Fit",
+    "shippingCharge": 15,
+    "careInstructions": [],
+    "pdfDocuments": [],
+    "createdAt": "2026-10-27T21:23:45.581Z",
+    "updatedAt": "2026-10-27T21:23:45.581Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ae113ceab6d87d612796a11",
+    "productId": "PROD-MVR6M9YA-217",
+    "sku": "PA-BLAZER-1793135565294",
+    "name": "Imperial Worsted Navy Blazer 1793135565294",
+    "slug": "imperial-worsted-navy-blazer-1793135565294",
+    "description": "Hand-tailored from Super 160s English wool with brass crest buttons.",
+    "category": "Suits",
+    "subcategory": "Suits",
+    "price": 1250,
+    "images": [],
+    "colorImages": {},
+    "sizes": [
+      "40R",
+      "42R"
+    ],
+    "colors": [
+      "Navy"
+    ],
+    "variants": [
+      {
+        "id": "var-PROD-MVR6M9YA-217-0",
+        "size": "40R",
+        "color": "Navy",
+        "stock": 6,
+        "sku": "PA-BLAZER-1793135565294-40R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      },
+      {
+        "id": "var-PROD-MVR6M9YA-217-1",
+        "size": "42R",
+        "color": "Navy",
+        "stock": 4,
+        "sku": "PA-BLAZER-1793135565294-42R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      }
+    ],
+    "stockQuantity": 10,
+    "lowStockThreshold": 3,
+    "isFeatured": false,
+    "isNewArrival": true,
+    "isActive": true,
+    "fabric": "100% Super 160s English Wool",
+    "fit": "Sartorial Tailored Fit",
+    "shippingCharge": 15,
+    "careInstructions": [],
+    "pdfDocuments": [],
+    "createdAt": "2026-10-27T21:12:46.307Z",
+    "updatedAt": "2026-10-27T21:12:46.307Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ae1139a25a3a89071949e0f",
+    "productId": "PROD-MVR6L5SO-130",
+    "sku": "PA-BLAZER-1793135513248",
+    "name": "Imperial Worsted Navy Blazer 1793135513248",
+    "slug": "imperial-worsted-navy-blazer-1793135513248",
+    "description": "Hand-tailored from Super 160s English wool with brass crest buttons.",
+    "category": "Suits",
+    "subcategory": "Suits",
+    "price": 1250,
+    "images": [],
+    "colorImages": {},
+    "sizes": [
+      "40R",
+      "42R"
+    ],
+    "colors": [
+      "Navy"
+    ],
+    "variants": [
+      {
+        "id": "var-PROD-MVR6L5SO-130-0",
+        "size": "40R",
+        "color": "Navy",
+        "stock": 6,
+        "sku": "PA-BLAZER-1793135513248-40R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      },
+      {
+        "id": "var-PROD-MVR6L5SO-130-1",
+        "size": "42R",
+        "color": "Navy",
+        "stock": 4,
+        "sku": "PA-BLAZER-1793135513248-42R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      }
+    ],
+    "stockQuantity": 10,
+    "lowStockThreshold": 3,
+    "isFeatured": false,
+    "isNewArrival": true,
+    "isActive": true,
+    "fabric": "100% Super 160s English Wool",
+    "fit": "Sartorial Tailored Fit",
+    "shippingCharge": 15,
+    "careInstructions": [],
+    "pdfDocuments": [],
+    "createdAt": "2026-10-27T21:11:54.266Z",
+    "updatedAt": "2026-10-27T21:11:54.266Z",
+    "__v": 0
+  },
+  {
     "_id": "6ac13004c6145ab4c1c94c48",
     "productId": "PROD-MUSMBU24-926",
     "sku": "PA-SUIT-GRY-001",

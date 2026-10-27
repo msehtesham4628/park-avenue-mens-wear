@@ -92,20 +92,22 @@ app.use((req, res) => {
   });
 });
 
-let initialization: Promise<void> | null = null;
+import mongoose from 'mongoose';
+
+let isSeeded = false;
 
 async function initialize() {
-  if (!initialization) {
-    initialization = (async () => {
-      try {
-        await connectDB();
+  if (Number(mongoose.connection.readyState) !== 1) {
+    try {
+      const connected = await connectDB();
+      if (connected && !isSeeded) {
         await seedInitialData();
-      } catch (error) {
-        console.warn('[Park Avenue API] DB initialization warning, continuing with service fallback:', error);
+        isSeeded = true;
       }
-    })();
+    } catch (error) {
+      console.warn('[Park Avenue API] DB initialization warning, continuing with service fallback:', error);
+    }
   }
-  return initialization;
 }
 
 export default async function handler(req: express.Request, res: express.Response) {

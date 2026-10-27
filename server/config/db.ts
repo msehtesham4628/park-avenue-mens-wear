@@ -50,6 +50,10 @@ export async function connectDB(): Promise<boolean> {
     if (/(\.mongodb\.net|\.net|\.com|\.org|\.io|:\d+)\/$/i.test(formatted)) {
       formatted = `${formatted}${databaseName}`;
     }
+    // If URI has no slash after the host domain
+    if (/(\.mongodb\.net|\.net|\.com|\.org|\.io)$/i.test(formatted)) {
+      formatted = `${formatted}/${databaseName}`;
+    }
     return formatted;
   };
 
@@ -58,9 +62,9 @@ export async function connectDB(): Promise<boolean> {
     const finalUri = formatDbUri(targetUri, dbName);
     cache.promise = mongoose.connect(finalUri, {
       dbName,
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
-      socketTimeoutMS: 30000,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
       maxPoolSize: 10,
       minPoolSize: 0
     });

@@ -775,7 +775,13 @@ export const AdminDashboard: React.FC = () => {
         ProductService.create(optimistic)
           .then(saved => {
             if (saved) {
-              setProductsList(prev => prev.map(p => (p.id === tempId || p.sku === saved.sku) ? saved : p));
+              setProductsList(prev => {
+                const exists = prev.some(p => p.id === tempId || p.id === saved.id || (saved.sku && p.sku === saved.sku));
+                if (exists) {
+                  return prev.map(p => (p.id === tempId || p.id === saved.id || (saved.sku && p.sku === saved.sku)) ? saved : p);
+                }
+                return [saved, ...prev];
+              });
             }
             tabFetchTimestamps.current['products'] = Date.now();
             refreshProducts().catch(() => {});

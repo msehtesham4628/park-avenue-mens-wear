@@ -164,8 +164,45 @@ export async function compressImageFile(
   fileOrDataUrl: File | string,
   maxWidth = 960,
   maxHeight = 1280,
-  quality = 0.76
+  quality = 0.75
 ): Promise<string> {
+  // Try hardware-accelerated createImageBitmap first if available (supports iOS 15+ and modern Android)
+  if (typeof window !== 'undefined' && typeof createImageBitmap !== 'undefined' && fileOrDataUrl instanceof Blob) {
+    try {
+      const bitmap = await createImageBitmap(fileOrDataUrl);
+      let { width, height } = bitmap;
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, width);
+      canvas.height = Math.max(1, height);
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        try { bitmap.close(); } catch (_) {}
+        let compressed = canvas.toDataURL('image/jpeg', quality);
+        if (compressed && compressed.length > 450000) {
+          const scaledCanvas = document.createElement('canvas');
+          scaledCanvas.width = Math.round(canvas.width * 0.75);
+          scaledCanvas.height = Math.round(canvas.height * 0.75);
+          const scaledCtx = scaledCanvas.getContext('2d');
+          if (scaledCtx) {
+            scaledCtx.drawImage(canvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
+            compressed = scaledCanvas.toDataURL('image/jpeg', 0.68);
+          }
+        }
+        if (compressed && compressed.length > 30) {
+          return compressed;
+        }
+      }
+    } catch (_) {
+      // Fall through to FileReader / Image pathway
+    }
+  }
+
   return new Promise((resolve) => {
     const processImg = (src: string) => {
       const img = new Image();
@@ -181,23 +218,29 @@ export async function compressImageFile(
         canvas.height = Math.max(1, height);
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          resolve(src);
+          resolve(src.length < 500000 ? src : '');
           return;
         }
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
         try {
-          const isTransparent = typeof fileOrDataUrl !== 'string'
-            ? (fileOrDataUrl.type === 'image/png' || fileOrDataUrl.type === 'image/webp')
-            : (fileOrDataUrl.startsWith('data:image/png') || fileOrDataUrl.startsWith('data:image/webp'));
-          const mime = isTransparent ? 'image/webp' : 'image/jpeg';
-          const compressed = canvas.toDataURL(mime, quality);
+          let compressed = canvas.toDataURL('image/jpeg', quality);
+          if (compressed.length > 450000) {
+            const scaledCanvas = document.createElement('canvas');
+            scaledCanvas.width = Math.round(canvas.width * 0.75);
+            scaledCanvas.height = Math.round(canvas.height * 0.75);
+            const scaledCtx = scaledCanvas.getContext('2d');
+            if (scaledCtx) {
+              scaledCtx.drawImage(canvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
+              compressed = scaledCanvas.toDataURL('image/jpeg', 0.68);
+            }
+          }
           resolve(compressed);
         } catch (_) {
-          resolve(src);
+          resolve(src.length < 500000 ? src : '');
         }
       };
-      img.onerror = () => resolve(src);
+      img.onerror = () => resolve(src.length < 500000 ? src : '');
       img.src = src;
     };
 
@@ -267,7 +310,7 @@ export async function processProductFile(
 
   if (!isPdf) {
     // Normal image file (JPG, PNG, WEBP) — compress immediately to eliminate quota bloat
-    const compressedPreview = await compressImageFile(file, 1200, 1600, 0.84);
+    const compressedPreview = await compressImageFile(file, 960, 1280, 0.75);
     return {
       viewType,
       label,

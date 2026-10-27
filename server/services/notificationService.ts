@@ -363,6 +363,54 @@ export class NotificationService {
   }
 
   /**
+   * Dispatch high-level business events (e.g. ORDER_CONFIRMED, ALTERATION_RECEIVED)
+   */
+  async dispatchEvent(
+    eventType: string,
+    channel: string,
+    recipient: string,
+    data: any = {},
+    _unused?: any,
+    recipientName?: string
+  ) {
+    let subject = `Park Avenue Menswear Update`;
+    let message = `You have an update regarding your sartorial service.`;
+
+    if (eventType === 'ORDER_CONFIRMED') {
+      subject = `Order Confirmed — ${data.orderId}`;
+      message = `Thank you for your patronage. Your order #${data.orderId} has been confirmed.`;
+    } else if (eventType === 'ORDER_STATUS_CHANGED') {
+      subject = `Order Update — ${data.orderId} is now ${data.status}`;
+      message = `Your order #${data.orderId} has been updated to ${data.status}.${data.trackingNumber ? ` Tracking: ${data.trackingNumber}` : ''}`;
+    } else if (eventType === 'ALTERATION_RECEIVED') {
+      subject = `Bespoke Alteration Received — ${data.alterationId}`;
+      message = `Your tailoring ticket #${data.alterationId} for ${data.productName || 'garment'} has been logged at our master atelier.`;
+    } else if (eventType === 'ALTERATION_STATUS_CHANGED') {
+      subject = `Alteration Update — ${data.alterationId} is now ${data.status}`;
+      message = `Your tailoring ticket #${data.alterationId} status has progressed to ${data.status}.`;
+    }
+
+    const normChannel: NotificationChannelType = 
+      (channel === 'sms' || channel === 'whatsapp' || channel === 'email' || channel === 'in_app' || channel === 'all')
+        ? (channel as NotificationChannelType)
+        : 'email';
+
+    return this.send(normChannel, {
+      recipient: recipient || 'concierge@parkavenuemenswear.com',
+      recipientName,
+      subject,
+      title: subject,
+      message,
+      notificationType: eventType,
+      category: eventType.includes('ORDER') ? 'orders' : 'alterations',
+      orderId: data?.orderId,
+      alterationId: data?.alterationId,
+      customerId: data?.customerId,
+      metadata: data
+    });
+  }
+
+  /**
    * Record notification to database log with in-memory ledger fallback
    */
   private async recordNotificationLog(data: {

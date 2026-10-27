@@ -69,14 +69,17 @@ try {
   }
 } catch (_) {}
 
-const FAKE_SKU_PREFIXES = [
-  'PA-SHIRT-', 'PA-POLO-', 'PA-SWEAT-', 'PA-BOOT-', 'PA-SHOE-', 
-  'PA-LOOF-', 'PA-PANTS-', 'PA-JEAN-', 'PA-LJ-', 'PA-COAT-', 'PA-TIE-', 'PA-SHRT-'
-];
+// Specific legacy synthetic demo products that were purged from catalogue
+const PURGED_DEMO_SKUS = new Set([
+  'PA-SHIRT-001', 'PA-POLO-001', 'PA-SWEAT-001', 'PA-SWEAT-002', 
+  'PA-BOOT-001', 'PA-SHOE-001', 'PA-LOOF-001', 'PA-PANTS-001', 
+  'PA-JEAN-001', 'PA-LJ-001', 'PA-COAT-001', 'PA-TIE-001', 'PA-SHRT-001'
+]);
+
 const isFakeProduct = (p: Product) => {
-  const sku = (p.sku || '').toUpperCase();
-  const id = (p.id || '').toUpperCase();
-  return FAKE_SKU_PREFIXES.some(prefix => sku.startsWith(prefix) || id.startsWith('PROD-' + prefix.replace('PA-', '')));
+  const sku = (p.sku || '').toUpperCase().trim();
+  const id = (p.id || '').toUpperCase().trim();
+  return PURGED_DEMO_SKUS.has(sku) || PURGED_DEMO_SKUS.has(id);
 };
 
 // Safely seed in-memory cache from localStorage on startup
@@ -103,20 +106,36 @@ function safeSaveLocalStorage(key: string, data: any): void {
     localStorage.setItem(key, JSON.stringify(data));
   } catch (err: any) {
     // If quota exceeded, try stripping large media strings to preserve product record
-    if (err?.name === 'QuotaExceededError' || err?.code === 22) {
+    if (err?.name === 'QuotaExceededError' || err?.code === 22 || (err?.message && err.message.toLowerCase().includes('quota'))) {
       try {
         if (Array.isArray(data)) {
           const stripped = data.map((item: any) => ({
             ...item,
-            // Keep at most 1 primary image in localStorage to fit quota
-            images: Array.isArray(item.images) ? item.images.slice(0, 1) : [],
+            images: Array.isArray(item.images) && item.images.length > 0 && typeof item.images[0] === 'string' && item.images[0].length < 100000 ? item.images.slice(0, 1) : [],
             productViews: undefined,
             pdfDocuments: undefined
           }));
           localStorage.setItem(key, JSON.stringify(stripped));
           console.info(`[StorageVault] LocalStorage quota reached; saved lightweight index. Complete records preserved in IndexedDB.`);
         }
-      } catch (_) {}
+      } catch (_) {
+        try {
+          if (Array.isArray(data)) {
+            // Minimal metadata fallback: preserve IDs, titles, prices, categories
+            const metadataOnly = data.map((item: any) => ({
+              id: item.id,
+              name: item.name,
+              sku: item.sku,
+              price: item.price,
+              category: item.category,
+              subcategory: item.subcategory,
+              totalStock: item.totalStock,
+              variants: item.variants
+            }));
+            localStorage.setItem(key, JSON.stringify(metadataOnly));
+          }
+        } catch (_) {}
+      }
     }
   }
 }
