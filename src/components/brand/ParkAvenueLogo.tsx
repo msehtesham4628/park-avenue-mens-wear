@@ -46,13 +46,13 @@ export const ParkAvenueLogo: React.FC<ParkAvenueLogoProps> = ({
     );
   }
 
-  const width = size === 'sm' ? 150 : size === 'lg' ? 230 : size === 'xl' ? 280 : 190;
+  const width = size === 'sm' ? 140 : size === 'lg' ? 220 : size === 'xl' ? 260 : 175;
   return (
-    <div className={`flex items-center select-none ${className}`} style={{ width }}>
+    <div className={`flex items-center select-none shrink-0 ${className}`} style={{ width, minWidth: width }}>
       <img
         src={logoSource}
         alt="Park Avenue Menswear"
-        className="w-full h-auto max-h-16 object-contain object-left"
+        className="w-full h-auto max-h-14 object-contain object-left"
       />
     </div>
   );

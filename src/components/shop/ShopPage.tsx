@@ -293,18 +293,18 @@ export const ShopPage: React.FC = () => {
         </div>
 
         {/* Top Controls Bar */}
-        <div className="py-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border-b border-gray-200">
+        <div className="py-5 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4 border-b border-gray-200">
           
-          {/* Quick Categories Bar */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+          {/* Quick Categories Bar with smooth scroll and shrink-0 items */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-thin scrollbar-thumb-gray-200 flex-1 min-w-0 pr-1">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-colors whitespace-nowrap border cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider transition-colors whitespace-nowrap border cursor-pointer shrink-0 ${
                   selectedCategory === cat
                     ? 'bg-[#111827] text-white border-[#936B34] font-semibold'
-                    : 'bg-[#F9F9F8] text-gray-500 border-gray-200 hover:border-gray-400 hover:text-[#111827]'
+                    : 'bg-[#F9F9F8] text-gray-600 border-gray-200 hover:border-gray-400 hover:text-[#111827]'
                 }`}
               >
                 {cat}
@@ -312,17 +312,17 @@ export const ShopPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Right Controls: Search inside catalog + Sort */}
-          <div className="flex items-center gap-3">
+          {/* Right Controls: Search inside catalog + Sort + Filter button */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Inline search */}
-            <div className="relative flex-1 md:w-56">
+            <div className="relative flex-1 sm:w-48 lg:w-52">
               <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Filter current view..."
-                className="w-full bg-[#F9F9F8] border border-gray-200 pl-8 pr-3 py-1.5 text-xs text-[#111827] placeholder-slate-500 focus:border-[#936B34] focus:outline-none"
+                placeholder="Search products..."
+                className="w-full bg-[#F9F9F8] border border-gray-200 pl-8 pr-3 py-1.5 text-xs text-[#111827] placeholder-gray-400 focus:border-[#936B34] focus:outline-none"
               />
               {searchFilter && (
                 <button
@@ -337,7 +337,7 @@ export const ShopPage: React.FC = () => {
             {/* Mobile Filter Button */}
             <button
               onClick={() => setIsMobileFiltersOpen(true)}
-              className="lg:hidden px-3 py-1.5 bg-[#F9F9F8] border border-gray-200 text-xs text-[#111827] flex items-center gap-2 cursor-pointer"
+              className="lg:hidden px-3 py-1.5 bg-[#F9F9F8] border border-gray-200 text-xs text-[#111827] flex items-center gap-2 cursor-pointer shrink-0"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#936B34]" />
               <span>Filters</span>
@@ -347,14 +347,14 @@ export const ShopPage: React.FC = () => {
             </button>
 
             {/* Sort Selector */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
                 aria-label="Sort products by"
                 className="bg-[#F9F9F8] border border-gray-200 text-xs text-[#111827] px-3 py-1.5 appearance-none pr-8 focus:border-[#936B34] focus:outline-none cursor-pointer"
               >
-                <option value="featured">Sort: Featured &amp; Tailored</option>
+                <option value="featured">Sort: Featured</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
                 <option value="newest">New Arrivals First</option>

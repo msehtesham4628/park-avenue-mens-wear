@@ -95,18 +95,19 @@ export const Navbar: React.FC = () => {
               : 'bg-[#F9F9F8]/90 backdrop-blur-xs border-b border-gray-200/70 text-[#936B34]'
           }`}
         >
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <div className={`hidden md:flex items-center gap-2 text-left ${isTransparent ? 'text-gray-300' : 'text-gray-500'}`}>
+          <div className="max-w-[1536px] w-full mx-auto flex items-center justify-between">
+            <div className={`hidden md:flex items-center gap-2 text-left shrink-0 ${isTransparent ? 'text-gray-300' : 'text-gray-500'}`}>
               <span className={isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold'}>PARK AVENUE</span>
-              <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>•</span>
-              <span>ATELIER MENSWEAR</span>
+              <span className="hidden xl:inline text-white/20">•</span>
+              <span className="hidden xl:inline">ATELIER MENSWEAR</span>
             </div>
 
-            <div className={`mx-auto text-center font-medium tracking-[0.18em] truncate px-2 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
-              FREE INSURED SHIPPING ON ORDERS OVER $200 · BESPOKE ATELIER TAILORING
+            <div className={`mx-auto text-center font-medium tracking-[0.12em] sm:tracking-[0.16em] truncate px-2 text-[9px] sm:text-[10px] ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
+              <span className="hidden xl:inline">FREE INSURED SHIPPING ON ORDERS OVER $200 · BESPOKE ATELIER TAILORING</span>
+              <span className="xl:hidden inline">FREE INSURED SHIPPING OVER $200 · BESPOKE TAILORING</span>
             </div>
 
-            <div className={`hidden md:flex items-center gap-3 text-right text-[10px] ${isTransparent ? 'text-gray-300' : 'text-gray-500'}`}>
+            <div className={`hidden md:flex items-center gap-2 sm:gap-3 text-right text-[10px] shrink-0 ${isTransparent ? 'text-gray-300' : 'text-gray-500'}`}>
               <button 
                 onClick={() => setActiveView('track-order')}
                 className={`transition-colors flex items-center gap-1 cursor-pointer ${isTransparent ? 'hover:text-white' : 'hover:text-black'}`}
@@ -134,7 +135,6 @@ export const Navbar: React.FC = () => {
                 <RotateCcw className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                 <span>RETURNS</span>
               </button>
-
             </div>
           </div>
         </div>
@@ -147,22 +147,22 @@ export const Navbar: React.FC = () => {
               : 'py-2 sm:py-2.5'
           }`}
         >
-          <div className="max-w-6xl mx-auto px-3 sm:px-6 flex items-center justify-between gap-2">
+          <div className="max-w-[1536px] w-full mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 lg:gap-3 xl:gap-5">
           
-            {/* Brand Logo */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink min-w-0">
+            {/* Brand Logo - shrink-0 ensures it never squishes */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <button 
                 onClick={() => {
                   setActiveView('home');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="text-left focus-visible:outline-none group cursor-pointer"
+                className="text-left focus-visible:outline-none group cursor-pointer block shrink-0"
                 aria-label="PARK AVENUE MENSWEAR Home"
               >
                 <ParkAvenueLogo 
                   variant="horizontal" 
                   size={isScrolled ? 'sm' : 'md'} 
-                  className={`transition-all duration-300 max-w-[130px] xs:max-w-[155px] sm:max-w-[180px] md:max-w-none ${
+                  className={`transition-all duration-300 shrink-0 ${
                     isTransparent 
                       ? 'brightness-0 invert drop-shadow-md group-hover:brightness-125' 
                       : 'text-[#111827] group-hover:text-[#936B34]'
@@ -172,7 +172,7 @@ export const Navbar: React.FC = () => {
             </div>
 
             {/* Desktop Navigation Links - Compact luxury spacing */}
-            <nav className={`hidden lg:flex items-center gap-3 xl:gap-4.5 text-[10px] xl:text-[11px] tracking-[0.18em] uppercase font-sans font-medium ${
+            <nav className={`hidden lg:flex items-center gap-1.5 xl:gap-2.5 2xl:gap-4 text-[9.5px] xl:text-[10px] 2xl:text-[11px] tracking-[0.1em] xl:tracking-[0.15em] 2xl:tracking-[0.18em] uppercase font-sans font-medium shrink min-w-0 ${
               isTransparent ? 'text-white/90' : 'text-gray-700'
             }`}>
               <button 
@@ -181,7 +181,7 @@ export const Navbar: React.FC = () => {
                   setActiveView('shop');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className={`transition-colors relative py-1 cursor-pointer ${
+                className={`transition-colors relative py-1 cursor-pointer whitespace-nowrap ${
                   activeView === 'shop' && selectedCategory.toLowerCase().includes('new')
                     ? (isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold')
                     : (isTransparent ? 'hover:text-white' : 'hover:text-black')
@@ -202,7 +202,7 @@ export const Navbar: React.FC = () => {
                 return (
                   <div
                     key={category.id}
-                    className="relative flex items-center"
+                    className="relative flex items-center shrink-0"
                     onMouseEnter={() => setOpenCategoryDropdown(category.id)}
                     onMouseLeave={() => setOpenCategoryDropdown(null)}
                   >
@@ -214,7 +214,19 @@ export const Navbar: React.FC = () => {
                           : (isTransparent ? 'hover:text-white' : 'hover:text-black')
                       }`}
                     >
-                      <span>{category.name.toUpperCase()}</span>
+                      {category.id === 'sweaters-knitwear' ? (
+                        <>
+                          <span className="2xl:inline hidden">SWEATERS &amp; KNITWEAR</span>
+                          <span className="2xl:hidden inline">SWEATERS</span>
+                        </>
+                      ) : category.id === 'blazers-jackets' ? (
+                        <>
+                          <span className="2xl:inline hidden">BLAZERS &amp; JACKETS</span>
+                          <span className="2xl:hidden inline">BLAZERS</span>
+                        </>
+                      ) : (
+                        <span>{category.name.toUpperCase()}</span>
+                      )}
                     </button>
                     <button
                       type="button"
@@ -326,52 +338,53 @@ export const Navbar: React.FC = () => {
               </button>
             </nav>
 
-            {/* Desktop Right Action Utility - Compact */}
-            <div className={`hidden lg:flex items-center gap-3.5 xl:gap-4 text-xs font-mono tracking-wider ${
+            {/* Desktop Right Action Utility - Compact & Responsive */}
+            <div className={`hidden lg:flex items-center gap-2 xl:gap-2.5 2xl:gap-4 text-xs font-mono tracking-wider shrink-0 ${
               isTransparent ? 'text-white/90' : 'text-gray-700'
             }`}>
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] cursor-pointer ${
+                className={`flex items-center gap-1.5 p-1 transition-colors uppercase text-[11px] cursor-pointer ${
                   isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
                 }`}
                 aria-label="Search"
+                title="Search Catalogue"
               >
                 <Search className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
-                <span>SEARCH</span>
+                <span className="hidden 2xl:inline">SEARCH</span>
               </button>
 
               {/* Customer Account / Sign In */}
               {currentCustomer ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => {
                       setActiveView('customer-dashboard');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] cursor-pointer ${
+                    className={`flex items-center gap-1.5 p-1 transition-colors uppercase text-[11px] cursor-pointer ${
                       activeView === 'customer-dashboard' || activeView === 'account'
                         ? (isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold')
                         : (isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]')
                     }`}
                     aria-label="Customer Dashboard"
+                    title="Patron Dashboard"
                   >
                     <User className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
-                    <span>{currentCustomer.name?.split(' ')[0] || 'PATRON'} DASHBOARD</span>
+                    <span className="hidden 2xl:inline">{currentCustomer.name?.split(' ')[0] || 'PATRON'} DASHBOARD</span>
                   </button>
                   <button
                     onClick={() => {
                       setActiveView('login');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className={`text-[9px] font-mono cursor-pointer ${
+                    className={`text-[9px] font-mono cursor-pointer hidden 2xl:inline ${
                       isTransparent ? 'text-white/50 hover:text-white' : 'text-gray-400 hover:text-[#936B34]'
                     }`}
                     title="Switch or manage credentials"
                   >
                     (SWITCH)
                   </button>
-
                 </div>
               ) : (
                 <button
@@ -379,22 +392,23 @@ export const Navbar: React.FC = () => {
                     setActiveView('login');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] cursor-pointer font-semibold ${
+                  className={`flex items-center gap-1.5 p-1 transition-colors uppercase text-[11px] cursor-pointer font-semibold ${
                     activeView === 'login' 
                       ? (isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]')
                       : (isTransparent ? 'text-white hover:text-[#E5C384]' : 'text-[#111827] hover:text-[#936B34]')
                   }`}
                   aria-label="Sign In"
+                  title="Sign In"
                 >
                   <User className={`w-3.5 h-3.5 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
-                  <span>SIGN IN</span>
+                  <span className="hidden 2xl:inline">SIGN IN</span>
                 </button>
               )}
 
               {/* Alerts & Dispatches Button */}
               <button
                 onClick={() => setIsNotificationsOpen(true)}
-                className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] relative cursor-pointer ${
+                className={`flex items-center gap-1.5 p-1 transition-colors uppercase text-[11px] relative cursor-pointer ${
                   isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
                 }`}
                 aria-label="Atelier Alerts & Dispatches"
@@ -408,7 +422,7 @@ export const Navbar: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <span className="hidden xl:inline">ALERTS</span>
+                <span className="hidden 2xl:inline">ALERTS</span>
               </button>
 
               {/* Wishlist Button with Persistent Count Badge */}
@@ -425,7 +439,7 @@ export const Navbar: React.FC = () => {
                   }
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] relative cursor-pointer ${
+                className={`flex items-center gap-1.5 p-1 transition-colors uppercase text-[11px] relative cursor-pointer ${
                   isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
                 }`}
                 aria-label="Wishlist"
@@ -439,9 +453,9 @@ export const Navbar: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <span>WISHLIST</span>
+                <span className="hidden 2xl:inline">WISHLIST</span>
                 {wishlistCount > 0 && (
-                  <span className={`ml-0.5 text-[9px] font-mono font-semibold ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
+                  <span className={`hidden 2xl:inline ml-0.5 text-[9px] font-mono font-semibold ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
                     ({wishlistCount})
                   </span>
                 )}
@@ -450,7 +464,7 @@ export const Navbar: React.FC = () => {
               {/* Shopping Bag Button with Persistent Count Badge */}
               <button
                 onClick={() => setIsCartOpen(true)}
-                className={`flex items-center gap-1.5 transition-colors uppercase text-[11px] relative cursor-pointer ${
+                className={`flex items-center gap-1.5 p-1 transition-colors uppercase text-[11px] relative cursor-pointer ${
                   isTransparent ? 'hover:text-[#E5C384]' : 'hover:text-[#936B34]'
                 }`}
                 aria-label="Shopping Cart"
@@ -464,9 +478,13 @@ export const Navbar: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <span>CART</span>
+                <span className="hidden 2xl:inline">BAG</span>
+                {cartCount > 0 && (
+                  <span className={`hidden 2xl:inline ml-0.5 text-[9px] font-mono font-semibold ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`}>
+                    ({cartCount})
+                  </span>
+                )}
               </button>
-
             </div>
 
             {/* Mobile Right Controls: SEARCH, ALERTS, WISHLIST, ACCOUNT, CART, MENU */}
