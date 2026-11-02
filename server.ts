@@ -1,3 +1,4 @@
+import './server/config/suppressWarnings.js';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -12,14 +13,6 @@ import { seoService } from './server/services/seoService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Suppress DEP0169 legacy url.parse deprecation warning emitted by Express 4 internal dependencies on Node 22
-const originalEmitWarning = process.emitWarning;
-process.emitWarning = (warning: any, ...args: any[]) => {
-  if (typeof warning === 'string' && warning.includes('DEP0169')) return;
-  if (warning && typeof warning === 'object' && warning.code === 'DEP0169') return;
-  return (originalEmitWarning as any).call(process, warning, ...args);
-};
 
 // Catch unhandled errors gracefully to keep the server process alive
 process.on('uncaughtException', (err: any) => {

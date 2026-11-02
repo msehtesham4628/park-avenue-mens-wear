@@ -36,7 +36,7 @@
       "headers": { "Location": "/product/$1" }
     },
     {
-      "src": "/(sitemap\\.xml|sitemap_index\\.xml|sitemap_pages\\.xml|sitemap_products_[0-9]+\\.xml|robots\\.txt)",
+      "src": "/(sitemap\\.xml|sitemap_index\\.xml|sitemap_pages\\.xml|sitemap_products_[0-9]+\\.xml)",
       "dest": "/api/[...path].ts"
     },
     {

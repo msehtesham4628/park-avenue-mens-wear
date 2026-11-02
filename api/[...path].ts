@@ -1,3 +1,4 @@
+import '../server/config/suppressWarnings.js';
 import express from 'express';
 import cors from 'cors';
 import apiRouter from '../server/routes/index.js';
@@ -5,14 +6,6 @@ import { connectDB } from '../server/config/db.js';
 import { seedInitialData } from '../server/config/seed.js';
 import { errorHandler } from '../server/middleware/errorHandler.js';
 import { seoService } from '../server/services/seoService.js';
-
-// Suppress DEP0169 legacy url.parse deprecation warning emitted by Express 4 internal dependencies on Node 22
-const originalEmitWarning = process.emitWarning;
-process.emitWarning = (warning: any, ...args: any[]) => {
-  if (typeof warning === 'string' && warning.includes('DEP0169')) return;
-  if (warning && typeof warning === 'object' && warning.code === 'DEP0169') return;
-  return (originalEmitWarning as any).call(process, warning, ...args);
-};
 
 const app = express();
 
