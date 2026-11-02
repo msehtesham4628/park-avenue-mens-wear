@@ -142,6 +142,8 @@ async function bootstrapServer() {
     } catch (err: any) {
       return res.status(500).send(`Error: ${err?.message}`);
     }
+  });
+
   const BOT_USER_AGENT_REGEX = /(googlebot|bingbot|yandex|baiduspider|twitterbot|facebookexternalhit|rogerbot|linkedinbot|slackbot|whatsapp|telegrambot|embedly|quora link preview|showyoubot|outbrain|pinterest|applebot)/i;
 
   app.get([

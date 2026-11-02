@@ -2,73 +2,193 @@ import * as XLSX from 'xlsx';
 import { Product, Order, Customer, ProductCategory, OFFICIAL_CATEGORIES, ProductVariant } from '../types';
 
 /**
- * Downloads a standardized Excel template for bulk product upload
+ * Downloads a Blob reliably via a temporary anchor element
  */
-export function downloadProductExcelTemplate() {
-  // One row represents one COLOR + SIZE variant.
-  // Keep the same Product Group / Garment Name for all colors and sizes.
-  const templateRows = [
+export function downloadBlob(blob: Blob, filename: string) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  try {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    link.setAttribute('target', '_blank');
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      try {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch (_) {}
+    }, 2000);
+  } catch (err) {
+    console.error('[downloadBlob] Anchor click failed:', err);
+  }
+}
+
+/**
+ * Safely saves and downloads an XLSX workbook across desktop, mobile, and iframe environments
+ */
+export function saveWorkbook(wb: XLSX.WorkBook, filename: string) {
+  try {
+    // Generate binary array buffer via XLSX.write
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    downloadBlob(blob, filename);
+  } catch (err) {
+    console.warn('[saveWorkbook] Blob generation failed, trying XLSX.writeFile fallback:', err);
+    try {
+      XLSX.writeFile(wb, filename);
+    } catch (writeErr) {
+      console.error('[saveWorkbook] Critical failure downloading workbook:', writeErr);
+      throw new Error(`Unable to save ${filename}: please check browser download permissions.`);
+    }
+  }
+}
+
+/**
+ * Standardized template rows for bulk product upload
+ */
+export function getSampleTemplateRows() {
+  return [
     {
       'Product Group': 'PA-SUIT-001',
       'SKU': 'PA-SUIT-001-NAVY-38R',
       'Garment Name': 'Park Avenue Modern Tailored Suit',
       'Category': 'Suits',
-      'Subcategory': 'Suits',
+      'Subcategory': 'Two-Piece Suits',
       'Price ($)': 2850,
       'Color': 'Navy',
       'Color Hex': '#1E2A44',
       'Size': '38R',
-      'Stock': 3,
-      'Image URL': 'https://example.com/images/park-avenue-suit-navy.jpg',
+      'Stock': 5,
+      'Image URL': '/Suits_image.png',
       'Fabric': 'Super 150s Tasmanian Wool',
       'Fit': 'Modern Tailored',
-      'Description': 'Handcrafted Park Avenue tailored suit.'
+      'Description': 'Handcrafted Park Avenue two-piece wool suit with full canvas construction.'
     },
     {
       'Product Group': 'PA-SUIT-001',
       'SKU': 'PA-SUIT-001-NAVY-40R',
       'Garment Name': 'Park Avenue Modern Tailored Suit',
       'Category': 'Suits',
-      'Subcategory': 'Suits',
+      'Subcategory': 'Two-Piece Suits',
       'Price ($)': 2850,
       'Color': 'Navy',
       'Color Hex': '#1E2A44',
       'Size': '40R',
-      'Stock': 5,
-      'Image URL': 'https://example.com/images/park-avenue-suit-navy.jpg',
+      'Stock': 6,
+      'Image URL': '/Suits_image.png',
       'Fabric': 'Super 150s Tasmanian Wool',
       'Fit': 'Modern Tailored',
-      'Description': 'Handcrafted Park Avenue tailored suit.'
+      'Description': 'Handcrafted Park Avenue two-piece wool suit with full canvas construction.'
     },
     {
       'Product Group': 'PA-SUIT-001',
       'SKU': 'PA-SUIT-001-BLACK-38R',
       'Garment Name': 'Park Avenue Modern Tailored Suit',
       'Category': 'Suits',
-      'Subcategory': 'Suits',
+      'Subcategory': 'Two-Piece Suits',
       'Price ($)': 2850,
       'Color': 'Black',
       'Color Hex': '#111111',
       'Size': '38R',
-      'Stock': 2,
-      'Image URL': 'https://example.com/images/park-avenue-suit-black.jpg',
+      'Stock': 4,
+      'Image URL': '/Suits_image.png',
       'Fabric': 'Super 150s Tasmanian Wool',
       'Fit': 'Modern Tailored',
-      'Description': 'Handcrafted Park Avenue tailored suit.'
+      'Description': 'Handcrafted Park Avenue two-piece wool suit with full canvas construction.'
+    },
+    {
+      'Product Group': 'PA-SHIRT-002',
+      'SKU': 'PA-SHIRT-002-WHITE-15.5',
+      'Garment Name': 'Egyptian Cotton Royal Twill Shirt',
+      'Category': 'Shirts',
+      'Subcategory': 'Formal Dress Shirts',
+      'Price ($)': 320,
+      'Color': 'White',
+      'Color Hex': '#FFFFFF',
+      'Size': '15.5',
+      'Stock': 10,
+      'Image URL': '/Shirts_image.png',
+      'Fabric': '100% Egyptian Giza Cotton',
+      'Fit': 'Contemporary Slim',
+      'Description': 'Fine 120s two-ply Egyptian cotton dress shirt with mother-of-pearl buttons.'
+    },
+    {
+      'Product Group': 'PA-BLAZER-003',
+      'SKU': 'PA-BLAZER-003-CAMEL-40R',
+      'Garment Name': 'Italian Cashmere Blend Sport Coat',
+      'Category': 'Blazers & Jackets',
+      'Subcategory': 'Sport Coats',
+      'Price ($)': 1650,
+      'Color': 'Camel',
+      'Color Hex': '#C19A6B',
+      'Size': '40R',
+      'Stock': 4,
+      'Image URL': '/Blazers_jackets_image.png',
+      'Fabric': '90% Wool / 10% Cashmere',
+      'Fit': 'Tailored',
+      'Description': 'Unstructured Italian wool-cashmere sport coat with horn buttons.'
     }
   ];
+}
 
-  const ws = XLSX.utils.json_to_sheet(templateRows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Product_Template');
+/**
+ * Downloads a standardized Excel or CSV template for bulk product upload
+ */
+export function downloadProductExcelTemplate(format: 'xlsx' | 'csv' = 'xlsx') {
+  try {
+    const templateRows = getSampleTemplateRows();
+    const ws = XLSX.utils.json_to_sheet(templateRows);
 
-  ws['!cols'] = [
-    { wch: 18 }, { wch: 28 }, { wch: 38 }, { wch: 22 }, { wch: 24 },
-    { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 10 },
-    { wch: 55 }, { wch: 30 }, { wch: 20 }, { wch: 55 }
-  ];
+    if (format === 'csv') {
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      downloadBlob(blob, 'park_avenue_products_upload_template.csv');
+      return;
+    }
 
-  XLSX.writeFile(wb, 'park_avenue_products_upload_template.xlsx');
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Product_Template');
+
+    ws['!cols'] = [
+      { wch: 18 }, { wch: 28 }, { wch: 38 }, { wch: 22 }, { wch: 24 },
+      { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 10 },
+      { wch: 35 }, { wch: 30 }, { wch: 20 }, { wch: 55 }
+    ];
+
+    saveWorkbook(wb, 'park_avenue_products_upload_template.xlsx');
+  } catch (err: any) {
+    console.warn('[downloadProductExcelTemplate] Client download failed, using server fallback:', err);
+    // Direct server URL download fallback
+    if (typeof window !== 'undefined') {
+      const url = `/api/products/template?format=${format}`;
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `park_avenue_products_upload_template.${format}`);
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => document.body.removeChild(link), 1000);
+    }
+  }
+}
+
+export function downloadProductCsvTemplate() {
+  downloadProductExcelTemplate('csv');
+}
+
+/**
+ * Parses sample template rows into frontend Product objects for instant staging
+ */
+export function getSampleTemplateProducts(): Omit<Product, 'id' | 'totalStock'>[] {
+  const rows = getSampleTemplateRows();
+  const parsed = processRawSpreadsheetRows(rows);
+  return parsed.products;
 }
 
 /**
@@ -85,6 +205,8 @@ export interface ExcelParseResult {
  * ignoring casing, whitespace, and punctuation.
  */
 function getRowValue(row: Record<string, any>, aliases: string[]): string {
+  if (!row || typeof row !== 'object') return '';
+
   const normalizedKeys = Object.keys(row).map(k => ({
     original: k,
     normalized: k.toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -102,18 +224,9 @@ function getRowValue(row: Record<string, any>, aliases: string[]): string {
 }
 
 /**
- * Parses an uploaded Excel or CSV file into Product items with robust header matching and validation
+ * Transforms raw spreadsheet rows into grouped Product entities
  */
-export async function parseProductsExcel(file: File): Promise<ExcelParseResult> {
-  const data = await file.arrayBuffer();
-  const workbook = XLSX.read(data, { type: 'array' });
-  const firstSheetName = workbook.SheetNames[0];
-  if (!firstSheetName) throw new Error('Spreadsheet has no sheets.');
-
-  const worksheet = workbook.Sheets[firstSheetName];
-  const rows = XLSX.utils.sheet_to_json<any>(worksheet, { defval: '' });
-  if (rows.length === 0) throw new Error('Uploaded spreadsheet contains no data rows.');
-
+function processRawSpreadsheetRows(rows: Record<string, any>[]): ExcelParseResult {
   const products: Omit<Product, 'id' | 'totalStock'>[] = [];
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -121,9 +234,15 @@ export async function parseProductsExcel(file: File): Promise<ExcelParseResult> 
   rows.forEach((row, index) => {
     const rowNum = index + 2;
 
+    // Skip row if completely empty
+    const nonBlankValues = Object.values(row).filter(v => v !== undefined && v !== null && String(v).trim() !== '');
+    if (nonBlankValues.length === 0) {
+      return; // Skip blank line silently
+    }
+
     // Flexible column extraction
-    const rawGroup = getRowValue(row, ['Product Group', 'Group', 'Style Group', 'Group ID', 'Style Code', 'Parent SKU']);
-    const rawSku = getRowValue(row, ['SKU', 'Product Code', 'Item Code', 'Item SKU', 'Product ID', 'Style No', 'Style', 'Code', 'Barcode']);
+    const rawGroup = getRowValue(row, ['Product Group', 'Group', 'Style Group', 'Group ID', 'Style Code', 'Parent SKU', 'Style']);
+    const rawSku = getRowValue(row, ['SKU', 'Product Code', 'Item Code', 'Item SKU', 'Product ID', 'Style No', 'Code', 'Barcode']);
     const name = getRowValue(row, ['Garment Name', 'Product Name', 'Name', 'Title', 'Product', 'Item Name', 'Item', 'Garment']);
     const rawCategory = getRowValue(row, ['Category', 'Department', 'Dept', 'Collection', 'Group', 'Type', 'Product Type']);
     const subcategory = getRowValue(row, ['Subcategory', 'Sub Category', 'Sub-Category', 'Style Type']);
@@ -138,7 +257,7 @@ export async function parseProductsExcel(file: File): Promise<ExcelParseResult> 
     const imageUrl = getRowValue(row, ['Image URL', 'Image', 'Images', 'Photo', 'Picture', 'Img', 'Photo URL', 'Image Link']);
 
     if (!name && !rawSku) {
-      errors.push(`Row ${rowNum}: Missing both Garment Name and SKU. Row was skipped.`);
+      errors.push(`Row ${rowNum}: Missing Garment Name or SKU.`);
       return;
     }
 
@@ -148,14 +267,11 @@ export async function parseProductsExcel(file: File): Promise<ExcelParseResult> 
     const priceNum = parseFloat(rawPrice.replace(/[^0-9.]/g, ''));
     const finalPrice = (!isNaN(priceNum) && priceNum > 0) ? priceNum : 450;
     if (isNaN(priceNum) || priceNum <= 0) {
-      warnings.push(`Row ${rowNum} ("${effectiveName}"): Missing or zero price, defaulted to $450.`);
+      warnings.push(`Row ${rowNum} ("${effectiveName}"): Missing or zero price; assigned default $450.`);
     }
 
-    const stock = Math.max(0, parseInt(rawStock.replace(/[^0-9]/g, '') || '0', 10) || 0);
-
-    if (!imageUrl) {
-      warnings.push(`Row ${rowNum} ("${effectiveName}" / ${color}): No image link provided; using category atelier lookbook.`);
-    }
+    const parsedStock = parseInt(rawStock.replace(/[^0-9]/g, '') || '0', 10);
+    const stock = !isNaN(parsedStock) && parsedStock >= 0 ? parsedStock : 5;
 
     let category: ProductCategory = 'Suits';
     const rawLower = (rawCategory || '').trim().toLowerCase();
@@ -199,10 +315,22 @@ export async function parseProductsExcel(file: File): Promise<ExcelParseResult> 
       }
     }
 
+    const defaultImage = imageUrl || (
+      category === 'Suits' ? '/Suits_image.png' :
+      category === 'Shirts' ? '/Shirts_image.png' :
+      category === 'Blazers & Jackets' ? '/Blazers_jackets_image.png' :
+      category === 'Footwear' ? '/Footwear_image.png' :
+      category === 'Pants' ? '/Pants_image.png' :
+      category === 'Outerwear' ? '/Outwear_image.png' :
+      category === 'Sweaters & Knitwear' ? '/Sweaters_kintwear_image.png' :
+      category === 'Accessories' ? '/Accessories_image.png' :
+      category === 'Shorts' ? '/Shorts_image.png' : '/Suits_image.png'
+    );
+
     const variants: ProductVariant[] = [{
       id: `${effectiveSku}-var-${size}-${color}`.replace(/\s+/g, '-'),
       size: size || 'Standard',
-      stock: stock > 0 ? stock : 3,
+      stock: stock > 0 ? stock : 5,
       color,
       colorHex,
       sku: effectiveSku
@@ -218,10 +346,10 @@ export async function parseProductsExcel(file: File): Promise<ExcelParseResult> 
       description: description || 'Bespoke sartorial garment handcrafted with traditional craftsmanship.',
       details: ['Hand-finished tailoring', 'Classic drape', 'Bespoke fit'],
       care: ['Professional Dry Clean Only'],
-      fabric: fabric || 'Pure Wool / Silk Blend',
+      fabric: fabric || 'Superfine Wool Blend',
       fit: fit || 'Contemporary Tailored',
-      images: imageUrl ? [imageUrl] : [],
-      colorImages: imageUrl ? { [color]: [imageUrl] } : {},
+      images: [defaultImage],
+      colorImages: { [color]: [defaultImage] },
       variants
     });
   });
@@ -271,6 +399,47 @@ export async function parseProductsExcel(file: File): Promise<ExcelParseResult> 
 }
 
 /**
+ * Parses an uploaded Excel (.xlsx, .xls) or CSV file into Product items with robust header matching and validation
+ */
+export async function parseProductsExcel(file: File): Promise<ExcelParseResult> {
+  const data = await file.arrayBuffer();
+  let workbook: XLSX.WorkBook;
+
+  try {
+    workbook = XLSX.read(data, { type: 'array' });
+  } catch (err: any) {
+    try {
+      const text = new TextDecoder('utf-8').decode(data);
+      workbook = XLSX.read(text, { type: 'string' });
+    } catch {
+      throw new Error(`Unable to parse spreadsheet file: ${err?.message || 'Unsupported format'}`);
+    }
+  }
+
+  if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+    throw new Error('Spreadsheet has no sheets.');
+  }
+
+  // Find most relevant sheet
+  let chosenSheetName = workbook.SheetNames[0];
+  const preferredSheetNames = ['product_template', 'products', 'template', 'garments', 'catalog', 'sheet1'];
+  for (const name of workbook.SheetNames) {
+    if (preferredSheetNames.includes(name.toLowerCase())) {
+      chosenSheetName = name;
+      break;
+    }
+  }
+
+  const worksheet = workbook.Sheets[chosenSheetName];
+  if (!worksheet) throw new Error(`Worksheet "${chosenSheetName}" not found.`);
+
+  const rawRows = XLSX.utils.sheet_to_json<any>(worksheet, { defval: '', blankrows: false });
+  if (rawRows.length === 0) throw new Error('Uploaded spreadsheet contains no data rows.');
+
+  return processRawSpreadsheetRows(rawRows);
+}
+
+/**
  * Exports products list to Excel (.xlsx)
  */
 export function exportProductsToExcel(products: Product[]) {
@@ -304,7 +473,7 @@ export function exportProductsToExcel(products: Product[]) {
     { wch: 30 }  // Primary Image
   ];
 
-  XLSX.writeFile(wb, `park_avenue_products_catalogue_${Date.now().toString().slice(-6)}.xlsx`);
+  saveWorkbook(wb, `park_avenue_products_catalogue_${Date.now().toString().slice(-6)}.xlsx`);
 }
 
 /**
@@ -349,7 +518,7 @@ export function exportCustomersToExcel(customers: Customer[], orders: Order[]) {
     { wch: 22 }  // VIP Class
   ];
 
-  XLSX.writeFile(wb, `park_avenue_patrons_ledger_${Date.now().toString().slice(-6)}.xlsx`);
+  saveWorkbook(wb, `park_avenue_patrons_ledger_${Date.now().toString().slice(-6)}.xlsx`);
 }
 
 /**
@@ -401,7 +570,7 @@ export function exportOrdersToExcel(orders: Order[]) {
   const wsItems = XLSX.utils.json_to_sheet(lineItems);
   XLSX.utils.book_append_sheet(wb, wsItems, 'Order_Line_Items');
 
-  XLSX.writeFile(wb, `park_avenue_consignments_ledger_${Date.now().toString().slice(-6)}.xlsx`);
+  saveWorkbook(wb, `park_avenue_consignments_ledger_${Date.now().toString().slice(-6)}.xlsx`);
 }
 
 /**
@@ -471,14 +640,7 @@ export function exportTallyXml(orders: Order[]) {
 </ENVELOPE>`;
 
   const blob = new Blob([xml], { type: 'application/xml;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute('download', `tally_sales_vouchers_${Date.now().toString().slice(-6)}.xml`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, `tally_sales_vouchers_${Date.now().toString().slice(-6)}.xml`);
 }
 
 /**
@@ -519,7 +681,7 @@ export function exportTallyExcel(orders: Order[]) {
     { wch: 45 }
   ];
 
-  XLSX.writeFile(wb, `tally_daybook_ledger_${Date.now().toString().slice(-6)}.xlsx`);
+  saveWorkbook(wb, `tally_daybook_ledger_${Date.now().toString().slice(-6)}.xlsx`);
 }
 
 /**
@@ -597,7 +759,7 @@ export function exportSalesReportToExcel(orders: Order[], products: Product[]) {
   const wsVel = XLSX.utils.json_to_sheet(velocityRows);
   XLSX.utils.book_append_sheet(wb, wsVel, 'Garment_Sales_Velocity');
 
-  XLSX.writeFile(wb, `park_avenue_executive_sales_report_${Date.now().toString().slice(-6)}.xlsx`);
+  saveWorkbook(wb, `park_avenue_executive_sales_report_${Date.now().toString().slice(-6)}.xlsx`);
 }
 
 function escapeXml(unsafe: string): string {

@@ -93,6 +93,8 @@ import {
 } from '../../services/taxEngine';
 import {
   downloadProductExcelTemplate,
+  downloadProductCsvTemplate,
+  getSampleTemplateProducts,
   parseProductsExcel,
   exportProductsToExcel,
   exportCustomersToExcel,
@@ -1823,7 +1825,14 @@ export const AdminDashboard: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={downloadProductExcelTemplate}
+                  onClick={() => {
+                    try {
+                      downloadProductExcelTemplate('xlsx');
+                      showToast('Downloading Excel (.xlsx) products template...', 'success');
+                    } catch (err: any) {
+                      showToast(err?.message || 'Download failed', 'error');
+                    }
+                  }}
                   className="px-3 py-2 bg-[#F9F9F8] border border-gray-200 text-gray-600 font-mono text-xs uppercase tracking-wider hover:border-gray-400 hover:text-black transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                   title="Download sample formatted Excel template for products import"
                 >
@@ -5499,18 +5508,65 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Template Download Prompt */}
-            <div className="p-4 bg-amber-50/70 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+            <div className="p-4 bg-amber-50/70 border border-amber-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono">
               <div className="text-amber-900">
                 <span className="font-semibold uppercase block text-[11px] mb-0.5">Recommended Column Format:</span>
-                <span className="text-[11px] text-amber-800">Name, Category, Price, Size, Stock, Fabric, Fit, Description</span>
+                <span className="text-[11px] text-amber-800">
+                  Product Group, SKU, Garment Name, Category, Price, Color, Size, Stock, Fabric, Fit, Image URL
+                </span>
               </div>
-              <button
-                onClick={downloadProductExcelTemplate}
-                className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white text-[11px] uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 font-medium"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>DOWNLOAD TEMPLATE</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      downloadProductExcelTemplate('xlsx');
+                      showToast('Downloading Excel (.xlsx) template...', 'success');
+                    } catch (err: any) {
+                      showToast(err?.message || 'Download failed', 'error');
+                    }
+                  }}
+                  className="px-2.5 py-1.5 bg-[#936B34] hover:bg-[#7a5523] text-white text-[11px] uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer font-medium"
+                  title="Download standard Excel (.xlsx) template"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>EXCEL (.XLSX)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      downloadProductCsvTemplate();
+                      showToast('Downloading CSV (.csv) template...', 'success');
+                    } catch (err: any) {
+                      showToast(err?.message || 'Download failed', 'error');
+                    }
+                  }}
+                  className="px-2.5 py-1.5 bg-gray-800 hover:bg-black text-white text-[11px] uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer font-medium"
+                  title="Download plain text CSV (.csv) template"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>CSV</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sampleProducts = getSampleTemplateProducts();
+                    setParsedExcelProducts(sampleProducts);
+                    setExcelImportErrors([]);
+                    setExcelImportWarnings([]);
+                    setExcelFileName('sample_template_preview.xlsx');
+                    showToast(`Staged ${sampleProducts.length} sample garments from template`, 'info');
+                  }}
+                  className="px-2.5 py-1.5 bg-white border border-amber-300 hover:bg-amber-100/70 text-amber-950 text-[11px] uppercase tracking-wider transition-colors flex items-center gap-1.5 cursor-pointer font-medium shadow-2xs"
+                  title="Populate importer preview immediately with sample garments without uploading a file"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[#936B34]" />
+                  <span>LOAD SAMPLE DATA</span>
+                </button>
+              </div>
             </div>
 
             {/* File Upload Zone */}

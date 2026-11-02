@@ -13,6 +13,14 @@ router.get('/:slug/color-image/:color/:index', productController.getProductColor
 router.get('/color-image/:slug/:color/:index', productController.getProductColorImage);
 router.get('/admin/:slug', productController.getProductBySlug);
 
+// Product bulk upload template download endpoints (.xlsx / .csv)
+router.get('/template', productController.getProductExcelTemplate);
+router.get('/template.xlsx', productController.getProductExcelTemplate);
+router.get('/template.csv', productController.getProductExcelTemplate);
+router.get('/admin/template', productController.getProductExcelTemplate);
+router.get('/admin/template.xlsx', productController.getProductExcelTemplate);
+router.get('/admin/template.csv', productController.getProductExcelTemplate);
+
 // Storefront public endpoints
 router.get('/', productController.getProducts);
 router.get('/:slug', productController.getProductBySlug);

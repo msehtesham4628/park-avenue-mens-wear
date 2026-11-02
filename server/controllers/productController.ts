@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import * as XLSX from 'xlsx';
 import { AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { productService } from '../services/productService.js';
 import { skuService } from '../services/skuService.js';
@@ -6,6 +7,122 @@ import { descriptionService } from '../services/descriptionService.js';
 import { titleService } from '../services/titleService.js';
 
 export const productController = {
+  /**
+   * GET /api/products/template (.xlsx or .csv)
+   * Serves pre-built standardized template for batch upload
+   */
+  async getProductExcelTemplate(req: Request, res: Response) {
+    try {
+      const format = (req.query.format as string)?.toLowerCase() === 'csv' || req.path.endsWith('.csv') ? 'csv' : 'xlsx';
+      const templateRows = [
+        {
+          'Product Group': 'PA-SUIT-001',
+          'SKU': 'PA-SUIT-001-NAVY-38R',
+          'Garment Name': 'Park Avenue Modern Tailored Suit',
+          'Category': 'Suits',
+          'Subcategory': 'Two-Piece Suits',
+          'Price ($)': 2850,
+          'Color': 'Navy',
+          'Color Hex': '#1E2A44',
+          'Size': '38R',
+          'Stock': 5,
+          'Image URL': '/Suits_image.png',
+          'Fabric': 'Super 150s Tasmanian Wool',
+          'Fit': 'Modern Tailored',
+          'Description': 'Handcrafted Park Avenue two-piece wool suit with full canvas construction.'
+        },
+        {
+          'Product Group': 'PA-SUIT-001',
+          'SKU': 'PA-SUIT-001-NAVY-40R',
+          'Garment Name': 'Park Avenue Modern Tailored Suit',
+          'Category': 'Suits',
+          'Subcategory': 'Two-Piece Suits',
+          'Price ($)': 2850,
+          'Color': 'Navy',
+          'Color Hex': '#1E2A44',
+          'Size': '40R',
+          'Stock': 6,
+          'Image URL': '/Suits_image.png',
+          'Fabric': 'Super 150s Tasmanian Wool',
+          'Fit': 'Modern Tailored',
+          'Description': 'Handcrafted Park Avenue two-piece wool suit with full canvas construction.'
+        },
+        {
+          'Product Group': 'PA-SUIT-001',
+          'SKU': 'PA-SUIT-001-BLACK-38R',
+          'Garment Name': 'Park Avenue Modern Tailored Suit',
+          'Category': 'Suits',
+          'Subcategory': 'Two-Piece Suits',
+          'Price ($)': 2850,
+          'Color': 'Black',
+          'Color Hex': '#111111',
+          'Size': '38R',
+          'Stock': 4,
+          'Image URL': '/Suits_image.png',
+          'Fabric': 'Super 150s Tasmanian Wool',
+          'Fit': 'Modern Tailored',
+          'Description': 'Handcrafted Park Avenue two-piece wool suit with full canvas construction.'
+        },
+        {
+          'Product Group': 'PA-SHIRT-002',
+          'SKU': 'PA-SHIRT-002-WHITE-15.5',
+          'Garment Name': 'Egyptian Cotton Royal Twill Shirt',
+          'Category': 'Shirts',
+          'Subcategory': 'Formal Dress Shirts',
+          'Price ($)': 320,
+          'Color': 'White',
+          'Color Hex': '#FFFFFF',
+          'Size': '15.5',
+          'Stock': 10,
+          'Image URL': '/Shirts_image.png',
+          'Fabric': '100% Egyptian Giza Cotton',
+          'Fit': 'Contemporary Slim',
+          'Description': 'Fine 120s two-ply Egyptian cotton dress shirt with mother-of-pearl buttons.'
+        },
+        {
+          'Product Group': 'PA-BLAZER-003',
+          'SKU': 'PA-BLAZER-003-CAMEL-40R',
+          'Garment Name': 'Italian Cashmere Blend Sport Coat',
+          'Category': 'Blazers & Jackets',
+          'Subcategory': 'Sport Coats',
+          'Price ($)': 1650,
+          'Color': 'Camel',
+          'Color Hex': '#C19A6B',
+          'Size': '40R',
+          'Stock': 4,
+          'Image URL': '/Blazers_jackets_image.png',
+          'Fabric': '90% Wool / 10% Cashmere',
+          'Fit': 'Tailored',
+          'Description': 'Unstructured Italian wool-cashmere sport coat with horn buttons.'
+        }
+      ];
+
+      const ws = XLSX.utils.json_to_sheet(templateRows);
+
+      if (format === 'csv') {
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', 'attachment; filename="park_avenue_products_upload_template.csv"');
+        return res.status(200).send(csv);
+      }
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Product_Template');
+      ws['!cols'] = [
+        { wch: 18 }, { wch: 28 }, { wch: 38 }, { wch: 22 }, { wch: 24 },
+        { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 10 },
+        { wch: 35 }, { wch: 30 }, { wch: 20 }, { wch: 55 }
+      ];
+
+      const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="park_avenue_products_upload_template.xlsx"');
+      return res.status(200).send(buffer);
+    } catch (err: any) {
+      console.error('[getProductExcelTemplate] Generation error:', err);
+      return res.status(500).json({ success: false, message: 'Failed to generate product template.' });
+    }
+  },
   /**
    * GET /api/products
    */
