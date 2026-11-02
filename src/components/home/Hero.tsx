@@ -5,6 +5,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
+import { getCategorySlug } from '../../utils/router';
 
 interface HeroSlide {
   src: string;
@@ -199,14 +200,17 @@ export const Hero: React.FC = () => {
             </p>
 
             <div className="pt-1.5 pointer-events-auto">
-              <button
-                type="button"
-                onClick={() => handleSlideCta(currentSlide.category)}
+              <a
+                href={`/${getCategorySlug(currentSlide.category)}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSlideCta(currentSlide.category);
+                }}
                 className="group inline-flex items-center gap-2.5 px-6 py-2.5 sm:px-7 sm:py-3 bg-white hover:bg-[#936B34] text-[#111827] hover:text-white border border-white hover:border-[#936B34] text-[11px] sm:text-xs font-mono font-medium uppercase tracking-[0.22em] transition-all duration-300 shadow-lg cursor-pointer rounded-full active:scale-95"
               >
                 <span>EXPLORE {currentSlide.category.toUpperCase()}</span>
                 <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-              </button>
+              </a>
             </div>
           </div>
         </div>

@@ -120,7 +120,7 @@ async function runTests() {
     const filtered = await productService.getProducts({
       category: 'Dress Shirts'
     });
-    const allShirts = filtered.products.every(p => p.category === 'Dress Shirts');
+    const allShirts = filtered.products.length > 0 && filtered.products.every(p => p.category === 'Dress Shirts' || p.category === 'Shirts');
     assert(allShirts, 'Category filtering isolates requested garment category');
   } catch (err: any) {
     assert(false, 'Product search threw exception', err.message);

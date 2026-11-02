@@ -65,9 +65,9 @@ app.get('/sitemap_pages.xml', async (_req, res) => {
   }
 });
 
-app.get('/sitemap_products_:chunk.xml', async (req, res) => {
+app.get(['/sitemap_products.xml', '/sitemap_products_:chunk.xml'], async (req, res) => {
   try {
-    const chunk = Number.parseInt(req.params.chunk, 10);
+    const chunk = req.params.chunk ? Number.parseInt(req.params.chunk, 10) : 1;
     if (!Number.isInteger(chunk) || chunk < 1) {
       return res.status(400).type('application/xml').send('<error>Invalid sitemap chunk</error>');
     }
@@ -131,6 +131,7 @@ export default async function handler(req: express.Request, res: express.Respons
     requestPath === '/sitemap.xml' ||
     requestPath === '/sitemap_index.xml' ||
     requestPath === '/sitemap_pages.xml' ||
+    requestPath === '/sitemap_products.xml' ||
     requestPath === '/robots.txt' ||
     /^\/sitemap_products_\d+\.xml$/.test(requestPath);
 

@@ -108,24 +108,34 @@ export const Navbar: React.FC = () => {
             </div>
 
             <div className={`hidden md:flex items-center gap-2 sm:gap-3 text-right text-[10px] shrink-0 ${isTransparent ? 'text-gray-300' : 'text-gray-500'}`}>
-              <button 
-                onClick={() => setActiveView('track-order')}
+              <a 
+                href="/track-order"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveView('track-order');
+                }}
                 className={`transition-colors flex items-center gap-1 cursor-pointer ${isTransparent ? 'hover:text-white' : 'hover:text-black'}`}
               >
                 <Truck className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                 <span>TRACKING</span>
-              </button>
+              </a>
               <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>|</span>
-              <button 
-                onClick={() => setActiveView('track-alteration')}
+              <a 
+                href="/track-alteration"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveView('track-alteration');
+                }}
                 className={`transition-colors flex items-center gap-1 cursor-pointer ${isTransparent ? 'hover:text-white' : 'hover:text-black'}`}
               >
                 <Scissors className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                 <span>SERVICES</span>
-              </button>
+              </a>
               <span className={isTransparent ? 'text-white/20' : 'text-gray-300'}>|</span>
-              <button 
-                onClick={() => {
+              <a 
+                href="/track-return"
+                onClick={(e) => {
+                  e.preventDefault();
                   setActiveView('track-return');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
@@ -134,7 +144,7 @@ export const Navbar: React.FC = () => {
               >
                 <RotateCcw className={`w-3 h-3 ${isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]'}`} />
                 <span>RETURNS</span>
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -206,8 +216,12 @@ export const Navbar: React.FC = () => {
                     onMouseEnter={() => setOpenCategoryDropdown(category.id)}
                     onMouseLeave={() => setOpenCategoryDropdown(null)}
                   >
-                    <button
-                      onClick={() => handleNavCategory(category.queryValue)}
+                    <a
+                      href={`/${category.id}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleNavCategory(category.queryValue);
+                      }}
                       className={`transition-colors relative py-1 cursor-pointer whitespace-nowrap ${
                         isSelected
                           ? (isTransparent ? 'text-[#E5C384] font-semibold' : 'text-[#936B34] font-semibold')
@@ -227,7 +241,7 @@ export const Navbar: React.FC = () => {
                       ) : (
                         <span>{category.name.toUpperCase()}</span>
                       )}
-                    </button>
+                    </a>
                     <button
                       type="button"
                       onClick={(e) => {
@@ -271,8 +285,12 @@ export const Navbar: React.FC = () => {
                 onMouseEnter={() => setIsCategoriesOpen(true)}
                 onMouseLeave={() => setIsCategoriesOpen(false)}
               >
-                <button
-                  onClick={() => openCategoriesIndex()}
+                <a
+                  href="/categories"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openCategoriesIndex();
+                  }}
                   className={`flex items-center gap-1 transition-colors py-1 cursor-pointer ${
                     activeView === 'categories' || isCategoriesOpen 
                       ? (isTransparent ? 'text-[#E5C384]' : 'text-[#936B34]') 
@@ -282,7 +300,7 @@ export const Navbar: React.FC = () => {
                 >
                   <span>CATEGORIES</span>
                   <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180 text-[#936B34]' : ''}`} />
-                </button>
+                </a>
 
                 {isCategoriesOpen && (
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[520px] bg-white border border-gray-200 shadow-2xl p-5 z-50 text-[#111827] animate-in fade-in slide-in-from-top-2 duration-200">

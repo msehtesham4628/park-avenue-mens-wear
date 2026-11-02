@@ -42,13 +42,17 @@ export const Footer: React.FC = () => {
               </h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-mono uppercase tracking-wider text-gray-600">
                 {OFFICIAL_CATEGORIES.filter(c => c.id !== 'all').map(cat => (
-                  <button
+                  <a
                     key={cat.id}
-                    onClick={() => handleNavCategory(cat.queryValue)}
+                    href={`/${cat.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleNavCategory(cat.queryValue);
+                    }}
                     className="text-left hover:text-[#936B34] transition-colors cursor-pointer truncate"
                   >
                     {cat.name}
-                  </button>
+                  </a>
                 ))}
               </div>
             </div>
@@ -60,41 +64,52 @@ export const Footer: React.FC = () => {
               </h3>
               <ul className="space-y-3 text-xs font-mono uppercase tracking-wider text-gray-600">
                 <li>
-                  <button 
-                    onClick={() => {
+                  <a 
+                    href="/track-alteration"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setActiveView('track-alteration');
+                      navigateTo('/track-alteration');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="hover:text-[#936B34] transition-colors cursor-pointer"
+                    className="hover:text-[#936B34] transition-colors cursor-pointer block"
                   >
                     BESPOKE ALTERATIONS
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => {
+                  <a 
+                    href="/track-order"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setActiveView('track-order');
+                      navigateTo('/track-order');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }} 
-                    className="hover:text-[#936B34] transition-colors cursor-pointer"
+                    className="hover:text-[#936B34] transition-colors cursor-pointer block"
                   >
                     ORDER TRACKING
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => {
+                  <a 
+                    href="/track-return"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setActiveView('track-return');
+                      navigateTo('/track-return');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }} 
-                    className="hover:text-[#936B34] transition-colors cursor-pointer"
+                    className="hover:text-[#936B34] transition-colors cursor-pointer block"
                   >
                     RETURNS &amp; EXCHANGES
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => {
+                  <a 
+                    href="/returns"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setActiveView('return-policy');
                       navigateTo('/returns');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -103,11 +118,13 @@ export const Footer: React.FC = () => {
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-[#936B34]" />
                     <span>RETURN POLICY (15-DAY GUARANTEE)</span>
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => {
+                  <a 
+                    href="/terms"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setActiveView('terms');
                       navigateTo('/terms');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -116,11 +133,13 @@ export const Footer: React.FC = () => {
                   >
                     <FileText className="w-3.5 h-3.5 text-[#936B34]" />
                     <span>TERMS &amp; CONDITIONS</span>
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => {
+                  <a 
+                    href="/login-policy"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setActiveView('login-policy');
                       navigateTo('/login-policy');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -129,7 +148,7 @@ export const Footer: React.FC = () => {
                   >
                     <Lock className="w-3.5 h-3.5 text-emerald-600" />
                     <span>LOGIN SECURITY &amp; ACCESS POLICY</span>
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>
@@ -144,31 +163,46 @@ export const Footer: React.FC = () => {
                   PARK AVENUE MENSWEAR
                 </li>
                 <li>
-                  <button 
-                    onClick={() => {
+                  <a 
+                    href="/"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setActiveView('home');
+                      navigateTo('/');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }} 
-                    className="hover:text-[#936B34] transition-colors cursor-pointer"
+                    className="hover:text-[#936B34] transition-colors cursor-pointer block"
                   >
                     ABOUT ATELIER
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => {
+                  <a 
+                    href="/categories"
+                    onClick={(e) => {
+                      e.preventDefault();
                       setActiveView('categories');
+                      navigateTo('/categories');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }} 
-                    className="hover:text-[#936B34] transition-colors cursor-pointer"
+                    className="hover:text-[#936B34] transition-colors cursor-pointer block"
                   >
                     DEPARTMENTS DIRECTORY
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <span className="text-gray-600 hover:text-[#936B34] transition-colors cursor-pointer">
-                    CLIENT CARE &amp; CONCIERGE
-                  </span>
+                  <a
+                    href="/shop"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setActiveView('shop');
+                      navigateTo('/shop');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="text-gray-600 hover:text-[#936B34] transition-colors cursor-pointer block"
+                  >
+                    ALL COLLECTIONS
+                  </a>
                 </li>
               </ul>
             </div>

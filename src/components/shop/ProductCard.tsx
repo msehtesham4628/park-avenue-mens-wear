@@ -194,7 +194,16 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
 
           {/* Product Title */}
           <h3 className="font-serif text-base sm:text-lg text-[#111827] group-hover:text-[#936B34] transition-colors line-clamp-1 font-normal">
-            {product.name}
+            <a
+              href={`/product/${encodeURIComponent(product.id || (product as any).productId || product.sku)}`}
+              onClick={(e) => {
+                e.preventDefault();
+                navigateToProduct(product.id || (product as any).productId || product.sku, product.category);
+              }}
+              className="hover:text-[#936B34] transition-colors"
+            >
+              {product.name}
+            </a>
           </h3>
 
           {/* Color selector — shows available color swatches for product */}

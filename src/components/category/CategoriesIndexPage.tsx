@@ -66,12 +66,13 @@ export const CategoriesIndexPage: React.FC = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-white/5 via-transparent to-transparent pointer-events-none" />
         <div className="max-w-6xl mx-auto relative z-10">
           <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-[10px] sm:text-xs font-mono uppercase tracking-[0.25em] text-gray-400 mb-5">
-            <button 
-              onClick={() => { setActiveView('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            <a
+              href="/"
+              onClick={(e) => { e.preventDefault(); setActiveView('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className="hover:text-[#E5C384] transition-colors cursor-pointer"
             >
               HOME
-            </button>
+            </a>
             <ChevronRight className="w-3 h-3 text-white/40" />
             <span className="text-[#E5C384] font-semibold">ALL DEPARTMENTS</span>
           </nav>
@@ -110,9 +111,13 @@ export const CategoriesIndexPage: React.FC = () => {
             }).length;
 
             return (
-              <div
+              <a
                 key={category.id}
-                onClick={() => openCategoryPage(category.queryValue)}
+                href={`/${category.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  openCategoryPage(category.queryValue);
+                }}
                 className="group flex flex-col bg-white border border-gray-200 hover:border-[#936B34] transition-all duration-300 cursor-pointer overflow-hidden shadow-xs hover:shadow-xl rounded-xs"
               >
                 {/* Visual Cover */}
@@ -174,7 +179,7 @@ export const CategoriesIndexPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
-              </div>
+              </a>
             );
           })}
         </div>

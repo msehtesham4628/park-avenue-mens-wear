@@ -199,7 +199,6 @@ export function parseRoute(pathname?: string): RouteMatch {
       return { view: 'reset-password' };
 
     case 'track-return':
-    case 'returns':
     case 'exchange':
     case 'return-tracking':
       return { view: 'track-return' };

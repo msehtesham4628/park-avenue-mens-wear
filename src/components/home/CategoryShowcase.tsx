@@ -3,6 +3,7 @@ import { ArrowRight, ArrowUpRight, Sparkles, Compass } from 'lucide-react';
 import { useShop } from '../../context/ShopContext';
 import { MediaPlaceholder } from '../common/MediaPlaceholder';
 import { OFFICIAL_CATEGORIES, ProductCategory } from '../../types';
+import { getCategorySlug } from '../../utils/router';
 
 interface FeaturedCategoryCard {
   title: ProductCategory;
@@ -89,13 +90,17 @@ export const CategoryShowcase: React.FC = () => {
               Departments &amp; Categories
             </h2>
           </div>
-          <button
-            onClick={openCategoriesIndex}
+          <a
+            href="/categories"
+            onClick={(e) => {
+              e.preventDefault();
+              openCategoriesIndex();
+            }}
             className="mt-4 sm:mt-0 text-xs font-mono uppercase tracking-[0.2em] text-[#111827] hover:text-white bg-white hover:bg-[#936B34] border border-gray-300 hover:border-[#936B34] px-4 sm:px-5 py-2 rounded-full transition-all duration-300 flex items-center gap-2 font-medium cursor-pointer group shadow-xs active:scale-95"
           >
             <span>VIEW COMPLETE CATALOG</span>
             <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-          </button>
+          </a>
         </div>
 
         {/* Elevated Luxury Department Buttons Bar */}
@@ -114,26 +119,34 @@ export const CategoryShowcase: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Primary 'All Collections' Button */}
-            <button
-              onClick={openCategoriesIndex}
+            <a
+              href="/categories"
+              onClick={(e) => {
+                e.preventDefault();
+                openCategoriesIndex();
+              }}
               className="group inline-flex items-center gap-2 px-5 py-2.5 bg-[#111827] hover:bg-[#936B34] border border-[#111827] hover:border-[#936B34] text-white text-xs font-mono uppercase tracking-[0.16em] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer font-medium rounded-full active:scale-95"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#E5C384]" />
               <span>ALL COLLECTIONS</span>
               <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-            </button>
+            </a>
 
             {/* Individual Atelier Department Buttons (Suits, Blazers, Shirts, etc.) */}
             {departments.map((cat) => (
-              <button
+              <a
                 key={cat.id}
-                onClick={() => handleSelect(cat.queryValue)}
+                href={`/${cat.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSelect(cat.queryValue);
+                }}
                 className="group inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-white hover:bg-[#111827] border border-gray-300 hover:border-[#111827] text-gray-800 hover:text-white text-xs font-mono uppercase tracking-[0.15em] transition-all duration-200 shadow-xs hover:shadow-sm cursor-pointer rounded-full active:scale-95"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-[#936B34] group-hover:bg-[#E5C384] transition-colors" />
                 <span className="font-medium">{cat.name}</span>
                 <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#E5C384] transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </button>
+              </a>
             ))}
           </div>
         </div>
@@ -141,11 +154,14 @@ export const CategoryShowcase: React.FC = () => {
         {/* Full-image category cards with refined interactive styling */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {categoryCards.map((cat) => (
-            <button
+            <a
               key={cat.title}
-              type="button"
-              onClick={() => handleSelect(cat.title)}
-              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#F5F5F3] border border-gray-200 hover:border-[#936B34] text-left cursor-pointer transition-all duration-300 shadow-xs hover:shadow-xl rounded-2xl sm:rounded-3xl"
+              href={`/${getCategorySlug(cat.title)}`}
+              onClick={(e) => {
+                e.preventDefault();
+                handleSelect(cat.title);
+              }}
+              className="group relative block w-full aspect-[4/5] overflow-hidden bg-[#F5F5F3] border border-gray-200 hover:border-[#936B34] text-left cursor-pointer transition-all duration-300 shadow-xs hover:shadow-xl rounded-2xl sm:rounded-3xl"
             >
               {cat.image ? (
                 <img
@@ -184,7 +200,7 @@ export const CategoryShowcase: React.FC = () => {
                   <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                 </span>
               </div>
-            </button>
+            </a>
           ))}
         </div>
 
