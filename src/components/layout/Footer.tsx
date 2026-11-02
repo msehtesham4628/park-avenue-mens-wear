@@ -28,7 +28,7 @@ export const Footer: React.FC = () => {
             </div>
 
             <div className="text-xs font-mono uppercase tracking-widest text-[#936B34] font-medium">
-              HAND-CANVASSED SUITS &amp; BESPOKE TAILORING · NEW YORK
+              HAND-CANVASSED SUITS &amp; BESPOKE TAILORING · GURNEE, IL
             </div>
           </div>
 

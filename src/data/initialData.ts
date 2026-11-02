@@ -17,7 +17,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     "details": [
       "Fabric: Super 150s Italian Virgin Wool (Biella, Italy) woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.",
       "Fit: Contemporary Tailored Fit",
-      "Hand-finished in New York atelier",
+      "Hand-finished in Gurnee atelier",
       "Bespoke alterations complimentary"
     ],
     "fabric": "Super 150s Italian Virgin Wool (Biella, Italy) woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.",
@@ -73,7 +73,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     "details": [
       "Fabric: Super 150s Italian Virgin Wool (Biella, Italy) woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.",
       "Fit: Contemporary Tailored Fit",
-      "Hand-finished in New York atelier",
+      "Hand-finished in Gurnee atelier",
       "Bespoke alterations complimentary"
     ],
     "fabric": "Super 150s Italian Virgin Wool (Biella, Italy) woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.",
@@ -129,7 +129,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     "details": [
       "Fabric: Super 150s Italian Virgin Wool (Biella, Italy) woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.",
       "Fit: Contemporary Tailored Fit",
-      "Hand-finished in New York atelier",
+      "Hand-finished in Gurnee atelier",
       "Bespoke alterations complimentary"
     ],
     "fabric": "Super 150s Italian Virgin Wool (Biella, Italy) woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.",
@@ -185,7 +185,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     "details": [
       "Fabric: Super 150s Italian Virgin Wool (Biella, Italy) woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.",
       "Fit: Contemporary Tailored Fit",
-      "Hand-finished in New York atelier",
+      "Hand-finished in Gurnee atelier",
       "Bespoke alterations complimentary"
     ],
     "fabric": "Super 150s Italian Virgin Wool (Biella, Italy) woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.",
@@ -241,7 +241,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     "details": [
       "Fabric: Super 150s Italian Virgin Wool (Biella, Italy) woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.",
       "Fit: Contemporary Tailored Fit",
-      "Hand-finished in New York atelier",
+      "Hand-finished in Gurnee atelier",
       "Bespoke alterations complimentary"
     ],
     "fabric": "Super 150s Italian Virgin Wool (Biella, Italy) woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.",

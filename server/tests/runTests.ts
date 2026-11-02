@@ -215,10 +215,10 @@ async function runTests() {
         recipientName: 'Marcus Sterling',
         email: 'marcus.sterling@example.com',
         phone: '+1 (555) 777-8899',
-        street: '740 Park Avenue',
-        city: 'New York',
-        state: 'NY',
-        postalCode: '10021',
+        street: '6170 W Grand Ave',
+        city: 'Gurnee',
+        state: 'IL',
+        postalCode: '60031',
         country: 'United States',
         shippingMethod: 'White Glove Express'
       }

@@ -82,7 +82,7 @@ export function generateCategorySeo(categoryName: string, categorySlug: string, 
 
   const keywords = [
     `mens luxury ${categoryName.toLowerCase()} usa`,
-    `best ${categoryName.toLowerCase()} for men new york`,
+    `best ${categoryName.toLowerCase()} for men gurnee il`,
     `italian ${categoryName.toLowerCase()} bespoke`,
     `designer ${categoryName.toLowerCase()} park avenue`,
     `hand tailored ${categoryName.toLowerCase()} america`
@@ -186,16 +186,16 @@ function updateJsonLd(seo: SeoMetadataOptions, canonicalUrl: string): void {
     'priceRange': '$$$',
     'address': {
       '@type': 'PostalAddress',
-      'streetAddress': '740 Park Avenue',
-      'addressLocality': 'New York',
-      'addressRegion': 'NY',
-      'postalCode': '10021',
+      'streetAddress': '6170 W Grand Ave (Gurnee Mills)',
+      'addressLocality': 'Gurnee',
+      'addressRegion': 'IL',
+      'postalCode': '60031',
       'addressCountry': 'US'
     },
     'geo': {
       '@type': 'GeoCoordinates',
-      'latitude': '40.7711',
-      'longitude': '-73.9653'
+      'latitude': '42.3686',
+      'longitude': '-87.9547'
     },
     'openingHoursSpecification': [
       {

@@ -340,9 +340,9 @@ export const CustomerDashboard: React.FC = () => {
                     <span className="text-gray-500 font-normal">{currentCustomer.phone || '+1 (555) 234-5678'}</span>
                   </div>
                   <div className="text-gray-700 mt-0.5">
-                    {currentCustomer.addresses?.[0]?.street || '1048 5th Avenue'}
+                    {currentCustomer.addresses?.[0]?.street || '6170 W Grand Ave'}
                     {currentCustomer.addresses?.[0]?.apartment && `, ${currentCustomer.addresses[0].apartment}`}
-                    , {currentCustomer.addresses?.[0]?.city || 'New York'}, {currentCustomer.addresses?.[0]?.state || 'NY'} {currentCustomer.addresses?.[0]?.zipCode || (currentCustomer.addresses?.[0] as any)?.postalCode || '10028'}
+                    , {currentCustomer.addresses?.[0]?.city || 'Gurnee'}, {currentCustomer.addresses?.[0]?.state || 'IL'} {currentCustomer.addresses?.[0]?.zipCode || (currentCustomer.addresses?.[0] as any)?.postalCode || '60031'}
                   </div>
                   <div className="text-gray-400 text-[10px] uppercase mt-0.5">
                     {currentCustomer.addresses?.[0]?.country || 'United States'} &bull; Contact: {currentCustomer.email}

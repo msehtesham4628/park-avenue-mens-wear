@@ -78,7 +78,7 @@ export const SeoHead: React.FC = () => {
     if (activeView === 'track-alteration') {
       applySeoMetadata({
         title: `Bespoke Tailoring & Alteration Progress Vault | ${BRAND_NAME}`,
-        description: 'Inspect live workshop status and bench tailoring progress for your commissioned garments at Park Avenue New York atelier.',
+        description: 'Inspect live workshop status and bench tailoring progress for your commissioned garments at Park Avenue Gurnee atelier.',
         canonicalPath: '/track-alteration',
         ogType: 'website'
       });

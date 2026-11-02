@@ -495,7 +495,7 @@ export const AccountPage: React.FC = () => {
                       required
                       value={infoForm.street}
                       onChange={e => setInfoForm({ ...infoForm, street: e.target.value })}
-                      placeholder="e.g. 740 Park Avenue"
+                      placeholder="e.g. 6170 W Grand Ave"
                       className="w-full bg-white border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] font-sans focus:outline-none focus:border-[#936B34]"
                     />
                   </div>
@@ -522,7 +522,7 @@ export const AccountPage: React.FC = () => {
                       required
                       value={infoForm.city}
                       onChange={e => setInfoForm({ ...infoForm, city: e.target.value })}
-                      placeholder="e.g. New York"
+                      placeholder="e.g. Gurnee"
                       className="w-full bg-white border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] font-sans focus:outline-none focus:border-[#936B34]"
                     />
                   </div>
@@ -555,7 +555,7 @@ export const AccountPage: React.FC = () => {
                       maxLength={5}
                       value={infoForm.zipCode}
                       onChange={e => setInfoForm({ ...infoForm, zipCode: e.target.value.replace(/\D/g, '').slice(0, 5) })}
-                      placeholder="10021"
+                      placeholder="60031"
                       className="w-full bg-white border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
                     />
                   </div>

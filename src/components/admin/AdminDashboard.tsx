@@ -4129,7 +4129,7 @@ export const AdminDashboard: React.FC = () => {
                       { kw: 'italian wool bespoke suits nyc', intent: 'Transactional', rank: '#1 Position', path: '/suits', status: 'Optimal Meta & Schema' },
                       { kw: 'egyptian cotton dress shirts america', intent: 'Commercial', rank: '#1 Position', path: '/shirts', status: 'Optimal Meta & Schema' },
                       { kw: 'tailored mens dress pants us', intent: 'Commercial', rank: '#1 Position', path: '/pants', status: 'Optimal Meta & Schema' },
-                      { kw: 'goodyear welted shoes new york', intent: 'Transactional', rank: '#1 Position', path: '/footwear', status: 'Optimal Meta & Schema' },
+                      { kw: 'goodyear welted shoes gurnee il', intent: 'Transactional', rank: '#1 Position', path: '/footwear', status: 'Optimal Meta & Schema' },
                       { kw: 'cashmere overcoat luxury menswear', intent: 'Transactional', rank: '#1 Position', path: '/outerwear', status: 'Optimal Meta & Schema' },
                       { kw: 'bespoke suit alterations online usa', intent: 'Commercial', rank: '#1 Position', path: '/track-alteration', status: 'Optimal Meta & Schema' }
                     ].map((row, idx) => (
@@ -4220,7 +4220,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <p className="text-gray-700 font-medium">Park Avenue Menswear</p>
                   <p className="text-[10px] text-gray-500">
-                    740 Park Ave, New York, NY 10021 · Coordinates · Nationwide US Shipping · Sitelinks SearchBox
+                    6170 W Grand Ave, Gurnee, IL 60031 (Gurnee Mills) · Coordinates · Nationwide US Shipping · Sitelinks SearchBox
                   </p>
                 </div>
 
@@ -5705,9 +5705,9 @@ export const AdminDashboard: React.FC = () => {
                     shippingAddress: manualOrderStreet.trim() ? {
                       street: manualOrderStreet.trim(),
                       apartment: manualOrderApartment.trim() || undefined,
-                      city: manualOrderCity.trim() || 'New York',
-                      state: manualOrderState.trim() || 'NY',
-                      zipCode: manualOrderZip.trim() || '10028',
+                      city: manualOrderCity.trim() || 'Gurnee',
+                      state: manualOrderState.trim() || 'IL',
+                      zipCode: manualOrderZip.trim() || '60031',
                       country: manualOrderCountry.trim() || 'United States'
                     } : undefined,
                     shippingMethod: 'White-Glove Private Courier',
@@ -5738,7 +5738,7 @@ export const AdminDashboard: React.FC = () => {
                   setManualOrderStreet('');
                   setManualOrderApartment('');
                   setManualOrderCity('');
-                  setManualOrderState('NY');
+                  setManualOrderState('IL');
                   setManualOrderZip('');
                   setManualOrderCountry('United States');
                   setManualOrderItems([]);
@@ -5837,7 +5837,7 @@ export const AdminDashboard: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="New York"
+                      placeholder="Gurnee"
                       value={manualOrderCity}
                       onChange={(e) => setManualOrderCity(e.target.value)}
                       className="w-full bg-white border border-gray-300 p-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"
@@ -5850,7 +5850,7 @@ export const AdminDashboard: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="NY"
+                      placeholder="IL"
                       value={manualOrderState}
                       onChange={(e) => setManualOrderState(e.target.value)}
                       className="w-full bg-white border border-gray-300 p-2 text-xs text-[#111827] font-mono focus:outline-none focus:border-[#936B34]"

@@ -604,7 +604,7 @@ export const ProductService = {
       ],
       seoMetaTitle: `${name} | Luxury ${cat} USA | Park Avenue Menswear`.slice(0, 60),
       seoMetaDescription: `Discover ${name} at Park Avenue Menswear. Handcrafted with ${fabric}. Free express USA delivery on orders over $200. Tailored to perfection.`.slice(0, 155),
-      keywords: [`luxury ${cat.toLowerCase()} usa`, `${name.toLowerCase()} park avenue`, 'bespoke menswear usa', 'italian fabric suits nyc']
+      keywords: [`luxury ${cat.toLowerCase()} usa`, `${name.toLowerCase()} park avenue`, 'bespoke menswear usa', 'italian fabric suits gurnee il']
     };
   },
 

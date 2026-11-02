@@ -792,10 +792,10 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                         
                         <div className="text-xs font-mono space-y-1 text-gray-700">
                           <p className="font-bold text-[#111827]">{order.customerName || 'Valued Patron'}</p>
-                          <p>{order.shippingAddress?.street || '1048 5th Avenue'}</p>
+                          <p>{order.shippingAddress?.street || '6170 W Grand Ave'}</p>
                           {order.shippingAddress?.apartment && <p>{order.shippingAddress.apartment}</p>}
                           <p>
-                            {order.shippingAddress?.city || 'New York'}, {order.shippingAddress?.state || 'NY'} {order.shippingAddress?.zipCode || '10028'}
+                            {order.shippingAddress?.city || 'Gurnee'}, {order.shippingAddress?.state || 'IL'} {order.shippingAddress?.zipCode || '60031'}
                           </p>
                           <p className="text-gray-500 pt-1">
                             Contact: {order.customerEmail} {order.customerPhone ? `· ${order.customerPhone}` : ''}
@@ -1107,7 +1107,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="New York"
+                    placeholder="Gurnee"
                     value={addressEditForm.city}
                     onChange={e => setAddressEditForm({ ...addressEditForm, city: e.target.value })}
                     className="w-full bg-[#FAF8F5] border border-gray-300 p-2.5 text-[#111827] focus:bg-white focus:border-[#936B34] focus:outline-none"
@@ -1121,7 +1121,7 @@ export const OrderHistorySection: React.FC<OrderHistorySectionProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="NY"
+                    placeholder="IL"
                     value={addressEditForm.state}
                     onChange={e => setAddressEditForm({ ...addressEditForm, state: e.target.value })}
                     className="w-full bg-[#FAF8F5] border border-gray-300 p-2.5 text-[#111827] focus:bg-white focus:border-[#936B34] focus:outline-none"

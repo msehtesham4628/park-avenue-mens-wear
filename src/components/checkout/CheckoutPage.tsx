@@ -597,7 +597,7 @@ export const CheckoutPage: React.FC = () => {
                       type="text"
                       value={address.street}
                       onChange={e => setAddress({ ...address, street: e.target.value })}
-                      placeholder="e.g. 740 Park Avenue"
+                      placeholder="e.g. 6170 W Grand Ave"
                       className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
@@ -620,7 +620,7 @@ export const CheckoutPage: React.FC = () => {
                       type="text"
                       value={address.city}
                       onChange={e => setAddress({ ...address, city: e.target.value })}
-                      placeholder="e.g. New York"
+                      placeholder="e.g. Gurnee"
                       className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
@@ -650,7 +650,7 @@ export const CheckoutPage: React.FC = () => {
                       maxLength={10}
                       value={address.postalCode}
                       onChange={e => setAddress({ ...address, postalCode: e.target.value })}
-                      placeholder="e.g. 10021"
+                      placeholder="e.g. 60031"
                       className="mt-2 w-full bg-white border border-gray-300 p-3 text-sm font-sans normal-case tracking-normal focus:outline-none focus:border-[#936B34]"
                     />
                   </label>
@@ -1154,7 +1154,7 @@ export const CheckoutPage: React.FC = () => {
                       required
                       value={stripeZip || address.postalCode}
                       onChange={e => setStripeZip(e.target.value)}
-                      placeholder="e.g. 10021"
+                      placeholder="e.g. 60031"
                       className="w-full bg-white border border-gray-300 p-3 text-sm font-mono focus:outline-none focus:border-[#936B34]"
                     />
                   </div>

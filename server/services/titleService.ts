@@ -165,7 +165,7 @@ export const titleService = {
     const fit = params.fit || '';
     const color = params.color || '';
 
-    const prompt = `You are the Executive Brand Creative Director and Master Atelier Stylist for Park Avenue Menswear, an ultra-luxurious bespoke menswear house in New York City with worldwide prestige.
+    const prompt = `You are the Executive Brand Creative Director and Master Atelier Stylist for Park Avenue Menswear, an ultra-luxurious bespoke menswear house in Gurnee, Illinois with worldwide prestige.
 Your task is to generate 5 DISTINCT, FRESH, PRESTIGIOUS, LUXURY product titles for a menswear item.
 
 Context:

@@ -263,7 +263,7 @@ export const AccountInfoPage: React.FC = () => {
                   type="text"
                   value={form.city}
                   onChange={e => setForm({ ...form, city: e.target.value })}
-                  placeholder="e.g. New York"
+                  placeholder="e.g. Gurnee"
                   className="w-full bg-white border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
                 />
               </div>
@@ -276,7 +276,7 @@ export const AccountInfoPage: React.FC = () => {
                   type="text"
                   value={form.state}
                   onChange={e => setForm({ ...form, state: e.target.value })}
-                  placeholder="e.g. NY"
+                  placeholder="e.g. IL"
                   className="w-full bg-white border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
                 />
               </div>
@@ -289,7 +289,7 @@ export const AccountInfoPage: React.FC = () => {
                   type="text"
                   value={form.zipCode}
                   onChange={e => setForm({ ...form, zipCode: e.target.value })}
-                  placeholder="e.g. 10021"
+                  placeholder="e.g. 60031"
                   className="w-full bg-white border border-gray-300 px-3.5 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#936B34]"
                 />
               </div>

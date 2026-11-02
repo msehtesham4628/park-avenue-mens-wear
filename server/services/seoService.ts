@@ -463,11 +463,11 @@ Sitemap: ${CANONICAL_DOMAIN}/sitemap_products_1.xml
       sitemaps: sitemapsList,
       targetKeywords: [
         { keyword: 'luxury mens suits usa', intent: 'Commercial', difficulty: 'Medium', priority: 'High' },
-        { keyword: 'italian wool suits new york', intent: 'Transactional', difficulty: 'Medium', priority: 'High' },
+        { keyword: 'italian wool suits gurnee il', intent: 'Transactional', difficulty: 'Medium', priority: 'High' },
         { keyword: 'bespoke suits america', intent: 'Commercial', difficulty: 'High', priority: 'High' },
         { keyword: 'egyptian cotton dress shirts', intent: 'Commercial', difficulty: 'Medium', priority: 'High' },
         { keyword: 'handcrafted silk ties usa', intent: 'Commercial', difficulty: 'Low', priority: 'Medium' },
-        { keyword: 'goodyear welted shoes nyc', intent: 'Transactional', difficulty: 'Medium', priority: 'High' },
+        { keyword: 'goodyear welted shoes gurnee il', intent: 'Transactional', difficulty: 'Medium', priority: 'High' },
         { keyword: 'tailored wool trousers usa', intent: 'Commercial', difficulty: 'Low', priority: 'Medium' },
         { keyword: 'cashmere overcoats men usa', intent: 'Transactional', difficulty: 'Medium', priority: 'High' }
       ]

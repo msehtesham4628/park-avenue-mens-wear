@@ -57,7 +57,7 @@ export const descriptionService = {
     if (apiKey) {
       try {
         const ai = new GoogleGenAI({ apiKey });
-        const systemPrompt = `You are the master creative director and head sartorial copywriter for Park Avenue Menswear, an ultra-luxury bespoke menswear house located in New York City with worldwide express delivery across all 50 US States.
+        const systemPrompt = `You are the master creative director and head sartorial copywriter for Park Avenue Menswear, an ultra-luxury bespoke menswear house located in Gurnee, Illinois with worldwide express delivery across all 50 US States.
 Write compelling, high-converting, Google USA #1 ranking luxury fashion editorial copy for a prestigious menswear garment.
 
 Garment details:
@@ -142,7 +142,7 @@ Output MUST be valid JSON with this exact structure:
         'Signature Bemberg cupro jacquard interior lining with dual sweat guards',
         'Trousers feature split curtain waistband, front coin pocket, and unfinished hem for bespoke tailoring'
       ];
-      stylingAdvice = 'Pair with a crisp Egyptian cotton spread-collar shirt, hand-rolled silk grenadine tie, and Goodyear-welted black calfskin Oxfords for timeless New York elegance.';
+      stylingAdvice = 'Pair with a crisp Egyptian cotton spread-collar shirt, hand-rolled silk grenadine tie, and Goodyear-welted black calfskin Oxfords for timeless sartorial elegance.';
       fabricDetails = `${fabric} woven with a 280g/m four-season weight, offering fluid drape, natural thermal balance, and resilient shape retention.`;
       careInstructions = [
         'Professional eco-friendly dry clean only (max twice per season)',
@@ -150,7 +150,7 @@ Output MUST be valid JSON with this exact structure:
         'Store on contoured wide-shoulder cedar hangers between wearings'
       ];
     } else if (catLower.includes('shirt')) {
-      description = `An indispensable cornerstone of the luxury wardrobe, ${name} is meticulously woven from ${fabric}. Crafted with single-needle 22-stitches-per-inch precision tailoring, this shirt offers an exquisite hand feel, luminous luster, and exceptional all-day crispness.\n\nThe reinforced spread collar is engineered with removable brass stays to maintain crisp arching beneath jacket lapels, while genuine Australian mother-of-pearl buttons are crow-foot stitched for longevity. Perfect for executive travel from Manhattan to San Francisco.`;
+      description = `An indispensable cornerstone of the luxury wardrobe, ${name} is meticulously woven from ${fabric}. Crafted with single-needle 22-stitches-per-inch precision tailoring, this shirt offers an exquisite hand feel, luminous luster, and exceptional all-day crispness.\n\nThe reinforced spread collar is engineered with removable brass stays to maintain crisp arching beneath jacket lapels, while genuine Australian mother-of-pearl buttons are crow-foot stitched for longevity. Perfect for executive travel from Chicago to San Francisco.`;
       shortDescription = `Ultra-fine ${fabric} dress shirt tailored with single-needle seams and genuine mother-of-pearl buttons.`;
       bulletPoints = [
         `Woven from ${fabric} with liquid-silk hand feel`,
@@ -271,7 +271,7 @@ Output MUST be valid JSON with this exact structure:
     if (apiKey && rawText) {
       try {
         const ai = new GoogleGenAI({ apiKey });
-        const systemPrompt = `You are the master creative director and head merchandiser for Park Avenue Menswear, an ultra-luxury bespoke menswear house located in New York City.
+        const systemPrompt = `You are the master creative director and head merchandiser for Park Avenue Menswear, an ultra-luxury bespoke menswear house located in Gurnee, Illinois.
 Synthesize a prestigious, high-converting luxury menswear product title from the provided raw text notes, client brief, or technical garment specifications.
 
 Input text:

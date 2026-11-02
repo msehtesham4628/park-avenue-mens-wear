@@ -169,7 +169,7 @@ export const TermsPage: React.FC = () => {
               <span>Intellectual Property &amp; Governing Jurisdiction</span>
             </h2>
             <p>
-              All sartorial patterns, product titles, photography, descriptions, and the Park Avenue Menswear hallmark are proprietary intellectual property. These terms are governed under the laws of the State of New York and the United States of America.
+              All sartorial patterns, product titles, photography, descriptions, and the Park Avenue Menswear hallmark are proprietary intellectual property. These terms are governed under the laws of the State of Illinois and the United States of America.
             </p>
           </section>
 

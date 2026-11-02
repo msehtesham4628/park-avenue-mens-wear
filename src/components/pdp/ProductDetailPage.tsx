@@ -933,7 +933,7 @@ export const ProductDetailPage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                 <span className="text-[10px] font-mono uppercase text-gray-400 mr-1">Popular:</span>
                 {[
-                  { label: 'New York (10001)', zip: '10001' },
+                  { label: 'Gurnee (60031)', zip: '60031' },
                   { label: 'Beverly Hills (90210)', zip: '90210' },
                   { label: 'Dallas (75001)', zip: '75001' },
                   { label: 'Miami (33101)', zip: '33101' },
