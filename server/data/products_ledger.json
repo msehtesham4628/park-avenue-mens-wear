@@ -1,9 +1,9 @@
 [
   {
-    "productId": "PROD-MVZPFN4D-207",
-    "sku": "PA-BLAZER-1793650897548",
-    "name": "Imperial Worsted Navy Blazer 1793650897548",
-    "slug": "imperial-worsted-navy-blazer-1793650897548",
+    "productId": "PROD-MVZPRH15-962",
+    "sku": "PA-BLAZER-1793651449592",
+    "name": "Imperial Worsted Navy Blazer 1793651449592",
+    "slug": "imperial-worsted-navy-blazer-1793651449592",
     "description": "Hand-tailored from Super 160s English wool with brass crest buttons.",
     "category": "Suits",
     "subcategory": "Suits",
@@ -19,20 +19,20 @@
     ],
     "variants": [
       {
-        "id": "var-PROD-MVZPFN4D-207-0",
+        "id": "var-PROD-MVZPRH15-962-0",
         "size": "40R",
         "color": "Navy",
         "stock": 6,
-        "sku": "PA-BLAZER-1793650897548-40R",
+        "sku": "PA-BLAZER-1793651449592-40R",
         "priceModifier": 0,
         "colorHex": "#111827"
       },
       {
-        "id": "var-PROD-MVZPFN4D-207-1",
+        "id": "var-PROD-MVZPRH15-962-1",
         "size": "42R",
         "color": "Navy",
         "stock": 4,
-        "sku": "PA-BLAZER-1793650897548-42R",
+        "sku": "PA-BLAZER-1793651449592-42R",
         "priceModifier": 0,
         "colorHex": "#111827"
       }
@@ -47,62 +47,9 @@
     "shippingCharge": 15,
     "careInstructions": [],
     "pdfDocuments": [],
-    "_id": "6ae8f0d2aa54e46b246700df",
-    "createdAt": "2026-11-02T20:21:38.896Z",
-    "updatedAt": "2026-11-02T20:21:38.896Z",
-    "__v": 0
-  },
-  {
-    "_id": "6ae8f099370ac9cc1229bb74",
-    "productId": "PROD-MVZPEF3F-619",
-    "sku": "PA-BLAZER-1793650840532",
-    "name": "Imperial Worsted Navy Blazer 1793650840532",
-    "slug": "imperial-worsted-navy-blazer-1793650840532",
-    "description": "Hand-tailored from Super 160s English wool with brass crest buttons.",
-    "category": "Suits",
-    "subcategory": "Suits",
-    "price": 1250,
-    "images": [],
-    "colorImages": {},
-    "sizes": [
-      "40R",
-      "42R"
-    ],
-    "colors": [
-      "Navy"
-    ],
-    "variants": [
-      {
-        "id": "var-PROD-MVZPEF3F-619-0",
-        "size": "40R",
-        "color": "Navy",
-        "stock": 6,
-        "sku": "PA-BLAZER-1793650840532-40R",
-        "priceModifier": 0,
-        "colorHex": "#111827"
-      },
-      {
-        "id": "var-PROD-MVZPEF3F-619-1",
-        "size": "42R",
-        "color": "Navy",
-        "stock": 4,
-        "sku": "PA-BLAZER-1793650840532-42R",
-        "priceModifier": 0,
-        "colorHex": "#111827"
-      }
-    ],
-    "stockQuantity": 10,
-    "lowStockThreshold": 3,
-    "isFeatured": false,
-    "isNewArrival": true,
-    "isActive": true,
-    "fabric": "100% Super 160s English Wool",
-    "fit": "Sartorial Tailored Fit",
-    "shippingCharge": 15,
-    "careInstructions": [],
-    "pdfDocuments": [],
-    "createdAt": "2026-11-02T20:20:41.836Z",
-    "updatedAt": "2026-11-02T20:20:41.836Z",
+    "_id": "6ae8f2fa2c73c7cdc4d6a2d5",
+    "createdAt": "2026-11-02T20:30:50.875Z",
+    "updatedAt": "2026-11-02T20:30:50.875Z",
     "__v": 0
   },
   {
@@ -4196,6 +4143,112 @@
     "pdfDocuments": [],
     "createdAt": "2026-11-02T18:46:16.034Z",
     "updatedAt": "2026-11-02T18:46:16.034Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ae8f0d2aa54e46b246700df",
+    "productId": "PROD-MVZPFN4D-207",
+    "sku": "PA-BLAZER-1793650897548",
+    "name": "Imperial Worsted Navy Blazer 1793650897548",
+    "slug": "imperial-worsted-navy-blazer-1793650897548",
+    "description": "Hand-tailored from Super 160s English wool with brass crest buttons.",
+    "category": "Suits",
+    "subcategory": "Suits",
+    "price": 1250,
+    "images": [],
+    "colorImages": {},
+    "sizes": [
+      "40R",
+      "42R"
+    ],
+    "colors": [
+      "Navy"
+    ],
+    "variants": [
+      {
+        "id": "var-PROD-MVZPFN4D-207-0",
+        "size": "40R",
+        "color": "Navy",
+        "stock": 6,
+        "sku": "PA-BLAZER-1793650897548-40R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      },
+      {
+        "id": "var-PROD-MVZPFN4D-207-1",
+        "size": "42R",
+        "color": "Navy",
+        "stock": 4,
+        "sku": "PA-BLAZER-1793650897548-42R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      }
+    ],
+    "stockQuantity": 10,
+    "lowStockThreshold": 3,
+    "isFeatured": false,
+    "isNewArrival": true,
+    "isActive": true,
+    "fabric": "100% Super 160s English Wool",
+    "fit": "Sartorial Tailored Fit",
+    "shippingCharge": 15,
+    "careInstructions": [],
+    "pdfDocuments": [],
+    "createdAt": "2026-11-02T20:21:38.896Z",
+    "updatedAt": "2026-11-02T20:21:38.896Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ae8f099370ac9cc1229bb74",
+    "productId": "PROD-MVZPEF3F-619",
+    "sku": "PA-BLAZER-1793650840532",
+    "name": "Imperial Worsted Navy Blazer 1793650840532",
+    "slug": "imperial-worsted-navy-blazer-1793650840532",
+    "description": "Hand-tailored from Super 160s English wool with brass crest buttons.",
+    "category": "Suits",
+    "subcategory": "Suits",
+    "price": 1250,
+    "images": [],
+    "colorImages": {},
+    "sizes": [
+      "40R",
+      "42R"
+    ],
+    "colors": [
+      "Navy"
+    ],
+    "variants": [
+      {
+        "id": "var-PROD-MVZPEF3F-619-0",
+        "size": "40R",
+        "color": "Navy",
+        "stock": 6,
+        "sku": "PA-BLAZER-1793650840532-40R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      },
+      {
+        "id": "var-PROD-MVZPEF3F-619-1",
+        "size": "42R",
+        "color": "Navy",
+        "stock": 4,
+        "sku": "PA-BLAZER-1793650840532-42R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      }
+    ],
+    "stockQuantity": 10,
+    "lowStockThreshold": 3,
+    "isFeatured": false,
+    "isNewArrival": true,
+    "isActive": true,
+    "fabric": "100% Super 160s English Wool",
+    "fit": "Sartorial Tailored Fit",
+    "shippingCharge": 15,
+    "careInstructions": [],
+    "pdfDocuments": [],
+    "createdAt": "2026-11-02T20:20:41.836Z",
+    "updatedAt": "2026-11-02T20:20:41.836Z",
     "__v": 0
   }
 ]

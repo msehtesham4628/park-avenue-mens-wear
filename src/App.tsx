@@ -9,6 +9,7 @@ import { ToastContainer } from './components/common/ToastContainer';
 import { SeoHead } from './components/common/SeoHead';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // View Pages
 import { Hero } from './components/home/Hero';
@@ -105,6 +106,7 @@ export default function App() {
       <ShopProvider>
         <MainContent />
         <Analytics />
+        <SpeedInsights />
       </ShopProvider>
     </ErrorBoundary>
   );

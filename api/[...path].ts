@@ -86,6 +86,7 @@ app.get('/robots.txt', (_req, res) => {
   return res.status(200).send(seoService.generateRobotsTxt());
 });
 
+app.use('/api', apiRouter);
 app.use('/', apiRouter);
 app.use('/api', errorHandler);
 app.use(errorHandler);
