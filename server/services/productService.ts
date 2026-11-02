@@ -130,16 +130,60 @@ export function generateSlug(name: string): string {
 export function sanitizeProductPayload(prod: any, isList = false): any {
   if (!prod) return prod;
   const p = typeof prod.toObject === 'function' ? prod.toObject() : { ...prod };
+  const targetSlug = p.slug || p.productId || p.sku || 'garment';
 
   // Always strip out heavy productViews from list queries
   if (isList) {
     delete p.productViews;
+  } else if (p.productViews && typeof p.productViews === 'object') {
+    const sanitizedViews: Record<string, string> = {};
+    for (const [key, val] of Object.entries(p.productViews)) {
+      if (typeof val === 'string' && val.startsWith('data:')) {
+        sanitizedViews[key] = `/api/products/${encodeURIComponent(targetSlug)}/image/view-${encodeURIComponent(key)}`;
+      } else if (typeof val === 'string') {
+        sanitizedViews[key] = val;
+      }
+    }
+    p.productViews = sanitizedViews;
+  }
+
+  // Sanitize images array: convert heavy base64 strings into lightweight streaming endpoints
+  if (Array.isArray(p.images)) {
+    p.images = p.images.map((img: any, idx: number) => {
+      if (typeof img === 'string' && img.startsWith('data:')) {
+        return `/api/products/${encodeURIComponent(targetSlug)}/image/${idx}`;
+      }
+      return img;
+    });
+    if (isList && p.images.length > 4) {
+      p.images = p.images.slice(0, 4);
+    }
+  }
+
+  // Sanitize colorImages: convert heavy base64 strings into color streaming endpoints
+  if (p.colorImages && typeof p.colorImages === 'object') {
+    const rawColorImages = typeof (p.colorImages as any).toJSON === 'function'
+      ? (p.colorImages as any).toJSON()
+      : (p.colorImages instanceof Map ? Object.fromEntries(p.colorImages.entries()) : p.colorImages);
+    const sanitizedColorImages: Record<string, string[]> = {};
+    for (const [colorKey, valList] of Object.entries(rawColorImages)) {
+      if (Array.isArray(valList)) {
+        sanitizedColorImages[colorKey] = valList.map((cImg: any, idx: number) => {
+          if (typeof cImg === 'string' && cImg.startsWith('data:')) {
+            return `/api/products/${encodeURIComponent(targetSlug)}/color-image/${encodeURIComponent(colorKey)}/${idx}`;
+          }
+          return cImg;
+        });
+      } else {
+        sanitizedColorImages[colorKey] = valList as any;
+      }
+    }
+    p.colorImages = sanitizedColorImages;
   }
 
   if (Array.isArray(p.pdfDocuments)) {
     p.pdfDocuments = p.pdfDocuments.map((doc: any) => {
       const docId = doc.id || doc._id || 'doc-1';
-      const targetSlug = p.productId || p.slug || 'garment';
       const isDataUrl = typeof doc.url === 'string' && doc.url.startsWith('data:');
       return {
         id: docId,
@@ -151,11 +195,6 @@ export function sanitizeProductPayload(prod: any, isList = false): any {
         url: isDataUrl ? `/api/products/${encodeURIComponent(targetSlug)}/pdf/${encodeURIComponent(docId)}` : (doc.url || `/api/products/${encodeURIComponent(targetSlug)}/pdf/${encodeURIComponent(docId)}`)
       };
     });
-  }
-
-  // Keep list view images lightweight (first 4 URLs)
-  if (isList && Array.isArray(p.images) && p.images.length > 4) {
-    p.images = p.images.slice(0, 4);
   }
 
   return p;
@@ -220,6 +259,13 @@ export const productService = {
   },
 
   /**
+   * Retrieve in-memory products store
+   */
+  getAllProductsFromStore(): any[] {
+    return inMemoryStore;
+  },
+
+  /**
    * Query products with robust filtering, sorting and pagination
    */
   async getProducts(filters: ProductQueryFilters = {}) {
@@ -230,7 +276,7 @@ export const productService = {
     const query: any = {};
 
     if (!filters.includeInactive) {
-      query.isActive = true;
+      query.isActive = { $ne: false };
     }
 
     if (filters.category && filters.category !== 'All') {

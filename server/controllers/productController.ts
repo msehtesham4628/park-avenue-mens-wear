@@ -417,6 +417,121 @@ export const productController = {
       console.error('[ProductController] PDF streaming error:', err);
       return res.status(500).json({ success: false, message: 'Error retrieving PDF document.' });
     }
+  },
+
+  /**
+   * GET /api/products/:slug/image/:index
+   * Stream raw product image binary from stored base64 or redirect to external URL
+   */
+  async getProductImage(req: Request, res: Response) {
+    try {
+      const { slug, index } = req.params;
+      const targetSlug = slug || (req.query.slug as string);
+      const targetIndex = index !== undefined ? String(index) : (req.query.index as string) || '0';
+      if (!targetSlug) {
+        return res.status(400).json({ success: false, message: 'Garment identifier required.' });
+      }
+
+      const product = await productService.getProductRawBySlugOrId(targetSlug);
+      if (!product) {
+        return res.status(404).json({ success: false, message: 'Garment not found.' });
+      }
+
+      let imgUrl = '';
+      if (targetIndex.startsWith('view-')) {
+        const viewKey = targetIndex.replace('view-', '');
+        imgUrl = (product as any).productViews?.[viewKey] || '';
+      } else {
+        const num = parseInt(targetIndex, 10);
+        const images = Array.isArray((product as any).images) ? (product as any).images : [];
+        imgUrl = !isNaN(num) && images[num] ? images[num] : images[0] || '';
+      }
+
+      if (!imgUrl) {
+        // Fallback transparent 1x1 pixel PNG
+        const transparentPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.status(200).send(transparentPng);
+      }
+
+      if (imgUrl.startsWith('data:')) {
+        const matches = imgUrl.match(/^data:([A-Za-z0-9\-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const contentType = matches[1] || 'image/jpeg';
+          const buffer = Buffer.from(matches[2], 'base64');
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Length', buffer.length);
+          res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400, immutable');
+          res.setHeader('ETag', `"${targetSlug}-img-${targetIndex}"`);
+          return res.status(200).send(buffer);
+        }
+      }
+
+      if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://') || imgUrl.startsWith('/')) {
+        return res.redirect(imgUrl);
+      }
+
+      return res.status(400).json({ success: false, message: 'Invalid image encoding.' });
+    } catch (err: any) {
+      console.error('[ProductController] Image streaming error:', err);
+      return res.status(500).json({ success: false, message: 'Error retrieving product image.' });
+    }
+  },
+
+  /**
+   * GET /api/products/:slug/color-image/:color/:index
+   * Stream color-specific image binary
+   */
+  async getProductColorImage(req: Request, res: Response) {
+    try {
+      const { slug, color, index } = req.params;
+      const targetSlug = slug || (req.query.slug as string);
+      const targetColor = color || (req.query.color as string);
+      const targetIndex = parseInt(index || (req.query.index as string) || '0', 10);
+
+      if (!targetSlug || !targetColor) {
+        return res.status(400).json({ success: false, message: 'Garment identifier and color required.' });
+      }
+
+      const product = await productService.getProductRawBySlugOrId(targetSlug);
+      if (!product) {
+        return res.status(404).json({ success: false, message: 'Garment not found.' });
+      }
+
+      const colorImages = (product as any).colorImages || {};
+      const imgList = colorImages[targetColor] || colorImages[decodeURIComponent(targetColor)] || [];
+      const imgUrl = Array.isArray(imgList) && imgList[targetIndex] ? imgList[targetIndex] : (imgList[0] || (product as any).images?.[0] || '');
+
+      if (!imgUrl) {
+        const transparentPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        return res.status(200).send(transparentPng);
+      }
+
+      if (imgUrl.startsWith('data:')) {
+        const matches = imgUrl.match(/^data:([A-Za-z0-9\-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const contentType = matches[1] || 'image/jpeg';
+          const buffer = Buffer.from(matches[2], 'base64');
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Length', buffer.length);
+          res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400, immutable');
+          res.setHeader('ETag', `"${targetSlug}-${targetColor}-img-${targetIndex}"`);
+          return res.status(200).send(buffer);
+        }
+      }
+
+      if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://') || imgUrl.startsWith('/')) {
+        return res.redirect(imgUrl);
+      }
+
+      return res.status(400).json({ success: false, message: 'Invalid image encoding.' });
+    } catch (err: any) {
+      console.error('[ProductController] Color image streaming error:', err);
+      return res.status(500).json({ success: false, message: 'Error retrieving product color image.' });
+    }
   }
 };
 

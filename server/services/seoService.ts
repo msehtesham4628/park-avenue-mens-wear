@@ -86,6 +86,23 @@ export const seoService = {
       productMap.set(key, p);
     });
 
+    // 1.5. Products from ledger file
+    try {
+      const ledgerPath = path.resolve(process.cwd(), 'server/data/products_ledger.json');
+      if (fs.existsSync(ledgerPath)) {
+        const raw = fs.readFileSync(ledgerPath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((p: any) => {
+            if (p.isActive !== false) {
+              const key = p.productId || p.id || p.sku;
+              productMap.set(key, p);
+            }
+          });
+        }
+      }
+    } catch (_) {}
+
     // 2. In-memory store products
     try {
       const memoryProds = (productService as any).getAllProductsFromStore

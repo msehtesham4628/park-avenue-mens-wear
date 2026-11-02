@@ -7,6 +7,10 @@ const router = Router();
 // Streaming & public endpoints (specific subpaths must precede generic :slug)
 router.get('/pdf/:pdfId', productController.getProductPdf);
 router.get('/:slug/pdf/:pdfId', productController.getProductPdf);
+router.get('/:slug/image/:index', productController.getProductImage);
+router.get('/image/:slug/:index', productController.getProductImage);
+router.get('/:slug/color-image/:color/:index', productController.getProductColorImage);
+router.get('/color-image/:slug/:color/:index', productController.getProductColorImage);
 router.get('/admin/:slug', productController.getProductBySlug);
 
 // Storefront public endpoints
