@@ -238,6 +238,7 @@ export const AdminDashboard: React.FC = () => {
   const [excelFileName, setExcelFileName] = useState('');
   const [parsedExcelProducts, setParsedExcelProducts] = useState<Omit<Product, 'id' | 'totalStock'>[]>([]);
   const [excelImportErrors, setExcelImportErrors] = useState<string[]>([]);
+  const [excelImportWarnings, setExcelImportWarnings] = useState<string[]>([]);
   const [isImportingExcel, setIsImportingExcel] = useState(false);
 
   // Manual Order Modal state
@@ -5527,8 +5528,9 @@ export const AdminDashboard: React.FC = () => {
                     const result = await parseProductsExcel(file);
                     setParsedExcelProducts(result.products);
                     setExcelImportErrors(result.errors);
+                    setExcelImportWarnings(result.warnings || []);
                     if (result.products.length > 0) {
-                      showToast(`Parsed ${result.products.length} products successfully`, 'success');
+                      showToast(`Parsed ${result.products.length} garments (${result.errors.length} fatal errors, ${result.warnings?.length || 0} notices)`, 'success');
                     } else {
                       showToast('No products detected in file', 'error');
                     }
@@ -5544,21 +5546,36 @@ export const AdminDashboard: React.FC = () => {
                   {excelFileName ? excelFileName : 'CLICK OR DRAG FILE HERE TO SELECT EXCEL'}
                 </span>
                 <span className="text-[11px] font-mono text-gray-500 block">
-                  Accepts .xlsx, .xls, and .csv spreadsheet formats
+                  Accepts .xlsx, .xls, and .csv spreadsheet formats with flexible headers
                 </span>
               </label>
             </div>
 
-            {/* Validation Feedback & Warnings */}
+            {/* Fatal Errors */}
             {excelImportErrors.length > 0 && (
               <div className="p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs font-mono space-y-1">
                 <div className="flex items-center gap-1.5 font-semibold text-[11px] uppercase">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span>Validation Notices ({excelImportErrors.length}):</span>
+                  <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                  <span>Fatal Skipped Rows ({excelImportErrors.length}):</span>
                 </div>
                 <div className="max-h-24 overflow-y-auto space-y-0.5 text-[11px] pl-4 list-disc">
                   {excelImportErrors.map((err, i) => (
                     <div key={`import-err-${i}`}>&bull; {err}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Non-fatal Warnings / Defaults */}
+            {excelImportWarnings.length > 0 && (
+              <div className="p-3.5 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-mono space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-[11px] uppercase">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Atelier Formatting Notices ({excelImportWarnings.length}):</span>
+                </div>
+                <div className="max-h-24 overflow-y-auto space-y-0.5 text-[11px] pl-4 list-disc text-amber-800">
+                  {excelImportWarnings.map((warn, i) => (
+                    <div key={`import-warn-${i}`}>&bull; {warn}</div>
                   ))}
                 </div>
               </div>

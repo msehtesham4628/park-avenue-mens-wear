@@ -142,6 +142,39 @@ async function bootstrapServer() {
     } catch (err: any) {
       return res.status(500).send(`Error: ${err?.message}`);
     }
+  const BOT_USER_AGENT_REGEX = /(googlebot|bingbot|yandex|baiduspider|twitterbot|facebookexternalhit|rogerbot|linkedinbot|slackbot|whatsapp|telegrambot|embedly|quora link preview|showyoubot|outbrain|pinterest|applebot)/i;
+
+  app.get([
+    '/product/:id',
+    '/suits',
+    '/blazers-jackets',
+    '/shirts',
+    '/pants',
+    '/outerwear',
+    '/sweaters-knitwear',
+    '/footwear',
+    '/accessories',
+    '/shorts',
+    '/shop',
+    '/categories',
+    '/returns',
+    '/terms',
+    '/track-order',
+    '/track-alteration'
+  ], async (req, res, next) => {
+    const userAgent = String(req.headers['user-agent'] || '');
+    const isBot = BOT_USER_AGENT_REGEX.test(userAgent) || req.query.bot === '1' || req.query.prerender === '1';
+    if (isBot) {
+      try {
+        const html = await seoService.generateBotHtml(req.path);
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+        return res.status(200).send(html);
+      } catch (_) {
+        return next();
+      }
+    }
+    next();
   });
 
   // Mount API Router under /api

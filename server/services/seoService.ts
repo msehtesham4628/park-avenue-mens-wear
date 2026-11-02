@@ -496,5 +496,161 @@ Sitemap: ${CANONICAL_DOMAIN}/sitemap_products_1.xml
         { keyword: 'cashmere overcoats men usa', intent: 'Transactional', difficulty: 'Medium', priority: 'High' }
       ]
     };
+  },
+
+  /**
+   * Generates crawlable HTML for search engine bots (Googlebot, Bingbot, etc.)
+   * providing dynamic title, meta tags, exact canonical URL, and Schema.org structured data.
+   */
+  async generateBotHtml(pathname: string): Promise<string> {
+    const cleanPath = pathname.split('?')[0].replace(/\/+$/, '') || '/';
+    const canonicalUrl = `${CANONICAL_DOMAIN}${cleanPath === '/' ? '/' : cleanPath}`;
+    const products = await this.getAllActiveProducts();
+
+    let title = 'Park Avenue Menswear | Bespoke Tailoring & Luxury Apparel USA';
+    let description = 'Explore luxury American menswear, Italian wool suits, Egyptian cotton dress shirts, tailored dress pants, and handcrafted silk ties. Master tailoring & express US shipping.';
+    let ogType = 'website';
+    let primaryImage = `${CANONICAL_DOMAIN}/Park_Avenue_Logo.png`;
+    let bodyMarkup = '';
+    let jsonLd: any = null;
+
+    // 1. Product Detail Page
+    if (cleanPath.startsWith('/product/')) {
+      const productId = decodeURIComponent(cleanPath.replace('/product/', ''));
+      const product = products.find(p => {
+        const id = String(p.productId || p.id || p.sku || '').toLowerCase();
+        return id === productId.toLowerCase();
+      });
+
+      if (product) {
+        title = `${product.name} | ${product.fabric || 'Italian Fabric'} | Park Avenue Menswear USA`.slice(0, 60);
+        description = `Discover ${product.name} ($${Number(product.price).toLocaleString('en-US')}) at Park Avenue Menswear. Handcrafted with ${product.fabric || 'Italian textiles'} and master tailoring. Express USA shipping.`.slice(0, 155);
+        ogType = 'product';
+        if (product.images && product.images[0]) {
+          primaryImage = product.images[0].startsWith('http') ? product.images[0] : `${CANONICAL_DOMAIN}${product.images[0]}`;
+        }
+
+        jsonLd = {
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          '@id': `${canonicalUrl}#product`,
+          name: product.name,
+          image: [primaryImage],
+          description: product.description,
+          sku: product.sku || product.id,
+          brand: { '@type': 'Brand', name: 'Park Avenue Menswear' },
+          category: product.category,
+          offers: {
+            '@type': 'Offer',
+            url: canonicalUrl,
+            priceCurrency: 'USD',
+            price: Number(product.price || 0).toFixed(2),
+            itemCondition: 'https://schema.org/NewCondition',
+            availability: 'https://schema.org/InStock',
+            seller: { '@type': 'Organization', name: 'Park Avenue Menswear' }
+          }
+        };
+
+        bodyMarkup = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1000px; margin: 0 auto; padding: 24px;">
+            <nav style="font-size: 13px; margin-bottom: 16px;"><a href="/">Home</a> &gt; <a href="/shop">Shop</a> &gt; <span>${product.name}</span></nav>
+            <h1 style="font-size: 28px; font-weight: 700; color: #111827;">${product.name}</h1>
+            <p style="font-size: 22px; color: #936B34; font-weight: 600;">$${Number(product.price).toLocaleString('en-US')}</p>
+            <p style="font-size: 15px; color: #4b5563; line-height: 1.6;">${product.description || 'Bespoke sartorial garment handcrafted with traditional Italian craftsmanship.'}</p>
+            <div style="margin: 20px 0; font-size: 14px;">
+              <p><strong>Fabric:</strong> ${product.fabric || 'Superfine Italian Wool'}</p>
+              <p><strong>Tailoring Fit:</strong> ${product.fit || 'Contemporary Tailored'}</p>
+              <p><strong>Category:</strong> ${product.category}</p>
+            </div>
+            <p><a href="/shop" style="color: #936B34; font-weight: 600;">Browse All Collections</a> &bull; <a href="/returns">15-Day Return Guarantee</a></p>
+          </div>
+        `;
+      }
+    }
+
+    // 2. Category Page
+    if (!bodyMarkup) {
+      const catSlug = cleanPath.replace(/^\//, '');
+      const cat = CORE_CATEGORIES.find(c => c.slug === catSlug);
+      if (cat) {
+        title = `Luxury Men's ${cat.name} USA | Bespoke ${cat.name} | Park Avenue Menswear`.slice(0, 60);
+        description = `Explore luxury men's ${cat.name.toLowerCase()} crafted from pure Italian wool, Egyptian cotton, and cashmere. Master bespoke alterations & free USA delivery.`.slice(0, 155);
+        const catProds = products.filter(p => {
+          const cName = String(p.category || '').toLowerCase();
+          return cName.includes(catSlug.replace('-', ' ')) || catSlug.includes(cName);
+        });
+
+        bodyMarkup = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1200px; margin: 0 auto; padding: 24px;">
+            <nav style="font-size: 13px; margin-bottom: 16px;"><a href="/">Home</a> &gt; <span>${cat.name}</span></nav>
+            <h1 style="font-size: 30px; font-weight: 700; color: #111827;">Luxury Men's ${cat.name}</h1>
+            <p style="font-size: 15px; color: #4b5563;">Explore our curated selection of hand-tailored ${cat.name.toLowerCase()} with complimentary bespoke fitting.</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-top: 24px;">
+              ${catProds.slice(0, 12).map(p => `
+                <div style="border: 1px solid #e5e7eb; padding: 16px; border-radius: 4px;">
+                  <h3 style="font-size: 16px; margin: 0 0 6px 0;"><a href="/product/${encodeURIComponent(p.productId || p.id || p.sku)}" style="color: #111827; text-decoration: none;">${p.name}</a></h3>
+                  <p style="color: #936B34; font-weight: 600; margin: 0 0 8px 0;">$${Number(p.price).toLocaleString('en-US')}</p>
+                  <a href="/product/${encodeURIComponent(p.productId || p.id || p.sku)}" style="font-size: 12px; color: #936B34; font-weight: 600;">View Details &rarr;</a>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // 3. Fallback generic crawlable body
+    if (!bodyMarkup) {
+      bodyMarkup = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1200px; margin: 0 auto; padding: 24px;">
+          <header style="border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 24px;">
+            <h1 style="font-size: 28px; font-weight: 700; color: #111827; margin: 0 0 8px 0;">Park Avenue Menswear</h1>
+            <p style="color: #6b7280; margin: 0;">Bespoke Tailoring &amp; Luxury Apparel | Gurnee, IL &amp; Nationwide USA</p>
+            <nav style="margin-top: 14px; display: flex; flex-wrap: wrap; gap: 12px; font-size: 14px;">
+              <a href="/">Home</a>
+              <a href="/suits">Suits &amp; Tuxedos</a>
+              <a href="/blazers-jackets">Blazers &amp; Jackets</a>
+              <a href="/shirts">Dress Shirts</a>
+              <a href="/pants">Tailored Pants</a>
+              <a href="/outerwear">Outerwear</a>
+              <a href="/footwear">Footwear</a>
+              <a href="/accessories">Accessories</a>
+              <a href="/shop">Shop All</a>
+              <a href="/returns">Returns</a>
+              <a href="/terms">Terms</a>
+            </nav>
+          </header>
+          <p style="font-size: 15px; color: #4b5563;">Experience bespoke tailoring, Italian wool suits, Egyptian cotton shirts, and artisan alteration services at Park Avenue Menswear.</p>
+        </div>
+      `;
+    }
+
+    return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${title}</title>
+    <meta name="description" content="${description}" />
+    <link rel="canonical" href="${canonicalUrl}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:url" content="${canonicalUrl}" />
+    <meta property="og:type" content="${ogType}" />
+    <meta property="og:image" content="${primaryImage}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${title}" />
+    <meta name="twitter:description" content="${description}" />
+    <meta name="twitter:image" content="${primaryImage}" />
+    <meta name="robots" content="index, follow" />
+    <link rel="icon" type="image/png" href="/Park_Avenue_Logo.png" />
+    ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` : ''}
+  </head>
+  <body class="bg-white text-[#111827] antialiased">
+    <div id="root">${bodyMarkup}</div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>`;
   }
 };
+

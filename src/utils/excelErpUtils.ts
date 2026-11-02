@@ -72,12 +72,39 @@ export function downloadProductExcelTemplate() {
 }
 
 /**
- * Parses an uploaded Excel or CSV file into Product items
+ * Excel Parsing Result Interface
  */
-export async function parseProductsExcel(file: File): Promise<{
+export interface ExcelParseResult {
   products: Omit<Product, 'id' | 'totalStock'>[];
   errors: string[];
-}> {
+  warnings: string[];
+}
+
+/**
+ * Flexible column value accessor that matches against multiple possible header aliases,
+ * ignoring casing, whitespace, and punctuation.
+ */
+function getRowValue(row: Record<string, any>, aliases: string[]): string {
+  const normalizedKeys = Object.keys(row).map(k => ({
+    original: k,
+    normalized: k.toLowerCase().replace(/[^a-z0-9]/g, '')
+  }));
+
+  for (const alias of aliases) {
+    const normAlias = alias.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const found = normalizedKeys.find(k => k.normalized === normAlias);
+    if (found && row[found.original] !== undefined && row[found.original] !== null) {
+      const val = String(row[found.original]).trim();
+      if (val) return val;
+    }
+  }
+  return '';
+}
+
+/**
+ * Parses an uploaded Excel or CSV file into Product items with robust header matching and validation
+ */
+export async function parseProductsExcel(file: File): Promise<ExcelParseResult> {
   const data = await file.arrayBuffer();
   const workbook = XLSX.read(data, { type: 'array' });
   const firstSheetName = workbook.SheetNames[0];
@@ -89,32 +116,45 @@ export async function parseProductsExcel(file: File): Promise<{
 
   const products: Omit<Product, 'id' | 'totalStock'>[] = [];
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   rows.forEach((row, index) => {
     const rowNum = index + 2;
-    const sku = String(row['SKU'] || row['sku'] || `PA-IMP-${Date.now()}-${index}`).trim();
-    const name = String(row['Garment Name'] || row['Name'] || row['name'] || '').trim();
-    const rawCategory = String(row['Category'] || row['category'] || 'Suits').trim();
-    const subcategory = String(row['Subcategory'] || row['subcategory'] || '').trim();
-    const priceNum = parseFloat(String(row['Price ($)'] || row['Price'] || row['price'] || '0').replace(/[^0-9.]/g, ''));
-    const color = String(row['Color'] || row['color'] || 'Default').trim() || 'Default';
-    const colorHex = String(row['Color Hex'] || row['ColorHex'] || row['colorHex'] || '#111827').trim();
-    const fabric = String(row['Fabric'] || row['fabric'] || '').trim();
-    const fit = String(row['Fit'] || row['fit'] || '').trim();
-    const description = String(row['Description'] || row['description'] || '').trim();
-    const size = String(row['Size'] || row['size'] || '').trim();
-    const stock = Math.max(0, parseInt(String(row['Stock'] || row['stock'] || '0'), 10) || 0);
-    const imageUrl = String(row['Image URL'] || row['Image'] || row['image'] || '').trim();
 
-    if (!name) {
-      errors.push(`Row ${rowNum}: Missing Garment Name. Skipped.`);
+    // Flexible column extraction
+    const rawGroup = getRowValue(row, ['Product Group', 'Group', 'Style Group', 'Group ID', 'Style Code', 'Parent SKU']);
+    const rawSku = getRowValue(row, ['SKU', 'Product Code', 'Item Code', 'Item SKU', 'Product ID', 'Style No', 'Style', 'Code', 'Barcode']);
+    const name = getRowValue(row, ['Garment Name', 'Product Name', 'Name', 'Title', 'Product', 'Item Name', 'Item', 'Garment']);
+    const rawCategory = getRowValue(row, ['Category', 'Department', 'Dept', 'Collection', 'Group', 'Type', 'Product Type']);
+    const subcategory = getRowValue(row, ['Subcategory', 'Sub Category', 'Sub-Category', 'Style Type']);
+    const rawPrice = getRowValue(row, ['Price ($)', 'Price', 'Unit Price', 'Cost', 'Rate', 'MRP', 'Selling Price', 'Amount']);
+    const color = getRowValue(row, ['Color', 'Colour', 'Shade']) || 'Classic';
+    const colorHex = getRowValue(row, ['Color Hex', 'Hex', 'ColorHex', 'Hex Code']) || '#111827';
+    const fabric = getRowValue(row, ['Fabric', 'Material', 'Textile', 'Cloth', 'Composition']);
+    const fit = getRowValue(row, ['Fit', 'Cut', 'Tailoring Fit', 'Style Fit']);
+    const description = getRowValue(row, ['Description', 'Desc', 'Details', 'About', 'Product Details']);
+    const size = getRowValue(row, ['Size', 'Sizes', 'Measurement', 'Dimensions']) || 'Standard';
+    const rawStock = getRowValue(row, ['Stock', 'Qty', 'Quantity', 'Inventory', 'Count', 'Available', 'Units']);
+    const imageUrl = getRowValue(row, ['Image URL', 'Image', 'Images', 'Photo', 'Picture', 'Img', 'Photo URL', 'Image Link']);
+
+    if (!name && !rawSku) {
+      errors.push(`Row ${rowNum}: Missing both Garment Name and SKU. Row was skipped.`);
       return;
     }
-    if (!imageUrl) {
-      errors.push(`Row ${rowNum} (${name} / ${color}): Missing Image URL. The color will use the product's fallback image.`);
-    }
+
+    const effectiveName = name || (rawSku ? `Garment ${rawSku}` : 'Bespoke Garment');
+    const effectiveSku = rawSku || (rawGroup ? `${rawGroup}-${color.toUpperCase().replace(/\s+/g, '')}-${size}` : `PA-${Date.now().toString(36).toUpperCase()}-${index + 1}`);
+
+    const priceNum = parseFloat(rawPrice.replace(/[^0-9.]/g, ''));
+    const finalPrice = (!isNaN(priceNum) && priceNum > 0) ? priceNum : 450;
     if (isNaN(priceNum) || priceNum <= 0) {
-      errors.push(`Row ${rowNum} (${name}): Invalid Price. Defaulted to $450.`);
+      warnings.push(`Row ${rowNum} ("${effectiveName}"): Missing or zero price, defaulted to $450.`);
+    }
+
+    const stock = Math.max(0, parseInt(rawStock.replace(/[^0-9]/g, '') || '0', 10) || 0);
+
+    if (!imageUrl) {
+      warnings.push(`Row ${rowNum} ("${effectiveName}" / ${color}): No image link provided; using category atelier lookbook.`);
     }
 
     let category: ProductCategory = 'Suits';
@@ -153,32 +193,27 @@ export async function parseProductsExcel(file: File): Promise<{
         category = 'Shorts';
       } else {
         category = 'Suits';
-        errors.push(`Row ${rowNum}: Category "${rawCategory}" normalized to "Suits".`);
+        if (rawCategory) {
+          warnings.push(`Row ${rowNum}: Category "${rawCategory}" normalized to "Suits".`);
+        }
       }
     }
 
-    // A row is one color. Example: 38R:3, 40R:5 creates size variants
-    // under that color, allowing same-name rows to be grouped in the storefront.
-    const variants: ProductVariant[] = [];
-    if (size) {
-      variants.push({
-        id: `${sku}-var`,
-        size,
-        stock,
-        color,
-        colorHex,
-        sku
-      });
-    } else {
-      errors.push(`Row ${rowNum} (${name} / ${color}): Missing Size.`);
-    }
+    const variants: ProductVariant[] = [{
+      id: `${effectiveSku}-var-${size}-${color}`.replace(/\s+/g, '-'),
+      size: size || 'Standard',
+      stock: stock > 0 ? stock : 3,
+      color,
+      colorHex,
+      sku: effectiveSku
+    }];
 
     products.push({
-      sku,
-      name,
+      sku: rawGroup || effectiveSku,
+      name: effectiveName,
       subtitle: subcategory || 'Sartorial Collection',
       category,
-      price: priceNum > 0 ? priceNum : 450,
+      price: finalPrice,
       collection: 'Park Avenue Sartorial',
       description: description || 'Bespoke sartorial garment handcrafted with traditional craftsmanship.',
       details: ['Hand-finished tailoring', 'Classic drape', 'Bespoke fit'],
@@ -191,9 +226,7 @@ export async function parseProductsExcel(file: File): Promise<{
     });
   });
 
-  // Merge rows belonging to the same Product Group / Garment Name into one
-  // MongoDB product document. Each Excel row remains a distinct color + size
-  // variant, while color-specific images are retained.
+  // Group multiple rows into single product items by Group, Name, or SKU
   const grouped = new Map<string, Omit<Product, 'id' | 'totalStock'>>();
   for (const product of products) {
     const groupKey = product.name.trim().toLowerCase();
@@ -201,7 +234,6 @@ export async function parseProductsExcel(file: File): Promise<{
     if (!existing) {
       grouped.set(groupKey, {
         ...product,
-        sku: product.sku.split('-').slice(0, -1).join('-') || product.sku,
         variants: [...(product.variants || [])],
         images: [...new Set(product.images || [])],
         colorImages: { ...(product.colorImages || {}) },
@@ -210,18 +242,32 @@ export async function parseProductsExcel(file: File): Promise<{
       continue;
     }
 
-    existing.variants = [...(existing.variants || []), ...(product.variants || [])];
+    // Merge variants by size and color
+    const mergedVariants = [...(existing.variants || [])];
+    for (const incomingVar of product.variants || []) {
+      const matchIdx = mergedVariants.findIndex(
+        v => v.size.toLowerCase() === incomingVar.size.toLowerCase() &&
+             v.color.toLowerCase() === incomingVar.color.toLowerCase()
+      );
+      if (matchIdx >= 0) {
+        mergedVariants[matchIdx].stock += incomingVar.stock;
+      } else {
+        mergedVariants.push(incomingVar);
+      }
+    }
+    existing.variants = mergedVariants;
+
     existing.images = [...new Set([...(existing.images || []), ...(product.images || [])])];
 
     const existingColorImages = existing.colorImages || {};
     const incomingColorImages = product.colorImages || {};
     existing.colorImages = { ...existingColorImages, ...incomingColorImages };
 
-    existing.colors = Array.from(new Set((existing.variants || []).map(v => v.color)));
+    existing.colors = Array.from(new Set(mergedVariants.map(v => v.color)));
   }
 
   const groupedProducts = Array.from(grouped.values());
-  return { products: groupedProducts, errors };
+  return { products: groupedProducts, errors, warnings };
 }
 
 /**

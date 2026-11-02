@@ -1,9 +1,9 @@
 [
   {
-    "productId": "PROD-MVZPRH15-962",
-    "sku": "PA-BLAZER-1793651449592",
-    "name": "Imperial Worsted Navy Blazer 1793651449592",
-    "slug": "imperial-worsted-navy-blazer-1793651449592",
+    "productId": "PROD-MVZS37YY-615",
+    "sku": "PA-BLAZER-1793655356738",
+    "name": "Imperial Worsted Navy Blazer 1793655356738",
+    "slug": "imperial-worsted-navy-blazer-1793655356738",
     "description": "Hand-tailored from Super 160s English wool with brass crest buttons.",
     "category": "Suits",
     "subcategory": "Suits",
@@ -19,20 +19,20 @@
     ],
     "variants": [
       {
-        "id": "var-PROD-MVZPRH15-962-0",
+        "id": "var-PROD-MVZS37YY-615-0",
         "size": "40R",
         "color": "Navy",
         "stock": 6,
-        "sku": "PA-BLAZER-1793651449592-40R",
+        "sku": "PA-BLAZER-1793655356738-40R",
         "priceModifier": 0,
         "colorHex": "#111827"
       },
       {
-        "id": "var-PROD-MVZPRH15-962-1",
+        "id": "var-PROD-MVZS37YY-615-1",
         "size": "42R",
         "color": "Navy",
         "stock": 4,
-        "sku": "PA-BLAZER-1793651449592-42R",
+        "sku": "PA-BLAZER-1793655356738-42R",
         "priceModifier": 0,
         "colorHex": "#111827"
       }
@@ -47,9 +47,9 @@
     "shippingCharge": 15,
     "careInstructions": [],
     "pdfDocuments": [],
-    "_id": "6ae8f2fa2c73c7cdc4d6a2d5",
-    "createdAt": "2026-11-02T20:30:50.875Z",
-    "updatedAt": "2026-11-02T20:30:50.875Z",
+    "_id": "6ae9023ef323ff1722b641b2",
+    "createdAt": "2026-11-02T21:35:58.235Z",
+    "updatedAt": "2026-11-02T21:35:58.235Z",
     "__v": 0
   },
   {
@@ -3673,14 +3673,17 @@
     "_id": "6ae8d66a7b0b735a537f94d0",
     "productId": "PROD-MVZLEQSM-350",
     "sku": "PA-MVZLEQ75",
-    "name": "Navy blue formal sweater",
-    "slug": "navy-blue-formal-sweater",
+    "name": "Men's Navy Blue Wool-Blend Utility Jacket",
+    "slug": "mens-navy-blue-wool-blend-utility-jacket",
     "description": "Precision crafted bespoke garment cut in our private atelier.",
     "category": "Sweaters & Knitwear",
     "subcategory": "Cashmere Crewnecks",
     "price": 199.99,
     "images": [
-      "/api/products/navy-blue-formal-sweater/image/0"
+      "/api/products/mens-navy-blue-wool-blend-utility-jacket/image/0",
+      "/api/products/mens-navy-blue-wool-blend-utility-jacket/image/1",
+      "/api/products/mens-navy-blue-wool-blend-utility-jacket/image/2",
+      "/api/products/mens-navy-blue-wool-blend-utility-jacket/image/3"
     ],
     "colorImages": {},
     "sizes": [
@@ -3693,7 +3696,7 @@
     ],
     "variants": [
       {
-        "id": "var-1793644137761-0-0",
+        "id": "var-1793652511354-0-0",
         "size": "38R",
         "color": "Navy blue",
         "stock": 4,
@@ -3702,7 +3705,7 @@
         "colorHex": "#111827"
       },
       {
-        "id": "var-1793644137761-0-1",
+        "id": "var-1793652511354-0-1",
         "size": "40R",
         "color": "Navy blue",
         "stock": 6,
@@ -3711,7 +3714,7 @@
         "colorHex": "#111827"
       },
       {
-        "id": "var-1793644137761-0-2",
+        "id": "var-1793652511354-0-2",
         "size": "42R",
         "color": "Navy blue",
         "stock": 2,
@@ -3730,7 +3733,10 @@
     "shippingCharge": 15,
     "careInstructions": [],
     "productViews": {
-      "front": "/api/products/navy-blue-formal-sweater/image/view-front"
+      "front": "/api/products/mens-navy-blue-wool-blend-utility-jacket/image/view-front",
+      "back": "/api/products/mens-navy-blue-wool-blend-utility-jacket/image/view-back",
+      "left": "/api/products/mens-navy-blue-wool-blend-utility-jacket/image/view-left",
+      "right": "/api/products/mens-navy-blue-wool-blend-utility-jacket/image/view-right"
     },
     "pdfDocuments": [],
     "createdAt": "2026-11-02T18:28:58.537Z",
@@ -3792,7 +3798,7 @@
     "lowStockThreshold": 3,
     "isFeatured": true,
     "isNewArrival": true,
-    "isActive": true,
+    "isActive": false,
     "fabric": "Woolen",
     "fit": "Contemporary Tailored Fit",
     "shippingCharge": 15,
@@ -4188,7 +4194,7 @@
     "lowStockThreshold": 3,
     "isFeatured": false,
     "isNewArrival": true,
-    "isActive": true,
+    "isActive": false,
     "fabric": "100% Super 160s English Wool",
     "fit": "Sartorial Tailored Fit",
     "shippingCharge": 15,
@@ -4241,7 +4247,7 @@
     "lowStockThreshold": 3,
     "isFeatured": false,
     "isNewArrival": true,
-    "isActive": true,
+    "isActive": false,
     "fabric": "100% Super 160s English Wool",
     "fit": "Sartorial Tailored Fit",
     "shippingCharge": 15,
@@ -4249,6 +4255,59 @@
     "pdfDocuments": [],
     "createdAt": "2026-11-02T20:20:41.836Z",
     "updatedAt": "2026-11-02T20:20:41.836Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ae8f2fa2c73c7cdc4d6a2d5",
+    "productId": "PROD-MVZPRH15-962",
+    "sku": "PA-BLAZER-1793651449592",
+    "name": "Imperial Worsted Navy Blazer 1793651449592",
+    "slug": "imperial-worsted-navy-blazer-1793651449592",
+    "description": "Hand-tailored from Super 160s English wool with brass crest buttons.",
+    "category": "Suits",
+    "subcategory": "Suits",
+    "price": 1250,
+    "images": [],
+    "colorImages": {},
+    "sizes": [
+      "40R",
+      "42R"
+    ],
+    "colors": [
+      "Navy"
+    ],
+    "variants": [
+      {
+        "id": "var-PROD-MVZPRH15-962-0",
+        "size": "40R",
+        "color": "Navy",
+        "stock": 6,
+        "sku": "PA-BLAZER-1793651449592-40R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      },
+      {
+        "id": "var-PROD-MVZPRH15-962-1",
+        "size": "42R",
+        "color": "Navy",
+        "stock": 4,
+        "sku": "PA-BLAZER-1793651449592-42R",
+        "priceModifier": 0,
+        "colorHex": "#111827"
+      }
+    ],
+    "stockQuantity": 10,
+    "lowStockThreshold": 3,
+    "isFeatured": false,
+    "isNewArrival": true,
+    "isActive": false,
+    "fabric": "100% Super 160s English Wool",
+    "fit": "Sartorial Tailored Fit",
+    "shippingCharge": 15,
+    "careInstructions": [],
+    "pdfDocuments": [],
+    "createdAt": "2026-11-02T20:30:50.875Z",
+    "updatedAt": "2026-11-02T20:30:50.875Z",
     "__v": 0
   }
 ]

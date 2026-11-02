@@ -80,10 +80,40 @@ app.get(['/sitemap_products.xml', '/sitemap_products_:chunk.xml'], async (req, r
   }
 });
 
-app.get('/robots.txt', (_req, res) => {
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=86400');
-  return res.status(200).send(seoService.generateRobotsTxt());
+const BOT_USER_AGENT_REGEX = /(googlebot|bingbot|yandex|baiduspider|twitterbot|facebookexternalhit|rogerbot|linkedinbot|slackbot|whatsapp|telegrambot|embedly|quora link preview|showyoubot|outbrain|pinterest|applebot)/i;
+
+// Pre-render rich crawlable HTML with Schema.org & exact canonical URLs for search crawlers
+app.get([
+  '/product/:id',
+  '/suits',
+  '/blazers-jackets',
+  '/shirts',
+  '/pants',
+  '/outerwear',
+  '/sweaters-knitwear',
+  '/footwear',
+  '/accessories',
+  '/shorts',
+  '/shop',
+  '/categories',
+  '/returns',
+  '/terms',
+  '/track-order',
+  '/track-alteration'
+], async (req, res, next) => {
+  const userAgent = String(req.headers['user-agent'] || '');
+  const isBot = BOT_USER_AGENT_REGEX.test(userAgent) || req.query.bot === '1' || req.query.prerender === '1';
+  if (isBot) {
+    try {
+      const html = await seoService.generateBotHtml(req.path);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+      return res.status(200).send(html);
+    } catch (_) {
+      return next();
+    }
+  }
+  next();
 });
 
 app.use('/api', apiRouter);
@@ -128,7 +158,10 @@ export default async function handler(req: express.Request, res: express.Respons
   // SEO endpoints must never wait for the database/app initialization.
   // Googlebot can fetch the sitemap even while MongoDB is unavailable.
   const requestPath = String(req.path || req.url || '').split('?')[0];
+  const userAgent = String(req.headers['user-agent'] || '');
+  const isBotUser = BOT_USER_AGENT_REGEX.test(userAgent);
   const isSeoRequest =
+    isBotUser ||
     requestPath === '/sitemap.xml' ||
     requestPath === '/sitemap_index.xml' ||
     requestPath === '/sitemap_pages.xml' ||

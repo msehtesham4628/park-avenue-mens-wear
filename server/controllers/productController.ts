@@ -187,29 +187,55 @@ export const productController = {
       if (products.length === 0) return res.status(400).json({ success: false, message: 'No products supplied.' });
       if (products.length > 500) return res.status(400).json({ success: false, message: 'Maximum 500 products per import.' });
 
-      const created = [];
-      for (const item of products) {
-        created.push(await productService.createProduct({
-          name: item.name,
-          sku: item.sku,
-          description: item.description || 'Master crafted bespoke menswear.',
-          category: item.category,
-          subcategory: item.subcategory,
-          price: Number(item.price),
-          salePrice: item.salePrice !== undefined ? Number(item.salePrice) : undefined,
-          images: Array.isArray(item.images) ? item.images : [],
-          colorImages: item.colorImages && typeof item.colorImages === 'object' ? item.colorImages : {},
-          variants: Array.isArray(item.variants) ? item.variants : [],
-          lowStockThreshold: item.lowStockThreshold !== undefined ? Number(item.lowStockThreshold) : 3,
-          isFeatured: Boolean(item.isFeatured),
-          isNewArrival: item.isNewArrival !== undefined ? Boolean(item.isNewArrival) : true,
-          fabric: item.fabric,
-          fit: item.fit,
-          careInstructions: Array.isArray(item.care) ? item.care : (Array.isArray(item.careInstructions) ? item.careInstructions : [])
-        }, { id: user.id, name: user.name, email: user.email, role: user.role }));
+      const results = [];
+      let createdCount = 0;
+      let updatedCount = 0;
+      const rowErrors: string[] = [];
+
+      for (let i = 0; i < products.length; i++) {
+        const item = products[i];
+        try {
+          const resUpsert = await productService.upsertProduct({
+            name: item.name,
+            sku: item.sku,
+            productId: item.productId || item.id,
+            description: item.description || 'Master crafted bespoke menswear.',
+            category: item.category,
+            subcategory: item.subcategory,
+            price: Number(item.price),
+            salePrice: item.salePrice !== undefined ? Number(item.salePrice) : undefined,
+            images: Array.isArray(item.images) ? item.images : [],
+            colorImages: item.colorImages && typeof item.colorImages === 'object' ? item.colorImages : {},
+            variants: Array.isArray(item.variants) ? item.variants : [],
+            lowStockThreshold: item.lowStockThreshold !== undefined ? Number(item.lowStockThreshold) : 3,
+            isFeatured: Boolean(item.isFeatured),
+            isNewArrival: item.isNewArrival !== undefined ? Boolean(item.isNewArrival) : true,
+            fabric: item.fabric,
+            fit: item.fit,
+            careInstructions: Array.isArray(item.care) ? item.care : (Array.isArray(item.careInstructions) ? item.careInstructions : [])
+          }, { id: user.id, name: user.name, email: user.email, role: user.role });
+
+          results.push(resUpsert.product);
+          if (resUpsert.isNew) createdCount++;
+          else updatedCount++;
+        } catch (itemErr: any) {
+          console.error(`[Batch Product Import] Error processing row ${i + 1} (${item.name}):`, itemErr);
+          rowErrors.push(`Item "${item.name || `Row ${i + 1}`}": ${itemErr.message || 'Error saving garment'}`);
+        }
       }
 
-      return res.status(201).json({ success: true, data: created, message: `${created.length} products imported into MongoDB.` });
+      return res.status(200).json({
+        success: true,
+        data: results,
+        summary: {
+          total: products.length,
+          created: createdCount,
+          updated: updatedCount,
+          failed: rowErrors.length,
+          errors: rowErrors
+        },
+        message: `Catalogue vault updated: ${createdCount} garments created, ${updatedCount} garments updated${rowErrors.length > 0 ? ` (${rowErrors.length} notices)` : ''}.`
+      });
     } catch (err: any) {
       return res.status(400).json({ success: false, message: err.message || 'Batch import failed.' });
     }

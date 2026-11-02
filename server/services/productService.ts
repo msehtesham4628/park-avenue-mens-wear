@@ -494,6 +494,137 @@ export const productService = {
   },
 
   /**
+   * Upsert a product: updates existing product if SKU, Name, or Product ID matches;
+   * creates new product otherwise. Essential for Excel batch updates without duplication.
+   */
+  async upsertProduct(data: any, adminUser: { id: string; name: string; email: string; role: string }): Promise<{ product: any; isNew: boolean }> {
+    if (Number(mongoose.connection.readyState) !== 1) {
+      await connectDB();
+    }
+
+    const cleanSku = String(data.sku || '').trim();
+    const cleanName = String(data.name || '').trim();
+    const cleanSlug = generateSlug(cleanName);
+
+    // Look for existing product in MongoDB
+    let existing: any = null;
+    try {
+      if (Number(mongoose.connection.readyState) === 1) {
+        const orConditions: any[] = [];
+        if (data.productId) orConditions.push({ productId: data.productId });
+        if (cleanSku) orConditions.push({ sku: { $regex: new RegExp(`^${cleanSku.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+        if (cleanName) orConditions.push({ name: { $regex: new RegExp(`^${cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } });
+        if (cleanSlug) orConditions.push({ slug: cleanSlug });
+
+        if (orConditions.length > 0) {
+          existing = await ProductModel.findOne({ $or: orConditions });
+        }
+      }
+    } catch (_) {}
+
+    // Check in-memory store if not found in DB
+    if (!existing && inMemoryStore.length > 0) {
+      const lowerSku = cleanSku.toLowerCase();
+      const lowerName = cleanName.toLowerCase();
+      const memMatch = inMemoryStore.find(p =>
+        (p.productId && String(p.productId) === data.productId) ||
+        (cleanSku && p.sku && String(p.sku).toLowerCase() === lowerSku) ||
+        (cleanName && p.name && String(p.name).toLowerCase() === lowerName) ||
+        (cleanSlug && p.slug === cleanSlug)
+      );
+      if (memMatch) {
+        // If DB connected, re-query or proceed to update memory
+        existing = memMatch;
+      }
+    }
+
+    if (existing) {
+      // Existing garment found -> UPDATE
+      const { category: resolvedCat, subcategory: resolvedSubcat } = normalizeCategory(data.category, data.subcategory);
+      const cleanPrice = typeof data.price === 'number' && !isNaN(data.price) && data.price > 0
+        ? data.price
+        : (parseFloat(String(data.price || '').replace(/[^0-9.]/g, '')) || existing.price);
+
+      const updates: any = {};
+      if (cleanPrice > 0) updates.price = cleanPrice;
+      if (data.salePrice !== undefined && !isNaN(Number(data.salePrice))) updates.salePrice = Number(data.salePrice);
+      if (data.description) updates.description = data.description;
+      if (data.fabric) updates.fabric = data.fabric;
+      if (data.fit) updates.fit = data.fit;
+      if (resolvedCat) updates.category = resolvedCat;
+      if (resolvedSubcat) updates.subcategory = resolvedSubcat;
+      if (data.lowStockThreshold !== undefined) updates.lowStockThreshold = Number(data.lowStockThreshold);
+      if (data.isFeatured !== undefined) updates.isFeatured = Boolean(data.isFeatured);
+      if (data.isNewArrival !== undefined) updates.isNewArrival = Boolean(data.isNewArrival);
+
+      // Merge images safely
+      if (Array.isArray(data.images) && data.images.length > 0) {
+        updates.images = Array.from(new Set([...(existing.images || []), ...data.images]));
+      }
+      if (data.colorImages && typeof data.colorImages === 'object') {
+        updates.colorImages = { ...(existing.colorImages || {}), ...data.colorImages };
+      }
+
+      // Merge variants (update stock for matching size+color, append new ones)
+      if (Array.isArray(data.variants) && data.variants.length > 0) {
+        const existingVariants: any[] = (existing.variants || []).map((v: any) => typeof v.toObject === 'function' ? v.toObject() : { ...v });
+        for (const newVar of data.variants) {
+          const varSize = String(newVar.size || 'Standard').trim().toLowerCase();
+          const varColor = String(newVar.color || 'Standard').trim().toLowerCase();
+          const matchIdx = existingVariants.findIndex(v =>
+            String(v.size || '').trim().toLowerCase() === varSize &&
+            String(v.color || '').trim().toLowerCase() === varColor
+          );
+          if (matchIdx !== -1) {
+            existingVariants[matchIdx].stock = typeof newVar.stock === 'number' ? Math.max(0, newVar.stock) : (parseInt(String(newVar.stock || 0), 10) || 0);
+          } else {
+            existingVariants.push({
+              id: newVar.id || `var-${existing.productId || Date.now()}-${existingVariants.length}`,
+              size: newVar.size || 'Standard',
+              color: newVar.color || 'Standard',
+              colorHex: newVar.colorHex || '#111827',
+              stock: Math.max(0, Number(newVar.stock) || 0),
+              sku: newVar.sku || `${existing.sku}-${String(newVar.size || '').replace(/\s+/g, '')}`
+            });
+          }
+        }
+        updates.variants = existingVariants;
+        updates.stockQuantity = existingVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+        updates.sizes = Array.from(new Set(existingVariants.map(v => v.size)));
+        updates.colors = Array.from(new Set(existingVariants.map(v => v.color)));
+      }
+
+      updates.updatedAt = new Date();
+
+      if (typeof existing.save === 'function') {
+        Object.assign(existing, updates);
+        await existing.save();
+        const obj = sanitizeProductPayload(existing.toObject());
+        // Synchronize in-memory store
+        const memIdx = inMemoryStore.findIndex(p => p.productId === existing.productId || p.sku === existing.sku);
+        if (memIdx !== -1) {
+          inMemoryStore[memIdx] = obj;
+          saveStoreToDisk(inMemoryStore);
+        }
+        return { product: obj, isNew: false };
+      } else {
+        // In-memory fallback
+        const updatedMem = { ...existing, ...updates };
+        const memIdx = inMemoryStore.findIndex(p => p.productId === existing.productId || p.sku === existing.sku);
+        if (memIdx !== -1) {
+          inMemoryStore[memIdx] = updatedMem;
+          saveStoreToDisk(inMemoryStore);
+        }
+        return { product: sanitizeProductPayload(updatedMem), isNew: false };
+      }
+    }
+
+    // New product -> CREATE
+    const created = await this.createProduct(data, adminUser);
+    return { product: created, isNew: true };
+  },
+
+  /**
    * Create a new product (admin)
    */
   async createProduct(data: {
