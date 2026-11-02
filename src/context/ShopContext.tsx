@@ -214,6 +214,8 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     if (initialRoute.view === 'home') {
       try {
+        const isBot = typeof navigator !== 'undefined' && /bot|crawler|spider|crawling|google|bing|duckduckgo|baidu|yandex/i.test(navigator.userAgent);
+        if (isBot) return 'home';
         const seen = sessionStorage.getItem('pa_welcome_seen');
         if (!seen) {
           sessionStorage.setItem('pa_welcome_seen', '1');

@@ -2,115 +2,109 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.parkavenuemenswear.com/</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.00</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/shop</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/categories</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/track-order</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/track-alteration</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/track-return</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.60</priority>
   </url>
   <url>
-    <loc>https://www.parkavenuemenswear.com/login</loc>
-    <lastmod>2026-10-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.50</priority>
-  </url>
-  <url>
-    <loc>https://www.parkavenuemenswear.com/account</loc>
-    <lastmod>2026-10-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.50</priority>
-  </url>
-  <url>
     <loc>https://www.parkavenuemenswear.com/terms</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.40</priority>
+    <priority>0.50</priority>
   </url>
   <url>
-    <loc>https://www.parkavenuemenswear.com/returns-policy</loc>
-    <lastmod>2026-10-05</lastmod>
+    <loc>https://www.parkavenuemenswear.com/returns</loc>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.40</priority>
+    <priority>0.50</priority>
+  </url>
+  <url>
+    <loc>https://www.parkavenuemenswear.com/login-policy</loc>
+    <lastmod>2026-11-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.50</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/suits</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/blazers-jackets</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/shirts</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/pants</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/outerwear</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/sweaters-knitwear</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/footwear</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.90</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/accessories</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://www.parkavenuemenswear.com/shorts</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-11-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>

@@ -35,10 +35,9 @@ const STATIC_ROUTES = [
   { path: 'track-order', priority: 0.7, freq: 'monthly' as const, title: 'Track Executive Order USA', type: 'portal' as const },
   { path: 'track-alteration', priority: 0.7, freq: 'monthly' as const, title: 'Track Bespoke Alterations', type: 'portal' as const },
   { path: 'track-return', priority: 0.6, freq: 'monthly' as const, title: 'Track Returns & Exchanges', type: 'portal' as const },
-  { path: 'login', priority: 0.5, freq: 'monthly' as const, title: 'Client & Patron Login', type: 'portal' as const },
-  { path: 'account', priority: 0.5, freq: 'monthly' as const, title: 'Patron Account Portal', type: 'portal' as const },
-  { path: 'terms', priority: 0.4, freq: 'monthly' as const, title: 'Terms & Conditions of Commission', type: 'page' as const },
-  { path: 'returns-policy', priority: 0.4, freq: 'monthly' as const, title: 'Atelier Return Policy & Fit Guarantee', type: 'page' as const }
+  { path: 'terms', priority: 0.5, freq: 'monthly' as const, title: 'Terms & Conditions of Commission', type: 'page' as const },
+  { path: 'returns', priority: 0.5, freq: 'monthly' as const, title: 'Atelier Return Policy & Fit Guarantee', type: 'page' as const },
+  { path: 'login-policy', priority: 0.5, freq: 'monthly' as const, title: 'Patron Security & Access Policy', type: 'page' as const }
 ];
 
 // Persistent sitemap ledger path across cold starts & container restarts
@@ -102,16 +101,19 @@ export const seoService = {
       }
     } catch (_) {}
 
-    // 3. Database products
+    // 3. Database products (only if DB is connected)
     try {
-      const dbProducts = await ProductModel.find({ isActive: { $ne: false } })
-        .select('productId sku name slug category updatedAt createdAt')
-        .lean();
-      if (Array.isArray(dbProducts)) {
-        dbProducts.forEach(p => {
-          const key = p.productId || p.id || p.sku;
-          productMap.set(key, p);
-        });
+      if (Number(ProductModel.db?.readyState) === 1) {
+        const dbProducts = await ProductModel.find({ isActive: { $ne: false } })
+          .select('productId sku name slug category updatedAt createdAt')
+          .maxTimeMS(2000)
+          .lean();
+        if (Array.isArray(dbProducts)) {
+          dbProducts.forEach(p => {
+            const key = p.productId || p.id || p.sku;
+            productMap.set(key, p);
+          });
+        }
       }
     } catch (_) {}
 
@@ -200,7 +202,7 @@ export const seoService = {
     for (const prod of chunkProducts) {
       const id = prod.productId || prod.id || prod.sku;
       const prodDate = prod.updatedAt ? new Date(prod.updatedAt).toISOString().split('T')[0] : today;
-      const fullUrl = `${CANONICAL_DOMAIN}/category/products/${encodeURIComponent(id)}`;
+      const fullUrl = `${CANONICAL_DOMAIN}/product/${encodeURIComponent(id)}`;
 
       xml += `  <url>\n`;
       xml += `    <loc>${fullUrl}</loc>\n`;
@@ -269,7 +271,7 @@ export const seoService = {
     const products = await this.getAllActiveProducts();
     for (const prod of products) {
       const id = prod.productId || prod.id || prod.sku;
-      const loc = `${CANONICAL_DOMAIN}/category/products/${encodeURIComponent(id)}`;
+      const loc = `${CANONICAL_DOMAIN}/product/${encodeURIComponent(id)}`;
       const prodDate = prod.updatedAt ? new Date(prod.updatedAt).toISOString().split('T')[0] : today;
 
       if (existingMap[loc]) {
@@ -388,18 +390,23 @@ Allow: /blazers-jackets
 Allow: /footwear
 Allow: /accessories
 Allow: /sweaters-knitwear
+Allow: /shorts
 Allow: /shop
 Allow: /categories
 Allow: /terms
-Allow: /returns-policy
+Allow: /returns
+Allow: /login-policy
 
 # Protected administrative and private endpoints
 Disallow: /admin
 Disallow: /dashboard
 Disallow: /api/
 Disallow: /customer-dashboard
+Disallow: /account
+Disallow: /login
 Disallow: /reset-password
 Disallow: /checkout
+Disallow: /cart
 
 # Official XML Sitemap Index & Sub-Sitemaps
 Sitemap: ${CANONICAL_DOMAIN}/sitemap.xml

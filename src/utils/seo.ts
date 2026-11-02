@@ -51,8 +51,8 @@ export function generateProductSeo(product: Product): SeoMetadataOptions {
     : DEFAULT_OG_IMAGE;
 
   const catSlug = getCategorySlug(product.category) || 'category';
-  const skuOrId = product.sku || product.id;
-  const productUrl = `/${catSlug}/products/${encodeURIComponent(skuOrId)}`;
+  const skuOrId = product.id || (product as any).productId || product.sku;
+  const productUrl = `/product/${encodeURIComponent(skuOrId)}`;
 
   return {
     title,

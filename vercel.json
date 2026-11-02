@@ -21,6 +21,21 @@
   ],
   "routes": [
     {
+      "src": "/returns-policy|/return-policy",
+      "status": 301,
+      "headers": { "Location": "/returns" }
+    },
+    {
+      "src": "/terms-and-conditions|/terms-of-service",
+      "status": 301,
+      "headers": { "Location": "/terms" }
+    },
+    {
+      "src": "/category/products/(.*)",
+      "status": 301,
+      "headers": { "Location": "/product/$1" }
+    },
+    {
       "src": "/(sitemap\\.xml|sitemap_index\\.xml|sitemap_pages\\.xml|sitemap_products_[0-9]+\\.xml|robots\\.txt)",
       "dest": "/api/[...path].ts"
     },

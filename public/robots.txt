@@ -1,0 +1,35 @@
+# Robots.txt for Park Avenue Menswear (https://www.parkavenuemenswear.com)
+User-agent: *
+Allow: /
+Allow: /product/
+Allow: /category/
+Allow: /suits
+Allow: /shirts
+Allow: /pants
+Allow: /outerwear
+Allow: /blazers-jackets
+Allow: /footwear
+Allow: /accessories
+Allow: /sweaters-knitwear
+Allow: /shorts
+Allow: /shop
+Allow: /categories
+Allow: /terms
+Allow: /returns
+Allow: /login-policy
+
+# Protected administrative and private endpoints
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /customer-dashboard
+Disallow: /account
+Disallow: /login
+Disallow: /reset-password
+Disallow: /checkout
+Disallow: /cart
+
+# Official XML Sitemap Index & Sub-Sitemaps
+Sitemap: https://www.parkavenuemenswear.com/sitemap.xml
+Sitemap: https://www.parkavenuemenswear.com/sitemap_pages.xml
+Sitemap: https://www.parkavenuemenswear.com/sitemap_products_1.xml

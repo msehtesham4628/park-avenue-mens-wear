@@ -28,7 +28,27 @@ app.use((_req, res, next) => {
   next();
 });
 
-app.use('/api', apiRouter);
+// Permanent 301 Redirects for legacy indexed URLs to canonical routes
+app.get(['/returns-policy', '/return-policy'], (_req, res) => {
+  return res.redirect(301, '/returns');
+});
+
+app.get(['/terms-and-conditions', '/terms-of-service'], (_req, res) => {
+  return res.redirect(301, '/terms');
+});
+
+app.get('/category/products/:id', (req, res) => {
+  return res.redirect(301, `/product/${encodeURIComponent(req.params.id)}`);
+});
+
+app.get('/:category/products/:id', (req, res, next) => {
+  const cat = req.params.category.toLowerCase();
+  const knownCategories = ['suits', 'blazers-jackets', 'shirts', 'pants', 'outerwear', 'sweaters-knitwear', 'footwear', 'accessories', 'shorts'];
+  if (knownCategories.includes(cat) && req.params.id) {
+    return res.redirect(301, `/product/${encodeURIComponent(req.params.id)}`);
+  }
+  next();
+});
 
 app.get(['/sitemap.xml', '/sitemap_index.xml'], async (_req, res) => {
   try {
