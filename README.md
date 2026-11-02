@@ -52,7 +52,6 @@ The project is designed around a real e-commerce workflow:
 ### Payments & Integrations
 
 - Stripe
-- Google Gemini
 - Configurable email provider
 - Configurable SMS provider
 - Configurable WhatsApp provider
@@ -264,8 +263,6 @@ FRONTEND_URL=
 STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
-
-GEMINI_API_KEY=
 
 EMAIL_PROVIDER=
 EMAIL_API_KEY=

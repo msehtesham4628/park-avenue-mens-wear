@@ -1,6 +1,0 @@
-{
-  "summary":  "Implementation plan to remove fake products, eliminate auto SKU/title/description features, completely remove SKU sections from product pages and UI, and implement an exact color picker with bidirectional hex mapping.",
-  "updatedAt":  "2026-10-21T04:48:44.285365303Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}
